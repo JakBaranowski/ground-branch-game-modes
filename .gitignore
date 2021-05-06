@@ -1,0 +1,10 @@
+# Ignore everything
+*
+!*/
+# Config files (AI only for now)
+!GroundBranch/Config/DefaultAISettings.ini
+# GameMode scripts
+!GroundBranch/Content/GroundBranch/Lua/*
+# Mission setups
+!GroundBranch/Content/GroundBranch/Mission/**
+!.gitignore
