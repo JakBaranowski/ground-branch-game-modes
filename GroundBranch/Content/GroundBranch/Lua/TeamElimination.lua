@@ -1,10 +1,24 @@
 local teamelimination = {
-	BlueTeamId = 1,
-	BlueTeamTag = "Blue",
-	BlueTeamLoadoutName = "Blue",
-	RedTeamId = 2,
-	RedTeamTag = "Red",
-	RedTeamLoadoutName = "Red",
+	UseReadyRoom = true,
+	UseRounds = true,
+	StringTables = { "TeamElimination" },
+	PlayerTeams = {
+		Blue = {
+			TeamId = 1,
+			Loadout = "Blue",
+		},
+		Red = {
+			TeamId = 2,
+			Loadout = "Red",
+		},
+	},
+	Settings = {
+		RoundTime = {
+			Min = 5,
+			Max = 30,
+			Value = 10,
+		},
+	},
 	RoundResult = "",
 	InsertionPoints = {},
 	bFixedInsertionPoints = false,
@@ -12,7 +26,7 @@ local teamelimination = {
 	PrevGroupIndex = 0,
 }
 
-function teamelimination:PostRun()
+function teamelimination:PreInit()
 	local AllInsertionPoints = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')
 	
 	if #AllInsertionPoints > 2 then
@@ -44,29 +58,24 @@ function teamelimination:PostRun()
 			end
 		end
 	end
+end
 
-	gamemode.AddStringTable("teamelimination")
-	gamemode.AddGameRule("UseReadyRoom")
-	gamemode.AddGameRule("UseRounds")
-	gamemode.AddPlayerTeam(self.BlueTeamId, self.BlueTeamTag, self.BlueTeamLoadoutName);
-	gamemode.AddPlayerTeam(self.RedTeamId, self.RedTeamTag, self.RedTeamLoadoutName);
-	gamemode.AddGameObjective(1, "EliminateRed", 1)
-	gamemode.AddGameObjective(2, "EliminateBlue", 1)
-	gamemode.AddGameSetting("roundtime", 5, 30, 5, 10);
-	gamemode.SetRoundStage("WaitingForReady")
+function teamelimination:PostInit()
+	gamemode.AddGameObjective(self.PlayerTeams.Blue.TeamId, "EliminateRed", 1)
+	gamemode.AddGameObjective(self.PlayerTeams.Red.TeamId, "EliminateBlue", 1)
 end
 
 function teamelimination:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	if InsertionPoint == nil then
-		timer.Set(self, "CheckReadyDownTimer", 0.1, false);
+		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false);
 	else
-		timer.Set(self, "CheckReadyUpTimer", 0.25, false);
+		timer.Set("CheckReadyUp", self, self.CheckReadyUpTimer, 0.25, false);
 	end
 end
 
-function teamelimination:PlayerWantsToEnterPlayChanged(PlayerState, WantsToEnterPlay)
-	if not WantsToEnterPlay then
-		timer.Set(self, "CheckReadyDownTimer", 0.1, false);
+function teamelimination:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+	if ReadyStatus ~= "DeclaredReady" then
+		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false);
 	elseif gamemode.GetRoundStage() == "PreRoundWait" and gamemode.PrepLatecomer(PlayerState) then
 		gamemode.EnterPlayArea(PlayerState)
 	end
@@ -74,9 +83,9 @@ end
 
 function teamelimination:CheckReadyUpTimer()
 	if gamemode.GetRoundStage() == "WaitingForReady" or gamemode.GetRoundStage() == "ReadyCountdown" then
-		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(false)
-		local BlueReady = ReadyPlayerTeamCounts[self.BlueTeamId]
-		local RedReady = ReadyPlayerTeamCounts[self.RedTeamId]
+		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
+		local BlueReady = ReadyPlayerTeamCounts[self.PlayerTeams.Blue.TeamId]
+		local RedReady = ReadyPlayerTeamCounts[self.PlayerTeams.Red.TeamId]
 		if BlueReady > 0 and RedReady > 0 then
 			if BlueReady + RedReady >= gamemode.GetPlayerCount(true) then
 				gamemode.SetRoundStage("PreRoundWait")
@@ -89,9 +98,9 @@ end
 
 function teamelimination:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == "ReadyCountdown" then
-		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(false)
-		local BlueReady = ReadyPlayerTeamCounts[self.BlueTeamId]
-		local RedReady = ReadyPlayerTeamCounts[self.RedTeamId]
+		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
+		local BlueReady = ReadyPlayerTeamCounts[self.PlayerTeams.Blue.TeamId]
+		local RedReady = ReadyPlayerTeamCounts[self.PlayerTeams.Red.TeamId]
 		if BlueReady < 1 or RedReady < 1 then
 			gamemode.SetRoundStage("WaitingForReady")
 		end
@@ -114,26 +123,26 @@ function teamelimination:OnCharacterDied(Character, CharacterController, KillerC
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
 		if CharacterController ~= nil then
 			player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
-			timer.Set(self, "CheckEndRoundTimer", 1.0, false);
+			timer.Set("CheckEndRound", self, self.CheckEndRoundTimer, 1.0, false);
 		end
 	end
 end
 
 function teamelimination:CheckEndRoundTimer()
-	local BluePlayers = gamemode.GetPlayerList("Lives", self.BlueTeamId, true, 1, false)
-	local RedPlayers = gamemode.GetPlayerList("Lives", self.RedTeamId, true, 1, false)
+	local BluePlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.Blue.TeamId, 1, false)
+	local RedPlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.Red.TeamId, 1, false)
 	
-	if #BluePlayers > 0 and #RedPlayers == 0 then
+	if #BluePlayersWithLives > 0 and #RedPlayersWithLives == 0 then
 		gamemode.AddGameStat("Result=Team1")
 		gamemode.AddGameStat("Summary=RedEliminated")
 		gamemode.AddGameStat("CompleteObjectives=EliminateBlue")
 		gamemode.SetRoundStage("PostRoundWait")
-	elseif #BluePlayers == 0 and #RedPlayers > 0 then
+	elseif #BluePlayersWithLives == 0 and #RedPlayersWithLives > 0 then
 		gamemode.AddGameStat("Result=Team2")
 		gamemode.AddGameStat("Summary=BlueEliminated")
 		gamemode.AddGameStat("CompleteObjectives=EliminateRed")
 		gamemode.SetRoundStage("PostRoundWait")
-	elseif #BluePlayers == 0 and #RedPlayers == 0 then
+	elseif #BluePlayersWithLives == 0 and #RedPlayersWithLives == 0 then
 		gamemode.AddGameStat("Result=None")
 		gamemode.AddGameStat("Summary=BothEliminated")
 		gamemode.SetRoundStage("PostRoundWait")
@@ -165,12 +174,12 @@ function teamelimination:RandomiseInsertionPointGroups()
 end
 
 function teamelimination:RandomiseInsertionPoints(TargetInsertionPoints)
-	local ShuffledInsertionPoints = {}
-
 	if #TargetInsertionPoints < 2 then
 		print("Error: #TargetInsertionPoints < 2")
 		return
 	end
+
+	local ShuffledInsertionPoints = {}
 
 	local BlueIndex = umath.random(#TargetInsertionPoints)
 	local RedIndex = BlueIndex + umath.random(#TargetInsertionPoints - 1)
@@ -181,10 +190,10 @@ function teamelimination:RandomiseInsertionPoints(TargetInsertionPoints)
 	for i, InsertionPoint in ipairs(TargetInsertionPoints) do
 		if i == BlueIndex then
 			actor.SetActive(InsertionPoint, true)
-			actor.SetTeamId(InsertionPoint, self.BlueTeamId)
+			actor.SetTeamId(InsertionPoint, self.PlayerTeams.Blue.TeamId)
 		elseif i == RedIndex then
 			actor.SetActive(InsertionPoint, true)
-			actor.SetTeamId(InsertionPoint, self.RedTeamId)
+			actor.SetTeamId(InsertionPoint, self.PlayerTeams.Red.TeamId)
 		else
 			actor.SetActive(InsertionPoint, false)
 			actor.SetTeamId(InsertionPoint, 255)
@@ -208,7 +217,7 @@ end
 
 function teamelimination:LogOut(Exiting)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
-		timer.Set(self, "CheckEndRoundTimer", 1.0, false);
+		timer.Set("CheckEndRound", self, self.CheckEndRoundTimer, 1.0, false);
 	end
 end
 

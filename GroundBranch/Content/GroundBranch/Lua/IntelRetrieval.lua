@@ -1,29 +1,56 @@
-local intel = {
-	OpForCount = 15,
-	MaxOpforCount = 0,
-	OpForTeamId = 100,
+local intelretrieval = {
+	UseReadyRoom = true,
+	UseRounds = true,
+	StringTables = { "IntelRetrieval" },
+	PlayerTeams = {
+		BluFor = {
+			TeamId = 1,
+			Loadout = "NoTeam",
+		},
+	},
+	Settings = {
+		OpForCount = {
+			Min = 1,
+			Max = 50,
+			Value = 15,
+		},
+		Difficulty = {
+			Min = 0,
+			Max = 4,
+			Value = 2,
+		},
+		RoundTime = {
+			Min = 10,
+			Max = 60,
+			Value = 60,
+		},
+		TeamExfil = {
+			Min = 0,
+			Max = 1,
+			Value = 1,
+		},
+		SearchTime = {
+			Min = 1,
+			Max = 60,
+			Value = 10,
+		},
+	},
 	OpForTeamTag = "OpFor",
-	BluForTeamId = 1,
-	BluForTeamTag = "BluFor",
-	BluForLoadoutName = "NoTeam",
-	PriorityTags = {"AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
-		"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50"},
+	PriorityTags = { "AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
+		"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50" },
 	PriorityGroupedSpawns = {},
 	ExtractionPoints = {},
 	ExtractionPointMarkers = {},
 	ExtractionPoint = nil,
 	Laptops = {},
 	LaptopTag = "TheIntelIsALie",
-	SearchTime = 10,
-	MinSearchTime = 1,
-	MaxSearchTime = 60,
-	TeamExfil = true,
 	TeamExfilWarning = false;
 }
 
-function intel:PostRun()
+function intelretrieval:PreInit()
 	local AllSpawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
 	local PriorityIndex = 1
+	local TotalSpawns = 0
 
 	-- Orders spawns by priority while allowing spawns of the same priority to be randomised.
 	for i, PriorityTag in ipairs(self.PriorityTags) do
@@ -36,7 +63,7 @@ function intel:PostRun()
 					self.PriorityGroupedSpawns[PriorityIndex] = {}
 				end
 				-- Ensures we can't spawn more AI then this map can handle.
-				self.MaxOpforCount = self.MaxOpforCount + 1 
+				TotalSpawns = TotalSpawns + 1 
 				table.insert(self.PriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
@@ -47,79 +74,46 @@ function intel:PostRun()
 		end
 	end
 
-	self.MaxOpforCount = math.min(ai.GetMaxCount(), self.MaxOpforCount)
+	TotalSpawns = math.min(ai.GetMaxCount(), TotalSpawns)
+	self.Settings.OpForCount.Max = TotalSpawns
+	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
 	
 	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C')
 
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
-		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.BluForTeamId, "ExtractionPoint", false)
+		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "ExtractionPoint", false)
 	end
 	
 	self.Laptops = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/Electronics/MilitaryLaptop/BP_Laptop_Usable.BP_Laptop_Usable_C')
-
-	gamemode.AddGameRule("UseReadyRoom")
-	gamemode.AddGameRule("UseRounds")
-
-	if not gamemode.HasGameOption("SpectateFreeCam") then
-		gamemode.AddGameRule("SpectateFreeCam")
-	end
-
-	if not gamemode.HasGameOption("AllowDeadChat") then
-		gamemode.AddGameRule("AllowDeadChat")
-	end
-
-	if not gamemode.HasGameOption("AllowEnemyBlips") then
-		gamemode.AddGameRule("AllowEnemyBlips")
-	end
-
-	if gamemode.HasGameOption("teamexfil") then
-		self.TeamExfil = (tonumber(gamemode.GetGameOption("teamexfil")) == 1)
-	end
-
-	if gamemode.HasGameOption("searchtime") then
-		self.SearchTime = math.max(tonumber(gamemode.GetGameOption("searchtime")), self.MinSearchTime)
-		self.SearchTime = math.min(self.SearchTime, self.MaxSearchTime)
-	end
-
-	-- Cooperative play requires a team for the players to be on.
-	gamemode.AddPlayerTeam(self.BluForTeamId, self.BluForTeamTag, self.BluForLoadoutName);
-
-	gamemode.AddStringTable("IntelRetrieval")
-	gamemode.AddGameObjective(1, "RetrieveIntel", 1)
-	gamemode.AddGameObjective(1, "ExfiltrateBluFor", 1)
-	gamemode.AddGameSetting("opforcount", 1, self.MaxOpforCount, 1, self.OpForCount)
-	gamemode.AddGameSetting("difficulty", 0, 4, 1, 2);
-	gamemode.AddGameSetting("roundtime", 10, 60, 10, 60);
-	if self.TeamExfil then
-		gamemode.AddGameSetting("teamexfil", 0, 1, 1, 1);
-	else
-		gamemode.AddGameSetting("teamexfil", 0, 1, 1, 0);
-	end
-	gamemode.SetRoundStage("WaitingForReady")
 end
 
-function intel:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
+function intelretrieval:PostInit()
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "RetrieveIntel", 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
+end
+
+function intelretrieval:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	if InsertionPoint == nil then
-		timer.Set(self, "CheckReadyDownTimer", 0.1, false)
+		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	else
-		timer.Set(self, "CheckReadyUpTimer", 0.25, false)
+		timer.Set("CheckReadyUp", self, self.CheckReadyUpTimer, 0.25, false)
 	end
 end
 
-function intel:PlayerWantsToEnterPlayChanged(PlayerState, WantsToEnterPlay)
-	if not WantsToEnterPlay then
-		timer.Set(self, "CheckReadyDownTimer", 0.1, false)
+function intelretrieval:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+	if ReadyStatus ~= "DeclaredReady" then
+		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	elseif gamemode.GetRoundStage() == "PreRoundWait" and gamemode.PrepLatecomer(PlayerState) then
 		gamemode.EnterPlayArea(PlayerState)
 	end
 end
 
-function intel:CheckReadyUpTimer()
+function intelretrieval:CheckReadyUpTimer()
 	if gamemode.GetRoundStage() == "WaitingForReady" or gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 	
-		local BluForReady = ReadyPlayerTeamCounts[self.BluForTeamId]
+		local BluForReady = ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId]
 	
 		if BluForReady >= gamemode.GetPlayerCount(true) then
 			gamemode.SetRoundStage("PreRoundWait")
@@ -129,17 +123,17 @@ function intel:CheckReadyUpTimer()
 	end
 end
 
-function intel:CheckReadyDownTimer()
+function intelretrieval:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 	
-		if ReadyPlayerTeamCounts[self.BluForTeamId] < 1 then
+		if ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId] < 1 then
 			gamemode.SetRoundStage("WaitingForReady")
 		end
 	end
 end
 
-function intel:OnRoundStageSet(RoundStage)
+function intelretrieval:OnRoundStageSet(RoundStage)
 	if RoundStage == "WaitingForReady" then
 		timer.ClearAll()
 
@@ -168,7 +162,7 @@ function intel:OnRoundStageSet(RoundStage)
 	end
 end
 
-function intel:SpawnOpFor()
+function intelretrieval:SpawnOpFor()
 	local OrderedSpawns = {}
 
 	for Key, Group in ipairs(self.PriorityGroupedSpawns) do
@@ -179,60 +173,47 @@ function intel:SpawnOpFor()
 		end
 	end
 
-	ai.CreateOverDuration(4.0, self.OpForCount, OrderedSpawns, self.OpForTeamTag)
+	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedSpawns, self.OpForTeamTag)
 end
 
-function intel:OnCharacterDied(Character, CharacterController, KillerController)
+function intelretrieval:OnCharacterDied(Character, CharacterController, KillerController)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
 		if CharacterController ~= nil then
 			if not actor.HasTag(CharacterController, self.OpForTeamTag) then
 				player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
-				timer.Set(self, "CheckBluForCountTimer", 1.0, false)
+				timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
 			end
 		end
 	end
 end
 
-function intel:CheckBluForCountTimer()
-	local BluForPlayers = gamemode.GetPlayerList("Lives", self.BluForTeamId, true, 1, false)
-	if #BluForPlayers == 0 then
+function intelretrieval:CheckBluForCountTimer()
+	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, false)
+	if #PlayersWithLives == 0 then
 		gamemode.AddGameStat("Result=None")
 		gamemode.AddGameStat("Summary=BluForEliminated")
 		gamemode.SetRoundStage("PostRoundWait")
 	end
 end
 
-function intel:OnProcessCommand(Command, Params)
-	if Command == "opforcount" then
-		if Params ~= nil then
-			self.OpForCount = math.max(tonumber(Params), 0)
-			self.OpForCount = math.min(self.OpForCount, self.MaxOpforCount)
-		end
-	elseif Command == "teamexfil" then
-		if Params ~= nil then
-			self.TeamExfil = (tonumber(Params) == 1)
-		end
-	end
-end
-
-function intel:ShouldCheckForTeamKills()
+function intelretrieval:ShouldCheckForTeamKills()
 	if gamemode.GetRoundStage() == "InProgress" then
 		return true
 	end
 	return false
 end
 
-function intel:PlayerCanEnterPlayArea(PlayerState)
+function intelretrieval:PlayerCanEnterPlayArea(PlayerState)
 	if player.GetInsertionPoint(PlayerState) ~= nil then
 		return true
 	end
 	return false
 end
 
-function intel:OnGameTriggerBeginOverlap(GameTrigger, Character)
+function intelretrieval:OnGameTriggerBeginOverlap(GameTrigger, Character)
 	if player.HasItemWithTag(Character, self.LaptopTag) == true then
-		if self.TeamExfil then
-			timer.Set(self, "CheckOpForExfilTimer", 1.0, true)
+		if self.Settings.TeamExfil.Value == 1 then
+			timer.Set("CheckOpForExfil", self, self.CheckOpForExfilTimer, 1.0, true)
 		else
 			gamemode.AddGameStat("Result=Team1")
 			gamemode.AddGameStat("Summary=IntelRetrieved")
@@ -242,29 +223,32 @@ function intel:OnGameTriggerBeginOverlap(GameTrigger, Character)
 	end
 end
 
-function intel:CheckOpForExfilTimer()
+function intelretrieval:CheckOpForExfilTimer()
 	local Overlaps = actor.GetOverlaps(self.ExtractionPoints[self.ExtractionPointIndex], 'GroundBranch.GBCharacter')
-	local LivingPlayers = gamemode.GetPlayerList("Lives", self.BluForTeamId, true, 1, false)
+	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, false)
 	
 	local bExfiltrated = false
 	local bLivingOverlap = false
 	local bLaptopSecure = false
 	local PlayerWithLapTop = nil
 
-	for i = 1, #LivingPlayers do
-		local LivingCharacter = player.GetCharacter(LivingPlayers[i])
-	
+	for i = 1, #PlayersWithLives do
 		bExfiltrated = false
 
-		for j = 1, #Overlaps do
-			if Overlaps[j] == LivingCharacter then
-				bLivingOverlap = true
-				bExfiltrated = true
-				if player.HasItemWithTag(LivingCharacter, self.LaptopTag) then
-					bLaptopSecure = true
-					PlayerWithLapTop = LivingPlayers[i]
+		local PlayerCharacter = player.GetCharacter(PlayersWithLives[i])
+	
+		-- May have lives, but no character, alive or otherwise.
+		if PlayerCharacter ~= nil then
+			for j = 1, #Overlaps do
+				if Overlaps[j] == PlayerCharacter then
+					bLivingOverlap = true
+					bExfiltrated = true
+					if player.HasItemWithTag(PlayerCharacter, self.LaptopTag) then
+						bLaptopSecure = true
+						PlayerWithLapTop = PlayersWithLives[i]
+					end
+					break
 				end
-				break
 			end
 		end
 
@@ -275,22 +259,22 @@ function intel:CheckOpForExfilTimer()
 	
 	if bLaptopSecure then
 		if bExfiltrated then
-		 	timer.Clear(self, "CheckOpForExfilTimer")
+		 	timer.Clear(self, "CheckOpForExfil")
 		 	gamemode.AddGameStat("Result=Team1")
 		 	gamemode.AddGameStat("Summary=IntelRetrieved")
 		 	gamemode.AddGameStat("CompleteObjectives=RetrieveIntel,ExfiltrateBluFor")
 		 	gamemode.SetRoundStage("PostRoundWait")
-		elseif not self.TeamExfilWarning then
+		elseif PlayerWithLapTop ~= nil and self.TeamExfilWarning == false then
+			player.ShowGameMessage(PlayerWithLapTop, "TeamExfil", "Engine", 5.0)
 			self.TeamExfilWarning = true
-			player.ShowGameMessage(Character, "TeamExfil", 5.0)
 		end
 	end
 end
 
-function intel:LogOut(Exiting)
+function intelretrieval:LogOut(Exiting)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
-		timer.Set(self, "CheckBluForCountTimer", 1.0, false);
+		timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false);
 	end
 end
 
-return intel
+return intelretrieval

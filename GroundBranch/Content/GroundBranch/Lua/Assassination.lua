@@ -1,13 +1,33 @@
 local assassination = {
-	OpForCount = 15,
-	MaxOpforCount = 0,
-	OpForTeamId = 100,
+	UseReadyRoom = true,
+	UseRounds = true,
+	StringTables = { "Assassination" },
+	PlayerTeams = {
+		BluFor = {
+			TeamId = 1,
+			Loadout = "NoTeam",
+		},
+	},
+	Settings = {
+		OpForCount = {
+			Min = 1,
+			Max = 50,
+			Value = 15,
+		},
+		Difficulty = {
+			Min = 0,
+			Max = 4,
+			Value = 2,
+		},
+		RoundTime = {
+			Min = 10,
+			Max = 60,
+			Value = 60,
+		},
+	},
 	OpForTeamTag = "OpFor",
-	BluForTeamId = 1,
-	BluForTeamTag = "BluFor",
-	BluForLoadoutName = "NoTeam",
-	PriorityTags = {"AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
-		"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50"},
+	PriorityTags = { "AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
+		"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50" },
 	PriorityGroupedSpawns = {},
 	OpForLeaderTag = "OpForLeader",
 	LeaderSpawns = {},
@@ -19,9 +39,10 @@ local assassination = {
 	ExtractionPoint = nil,
 }
 
-function assassination:PostRun()
+function assassination:PreInit()
 	local AllSpawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
 	local PriorityIndex = 1
+	local TotalSpawns = 0
 
 	-- Orders spawns by priority while allowing spawns of the same priority to be randomised.
 	for i, PriorityTag in ipairs(self.PriorityTags) do
@@ -34,7 +55,7 @@ function assassination:PostRun()
 					self.PriorityGroupedSpawns[PriorityIndex] = {}
 				end
 				-- Ensures we can't spawn more AI then this map can handle.
-				self.MaxOpforCount = self.MaxOpforCount + 1 
+				TotalSpawns = TotalSpawns + 1 
 				table.insert(self.PriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
@@ -45,10 +66,10 @@ function assassination:PostRun()
 		end
 	end
 
-	self.MaxOpforCount = math.min(ai.GetMaxCount(), self.MaxOpforCount)
-
 	-- Keeps one AI spot available for the HVT.
-	self.MaxOpforCount = self.MaxOpforCount - 1
+	TotalSpawns = math.min(ai.GetMaxCount(), TotalSpawns) - 1
+	self.Settings.OpForCount.Max = TotalSpawns
+	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
 	
 	for key, SpawnPoint in next, AllSpawns do
 		if actor.HasTag(SpawnPoint, self.OpForLeaderTag) then
@@ -60,43 +81,26 @@ function assassination:PostRun()
 
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
-		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.BluForTeamId, "ExtractionPoint", false)
+		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "ExtractionPoint", false)
 	end
+end
 
-	gamemode.AddGameRule("UseReadyRoom")
-	gamemode.AddGameRule("UseRounds")
-
-	if not gamemode.HasGameOption("SpectateFreeCam") then
-		gamemode.AddGameRule("SpectateFreeCam")
-	end
-
-	if not gamemode.HasGameOption("AllowDeadChat") then
-		gamemode.AddGameRule("AllowDeadChat")
-	end
-
-	-- Cooperative play requires a team for the players to be on.
-	gamemode.AddPlayerTeam(self.BluForTeamId, self.BluForTeamTag, self.BluForLoadoutName)
-
-	gamemode.AddStringTable("assassination")
+function assassination:PostInit()
 	gamemode.AddGameObjective(1, "EliminateOpForLeader", 1)
 	gamemode.AddGameObjective(1, "ExfiltrateBluFor", 1)
-	gamemode.AddGameSetting("opforcount", 1, self.MaxOpforCount, 1, self.OpForCount)
-	gamemode.AddGameSetting("difficulty", 0, 4, 1, 2)
-	gamemode.AddGameSetting("roundtime", 10, 60, 10, 60)
-	gamemode.SetRoundStage("WaitingForReady")
 end
 
 function assassination:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	if InsertionPoint == nil then
-		timer.Set(self, "CheckReadyDownTimer", 0.1, false)
+		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	else
-		timer.Set(self, "CheckReadyUpTimer", 0.25, false)
+		timer.Set("CheckReadyUp", self, self.CheckReadyUpTimer, 0.25, false)
 	end
 end
 
-function assassination:PlayerWantsToEnterPlayChanged(PlayerState, WantsToEnterPlay)
-	if not WantsToEnterPlay then
-		timer.Set(self, "CheckReadyDownTimer", 0.1, false)
+function assassination:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+	if ReadyStatus ~= "DeclaredReady" then
+		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	elseif gamemode.GetRoundStage() == "PreRoundWait" and gamemode.PrepLatecomer(PlayerState) then
 		gamemode.EnterPlayArea(PlayerState)
 	end
@@ -106,9 +110,9 @@ function assassination:CheckReadyUpTimer()
 	if gamemode.GetRoundStage() == "WaitingForReady" or gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 	
-		local BluForReady = ReadyPlayerTeamCounts[self.BluForTeamId]
+		local BluForReady = ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId]
 	
-		if BluForReady >=  gamemode.GetPlayerCount(true) then
+		if BluForReady >= gamemode.GetPlayerCount(true) then
 			gamemode.SetRoundStage("PreRoundWait")
 		elseif BluForReady > 0 then
 			gamemode.SetRoundStage("ReadyCountdown")
@@ -120,7 +124,7 @@ function assassination:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 	
-		if ReadyPlayerTeamCounts[self.BluForTeamId] < 1 then
+		if ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId] < 1 then
 			gamemode.SetRoundStage("WaitingForReady")
 		end
 	end
@@ -150,22 +154,18 @@ end
 function assassination:SpawnOpFor()
 	local OrderedSpawns = {}
 
-	-- shuffle credits https://stackoverflow.com/questions/35572435/how-do-you-do-the-fisher-yates-shuffle-in-lua
-	math.randomseed(os.time()) -- so that the results are always different
-	
 	for Key, Group in ipairs(self.PriorityGroupedSpawns) do
 		for i = #Group, 1, -1 do
-			local j = math.random(i)
+			local j = umath.random(i)
 			Group[i], Group[j] = Group[j], Group[i]
 			table.insert(OrderedSpawns, Group[i])
 		end
 	end
 
-	ai.CreateOverDuration(4.0, self.OpForCount, OrderedSpawns, self.OpForTeamTag)
+	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedSpawns, self.OpForTeamTag)
 
-	local RandomLeaderSpawn = self.LeaderSpawns[math.random(#self.LeaderSpawns)]
-
-	ai.Create(RandomLeaderSpawn, self.OpForLeaderTag, 5.0)
+	local RandomLeaderSpawnIndex = umath.random(#self.LeaderSpawns);
+	ai.Create(self.LeaderSpawns[RandomLeaderSpawnIndex], self.OpForLeaderTag, 5.0)
 end
 
 function assassination:OnCharacterDied(Character, CharacterController, KillerController)
@@ -174,10 +174,10 @@ function assassination:OnCharacterDied(Character, CharacterController, KillerCon
 			if actor.HasTag(CharacterController, self.OpForLeaderTag) then
 				self.OpForLeaderEliminated = true
 			elseif actor.HasTag(CharacterController, self.OpForTeamTag) then
-				-- timer.Set(self, "CheckOpForCountTimer", 1.0, false)
+				-- timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
 			else
 				player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
-				timer.Set(self, "CheckBluForCountTimer", 1.0, false)
+				timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
 			end
 		end
 	end
@@ -195,9 +195,9 @@ function assassination:CheckOpForCountTimer()
 end
 
 function assassination:CheckBluForCountTimer()
-	local BluForPlayers = gamemode.GetPlayerList("Lives", self.BluForTeamId, true, 1, false)
-	if #BluForPlayers == 0 then
-		timer.Clear(self, "CheckOpForExfilTimer")
+	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, true)
+	if #PlayersWithLives == 0 then
+		timer.Clear(self, "CheckOpForExfil")
 		gamemode.AddGameStat("Result=None")
 		if self.OpForLeaderEliminated == true then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
@@ -206,15 +206,6 @@ function assassination:CheckBluForCountTimer()
 			gamemode.AddGameStat("Summary=BluForEliminated")
 		end
 		gamemode.SetRoundStage("PostRoundWait")
-	end
-end
-
-function assassination:OnProcessCommand(Command, Params)
-	if Command == "opforcount" then
-		if Params ~= nil then
-			self.OpForCount = math.max(tonumber(Params), 0)
-			self.OpForCount = math.min(self.OpForCount, self.MaxOpforCount)
-		end
 	end
 end
 
@@ -227,31 +218,34 @@ end
 
 function assassination:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	if self.OpForLeaderEliminated == true then
-		timer.Set(self, "CheckOpForExfilTimer", 1.0, false)
+		timer.Set("CheckOpForExfil", self, self.CheckOpForExfilTimer, 1.0, false)
 	end
 end
 
 function assassination:CheckOpForExfilTimer()
 	local Overlaps = actor.GetOverlaps(self.ExtractionPoints[self.ExtractionPointIndex], 'GroundBranch.GBCharacter')
-	local LivingPlayers = gamemode.GetPlayerList("Lives", self.BluForTeamId, true, 1, false)
+	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, true)
 	
-	local bExfiltrated = true
+	local bExfiltrated = false
 	local bLivingOverlap = false
 
-	for i = 1, #LivingPlayers do
-		local LivingCharacter = player.GetCharacter(LivingPlayers[i])
-		local bFound = false
+	for i = 1, #PlayersWithLives do
+		bExfiltrated = false
 
-		for j = 1, #Overlaps do
-			if Overlaps[j] == LivingCharacter then
-				bLivingOverlap = true
-				bFound = true
-				break
+		local PlayerCharacter = player.GetCharacter(PlayersWithLives[i])
+
+		-- May have lives, but no character, alive or otherwise.
+		if PlayerCharacter ~= nil then
+			for j = 1, #Overlaps do
+				if Overlaps[j] == PlayerCharacter then
+					bLivingOverlap = true
+					bExfiltrated = true
+					break
+				end
 			end
 		end
 
-		if bFound == false then
-			bExfiltrated = false
+		if bExfiltrated == false then
 			break
 		end
 	end
@@ -264,7 +258,7 @@ function assassination:CheckOpForExfilTimer()
 			gamemode.AddGameStat("CompleteObjectives=EliminateOpForLeader,ExfiltrateBluFor")
 			gamemode.SetRoundStage("PostRoundWait")
 		else
-			timer.Set(self, "CheckOpForExfilTimer", 1.0, false)
+			timer.Set("CheckOpForExfil", self, self.CheckOpForExfilTimer, 1.0, false)
 		end
 	end
 end
@@ -278,7 +272,7 @@ end
 
 function assassination:LogOut(Exiting)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
-		timer.Set(self, "CheckBluForCountTimer", 1.0, false)
+		timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
 	end
 end
 

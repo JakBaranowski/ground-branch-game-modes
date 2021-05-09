@@ -1,27 +1,15 @@
 local deathmatch = {
+	UseReadyRoom = true,
+	UseRounds = false,
 	PlayerStarts = {},
 	RecentlyUsedPlayerStarts = {},
 	MaxRecentlyUsedPlayerStarts = 0,
 	TooCloseSq = 1000000,
 }
 
-function deathmatch:PostRun()
+function deathmatch:PreInit()
 	self.PlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
 	self.MaxRecentlyUsedPlayerStarts = #self.PlayerStarts / 2
-	
-	if not gamemode.HasGameOption("SpectateFreeCam") then
-		gamemode.AddGameRule("SpectateFreeCam")
-	end
-
-	if not gamemode.HasGameOption("SpectateEnemies") then
-		gamemode.AddGameRule("SpectateEnemies")
-	end	
-
-	if not gamemode.HasGameOption("AllowDeadChat") then
-		gamemode.AddGameRule("AllowDeadChat")
-	end
-	
-	gamemode.AddGameRule("UseReadyRoom")
 end
 
 function deathmatch:PlayerGameModeRequest(PlayerState, Request)
@@ -43,20 +31,24 @@ end
 
 function deathmatch:RateStart(PlayerStart)
 	local StartLocation = actor.GetLocation(PlayerStart)
-	local LivingPlayers = gamemode.GetPlayerList("Lives", 0, true, 0, false)
+	local PlayersWithLives = gamemode.GetPlayerListByLives(0, 1, false)
 	local DistScalar = 5000
 	local ClosestDistSq = DistScalar * DistScalar
 
-	for i = 1, #LivingPlayers do
-		local PlayerCharacter = player.GetCharacter(LivingPlayers[i])
-		local PlayerLocation = actor.GetLocation(PlayerCharacter)
-		local DistSq = vector.SizeSq(StartLocation - PlayerLocation)
-		if DistSq < self.TooCloseSq then
-			return -10.0
-		end
-		
-		if DistSq < ClosestDistSq then
-			ClosestDistSq = DistSq
+	for i = 1, #PlayersWithLives do
+		local PlayerCharacter = player.GetCharacter(PlayersWithLives[i])
+
+		-- May have lives, but no character, alive or otherwise.
+		if PlayerCharacter ~= nil then
+			local PlayerLocation = actor.GetLocation(PlayerCharacter)
+			local DistSq = vector.SizeSq(StartLocation - PlayerLocation)
+			if DistSq < self.TooCloseSq then
+				return -10.0
+			end
+			
+			if DistSq < ClosestDistSq then
+				ClosestDistSq = DistSq
+			end
 		end
 	end
 	

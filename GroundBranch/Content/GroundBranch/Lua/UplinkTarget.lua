@@ -1,11 +1,11 @@
-local laptop = {
+local uplinktarget = {
 	CurrentTime = 0,
 }
 
-function laptop:ServerUseTimer(User, DeltaTime)
+function uplinktarget:ServerUseTimer(User, DeltaTime)
 	local UserTeamId = actor.GetTeamId(User)
 	local Result = {}
-	if UserTeamId == gamemode.GetScript().DefendingTeamId then
+	if UserTeamId == gamemode.script.DefendingTeam.TeamId then
 		if self.CurrentTime == 0 then
 			Result.Message = "DataSecured"
 			Result.Percentage = 0.0
@@ -18,21 +18,21 @@ function laptop:ServerUseTimer(User, DeltaTime)
 		self.CurrentTime = self.CurrentTime + DeltaTime
 	end
 
-	local CaptureTime = gamemode.GetScript().CaptureTime
+	local CaptureTime = gamemode.script.Settings.CaptureTime.Value
 	self.CurrentTime = math.max(self.CurrentTime, 0)
 	self.CurrentTime = math.min(self.CurrentTime, CaptureTime)
 
 	Result.Equip = false
 	Result.Percentage = self.CurrentTime / CaptureTime
 	if Result.Percentage == 1.0 then
-		gamemode.GetScript():TargetCaptured()
+		gamemode.script:TargetCaptured()
 		Result.Message = "DataRetrieved"
 	end
 	return Result
 end
 
-function laptop:OnReset()
+function uplinktarget:OnReset()
 	self.CurrentTime = 0.0
 end
 
-return laptop
+return uplinktarget
