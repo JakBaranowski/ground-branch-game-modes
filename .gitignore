@@ -8,10 +8,10 @@
 # Config files (AI only)
 !GroundBranch/Config/DefaultAISettings.ini
 # GameMode scripts
-!GroundBranch/Content/GroundBranch/Lua/*
+!GroundBranch/Content/GroundBranch/Lua/331*.lua
 # Mission setups
-!GroundBranch/Content/GroundBranch/Mission/**
+!GroundBranch/Content/GroundBranch/Mission/**/331*.mis
 # Player loadouts
-!GroundBranch/Content/GroundBranch/DefaultLoadouts/*
+!GroundBranch/Content/GroundBranch/DefaultLoadouts/331*.kit
 # AI loadouts
-!GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/*
+!GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/331*.kit
