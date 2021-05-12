@@ -31,7 +31,6 @@ local assassination = {
 	PriorityGroupedSpawns = {},
 	OpForLeaderTag = "OpForLeader",
 	LeaderSpawns = {},
-	LeaderSpawnsMarkers = {},
 	OpForLeaderEliminated = false,
 	BluForExtracionPointTag = "BluForExtracionPoint",
 	ExtractionPoints = {},
@@ -60,34 +59,26 @@ function assassination:PreInit()
 				table.insert(self.PriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
+
 		-- Ensures we don't create empty tables for unused priorities.
 		if bFoundTag then
 			PriorityIndex = PriorityIndex + 1
 		end
 	end
 
-	-- Find all possible HVT spawn points
+	-- Keeps one AI spot available for the HVT.
+	TotalSpawns = math.min(ai.GetMaxCount(), TotalSpawns) - 1
+	self.Settings.OpForCount.Max = TotalSpawns
+	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
+	
 	for key, SpawnPoint in next, AllSpawns do
 		if actor.HasTag(SpawnPoint, self.OpForLeaderTag) then
 			table.insert(self.LeaderSpawns, SpawnPoint)
 		end
 	end
-
-	-- Adds one AI spot for the HVT.
-	TotalSpawns = TotalSpawns + 1
-
-	TotalSpawns = math.min(ai.GetMaxCount(), TotalSpawns)
-	self.Settings.OpForCount.Max = TotalSpawns
-	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
-
-	--  Adds disabled objective markers for all possible HVT locations.
-	for i = 1, #self.LeaderSpawns do
-		local Location = actor.GetLocation(self.LeaderSpawns[i])
-		self.LeaderSpawnsMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "HVT", false)
-	end
 	
-	-- Adds disabled objective markers for all possible extraction points
 	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBGameTrigger', self.BluForExtracionPointTag)
+
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
 		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "ExtractionPoint", false)
@@ -95,8 +86,8 @@ function assassination:PreInit()
 end
 
 function assassination:PostInit()
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpForLeader", 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
+	gamemode.AddGameObjective(1, "EliminateOpForLeader", 1)
+	gamemode.AddGameObjective(1, "ExfiltrateBluFor", 1)
 end
 
 function assassination:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
@@ -142,31 +133,24 @@ end
 function assassination:OnRoundStageSet(RoundStage)
 	if RoundStage == "WaitingForReady" then
 		ai.CleanUp(self.OpForTeamTag)
-		ai.CleanUp(self.OpForLeaderTag)
 
+		ai.CleanUp(self.OpForLeaderTag)
 		self.OpForLeaderEliminated = false
+
 		self.BluForExfiltrated = false
 		
 		self.ExtractionPointIndex = math.random(#self.ExtractionPoints)
-		self.LeaderIndex = math.random(#self.LeaderSpawns)
 
 		for i = 1, #self.ExtractionPoints do
 			local bActive = (i == self.ExtractionPointIndex)
 			actor.SetActive(self.ExtractionPoints[i], bActive)
 			actor.SetActive(self.ExtractionPointMarkers[i], bActive)
 		end
-
-		for i = 1, #self.LeaderSpawns do
-			local bActive = (i == self.LeaderIndex)
-			actor.SetActive(self.LeaderSpawns[i], bActive)
-			actor.SetActive(self.LeaderSpawnsMarkers[i], bActive)	
-		end
-
 	elseif RoundStage == "PreRoundWait" then
 		self:SpawnOpFor()
 	end
 end
---finished checking
+
 function assassination:SpawnOpFor()
 	local OrderedSpawns = {}
 
@@ -178,9 +162,10 @@ function assassination:SpawnOpFor()
 		end
 	end
 
-	-- Keeps one AI spot availble for the HVT
-	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value - 1, OrderedSpawns, self.OpForTeamTag)
-	ai.Create(self.LeaderSpawns[self.LeaderIndex], self.OpForLeaderTag, 5.0)
+	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedSpawns, self.OpForTeamTag)
+
+	local RandomLeaderSpawnIndex = umath.random(#self.LeaderSpawns);
+	ai.Create(self.LeaderSpawns[RandomLeaderSpawnIndex], self.OpForLeaderTag, 5.0)
 end
 
 function assassination:OnCharacterDied(Character, CharacterController, KillerController)

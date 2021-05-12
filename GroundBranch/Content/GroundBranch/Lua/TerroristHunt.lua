@@ -125,7 +125,7 @@ function terroristhunt:OnRoundStageSet(RoundStage)
 		self:SpawnOpFor()
 	end
 end
--- finished checking
+
 function terroristhunt:SpawnOpFor()
 	local OrderedSpawns = {}
 

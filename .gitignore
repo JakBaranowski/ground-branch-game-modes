@@ -1,10 +1,17 @@
 # Ignore everything
 *
+# But check folders and keep gitignore
 !*/
-# Config files (AI only for now)
+!.gitignore
+
+# Ground Branch Specific
+# Config files (AI only)
 !GroundBranch/Config/DefaultAISettings.ini
 # GameMode scripts
 !GroundBranch/Content/GroundBranch/Lua/*
 # Mission setups
 !GroundBranch/Content/GroundBranch/Mission/**
-!.gitignore
+# Player loadouts
+!GroundBranch/Content/GroundBranch/DefaultLoadouts/*
+# AI loadouts
+!GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/*
