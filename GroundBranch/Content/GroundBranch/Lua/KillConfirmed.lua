@@ -1,7 +1,7 @@
-local assassination = {
+local killConfirmed = {
 	UseReadyRoom = true,
 	UseRounds = true,
-	StringTables = { "Assassination" },
+	StringTables = { "KillConfirmed" },
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
@@ -10,9 +10,14 @@ local assassination = {
 	},
 	Settings = {
 		OpForCount = {
-			Min = 1,
+			Min = 0,
 			Max = 50,
 			Value = 15,
+		},
+		LeaderCount = {
+			Min = 1,
+			Max = 5,
+			Value = 1,
 		},
 		Difficulty = {
 			Min = 0,
@@ -31,15 +36,15 @@ local assassination = {
 	PriorityGroupedSpawns = {},
 	OpForLeaderTag = "OpForLeader",
 	LeaderSpawns = {},
-	OpForLeaderEliminated = false,
-	BluForExtracionPointTag = "BluForExtracionPoint",
+	LeaderSpawnsMarkers = {},
+	OpForLeadersEliminated = 0,
 	ExtractionPoints = {},
 	ExtractionPointMarkers = {},
 	BluForExfiltrated = false,
 	ExtractionPoint = nil,
 }
 
-function assassination:PreInit()
+function killConfirmed:PreInit()
 	local AllSpawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
 	local PriorityIndex = 1
 	local TotalSpawns = 0
@@ -47,7 +52,6 @@ function assassination:PreInit()
 	-- Orders spawns by priority while allowing spawns of the same priority to be randomised.
 	for i, PriorityTag in ipairs(self.PriorityTags) do
 		local bFoundTag = false
-		
 		for j, SpawnPoint in ipairs(AllSpawns) do
 			if actor.HasTag(SpawnPoint, PriorityTag) then
 				bFoundTag = true
@@ -55,42 +59,52 @@ function assassination:PreInit()
 					self.PriorityGroupedSpawns[PriorityIndex] = {}
 				end
 				-- Ensures we can't spawn more AI then this map can handle.
-				TotalSpawns = TotalSpawns + 1 
+				TotalSpawns = TotalSpawns + 1
 				table.insert(self.PriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
-
 		-- Ensures we don't create empty tables for unused priorities.
 		if bFoundTag then
 			PriorityIndex = PriorityIndex + 1
 		end
 	end
 
-	-- Keeps one AI spot available for the HVT.
-	TotalSpawns = math.min(ai.GetMaxCount(), TotalSpawns) - 1
-	self.Settings.OpForCount.Max = TotalSpawns
-	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, TotalSpawns)
-	
+	-- Find all possible HVT spawn points
 	for key, SpawnPoint in next, AllSpawns do
 		if actor.HasTag(SpawnPoint, self.OpForLeaderTag) then
 			table.insert(self.LeaderSpawns, SpawnPoint)
 		end
 	end
-	
-	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBGameTrigger', self.BluForExtracionPointTag)
 
+	self.Settings.LeaderCount.Max = math.min(ai.GetMaxCount(), #self.LeaderSpawns)
+	self.Settings.OpForCount.Value = math.min(self.Settings.LeaderCount.Value, self.Settings.LeaderCount.Max)
+
+	self.Settings.OpForCount.Max = math.min(ai.GetMaxCount(), TotalSpawns)
+	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, self.Settings.OpForCount.Max)
+
+	-- Adds objective markers for all possible HVT locations.
+	for i = 1, #self.LeaderSpawns do
+		local Location = actor.GetLocation(self.LeaderSpawns[i])
+		self.LeaderSpawnsMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "PossibleHVTLocation", true)
+	end
+
+	-- Gathers all extraction points placed in the mission
+	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C')
+
+	-- Adds objective markers for all possible extraction points
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
 		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "ExtractionPoint", false)
 	end
 end
 
-function assassination:PostInit()
-	gamemode.AddGameObjective(1, "EliminateOpForLeader", 1)
-	gamemode.AddGameObjective(1, "ExfiltrateBluFor", 1)
+-- BASIC PvE STUFF START
+function killConfirmed:PostInit()
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpForLeader", 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
 end
 
-function assassination:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
+function killConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	if InsertionPoint == nil then
 		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	else
@@ -98,7 +112,7 @@ function assassination:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	end
 end
 
-function assassination:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+function killConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	if ReadyStatus ~= "DeclaredReady" then
 		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	elseif gamemode.GetRoundStage() == "PreRoundWait" and gamemode.PrepLatecomer(PlayerState) then
@@ -106,7 +120,7 @@ function assassination:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	end
 end
 
-function assassination:CheckReadyUpTimer()
+function killConfirmed:CheckReadyUpTimer()
 	if gamemode.GetRoundStage() == "WaitingForReady" or gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 	
@@ -120,7 +134,7 @@ function assassination:CheckReadyUpTimer()
 	end
 end
 
-function assassination:CheckReadyDownTimer()
+function killConfirmed:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 	
@@ -129,14 +143,13 @@ function assassination:CheckReadyDownTimer()
 		end
 	end
 end
+-- BASIC PvE STUFF STOP
 
-function assassination:OnRoundStageSet(RoundStage)
+function killConfirmed:OnRoundStageSet(RoundStage)
 	if RoundStage == "WaitingForReady" then
 		ai.CleanUp(self.OpForTeamTag)
 
-		ai.CleanUp(self.OpForLeaderTag)
-		self.OpForLeaderEliminated = false
-
+		self.OpForLeadersEliminated = 0
 		self.BluForExfiltrated = false
 		
 		self.ExtractionPointIndex = math.random(#self.ExtractionPoints)
@@ -146,14 +159,37 @@ function assassination:OnRoundStageSet(RoundStage)
 			actor.SetActive(self.ExtractionPoints[i], bActive)
 			actor.SetActive(self.ExtractionPointMarkers[i], bActive)
 		end
+
+		for i = 1, #self.LeaderSpawnsMarkers do
+			actor.SetActive(self.LeaderSpawnsMarkers[i], true)
+		end
+
 	elseif RoundStage == "PreRoundWait" then
 		self:SpawnOpFor()
 	end
 end
 
-function assassination:SpawnOpFor()
+function killConfirmed:SpawnOpFor()
 	local OrderedSpawns = {}
 
+	print(self.LeaderSpawns)
+
+	-- Shuffle leader spawns
+	for i = #self.LeaderSpawns, 1, -1 do
+		local j = umath.random(i)
+		self.LeaderSpawns[i], self.LeaderSpawns[j] = self.LeaderSpawns[j], self.LeaderSpawns[i]
+	end
+
+	print(self.LeaderSpawns)
+
+	-- Add leader spawns at the beginning of ordered spawns
+	for i = 1, self.Settings.LeaderCount.Value, 1  do
+		table.insert(OrderedSpawns, self.LeaderSpawns[i])
+	end
+
+	print(OrderedSpawns)
+
+	-- Shuffle spawns within priority groups and add them to ordered spawns
 	for Key, Group in ipairs(self.PriorityGroupedSpawns) do
 		for i = #Group, 1, -1 do
 			local j = umath.random(i)
@@ -162,17 +198,20 @@ function assassination:SpawnOpFor()
 		end
 	end
 
-	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedSpawns, self.OpForTeamTag)
+	print(OrderedSpawns)
 
-	local RandomLeaderSpawnIndex = umath.random(#self.LeaderSpawns);
-	ai.Create(self.LeaderSpawns[RandomLeaderSpawnIndex], self.OpForLeaderTag, 5.0)
+	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedSpawns, self.OpForTeamTag)
 end
 
-function assassination:OnCharacterDied(Character, CharacterController, KillerController)
+function killConfirmed:OnCharacterDied(Character, CharacterController, KillerController)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
 		if CharacterController ~= nil then
 			if actor.HasTag(CharacterController, self.OpForLeaderTag) then
-				self.OpForLeaderEliminated = true
+				self.OpForLeadersEliminated = self.OpForLeadersEliminated + 1
+				timer.Set("ShowKillConfirmed", self, self.ShowKillConfirmedTimer, 1.0, false)
+				if self.OpForLeadersEliminated == self.Settings.LeaderCount then
+					timer.Set("ShowProceedToExtraction", self, self.ShowProceedToExtractionTimer, 3.0, false)
+				end
 			elseif actor.HasTag(CharacterController, self.OpForTeamTag) then
 				-- timer.Set("CheckOpForCount", self, self.CheckOpForCountTimer, 1.0, false)
 			else
@@ -183,23 +222,31 @@ function assassination:OnCharacterDied(Character, CharacterController, KillerCon
 	end
 end
 
-function assassination:CheckOpForCountTimer()
-	local OpForControllers = ai.GetControllers('GroundBranch.GBAIController', self.OpForTeamTag, 255, 255)
-
-	if #OpForControllers == 0 then
-		gamemode.AddGameStat("Result=Team1")
-		gamemode.AddGameStat("Summary=OpForEliminated")
-		gamemode.AddGameStat("CompleteObjectives=EliminateOpFor")
-		gamemode.SetRoundStage("PostRoundWait")
-	end
+function killConfirmed:ShowKillConfirmedTimer()
+	gamemode.BroadcastGameMessage("HVTNeutralized", "Engine", 2.0)
 end
 
-function assassination:CheckBluForCountTimer()
+function killConfirmed:ShowProceedToExtractionTimer()
+	gamemode.BroadcastGameMessage("ProceedToExtraction", "Engine", 2.0)
+end
+
+-- function killConfirmed:CheckOpForCountTimer()
+-- 	local OpForControllers = ai.GetControllers('GroundBranch.GBAIController', self.OpForTeamTag, 255, 255)
+
+-- 	if #OpForControllers == 0 then
+-- 		gamemode.AddGameStat("Result=Team1")
+-- 		gamemode.AddGameStat("Summary=OpForEliminated")
+-- 		gamemode.AddGameStat("CompleteObjectives=EliminateOpFor")
+-- 		gamemode.SetRoundStage("PostRoundWait")
+-- 	end
+-- end
+
+function killConfirmed:CheckBluForCountTimer()
 	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, true)
 	if #PlayersWithLives == 0 then
 		timer.Clear(self, "CheckOpForExfil")
 		gamemode.AddGameStat("Result=None")
-		if self.OpForLeaderEliminated == true then
+		if self.OpForLeadersEliminated == self.Settings.LeaderCount then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat("CompleteObjectives=EliminateOpForLeader")
 		else
@@ -209,23 +256,23 @@ function assassination:CheckBluForCountTimer()
 	end
 end
 
-function assassination:ShouldCheckForTeamKills()
+function killConfirmed:ShouldCheckForTeamKills()
 	if gamemode.GetRoundStage() == "InProgress" then
 		return true
 	end
 	return false
 end
 
-function assassination:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	if self.OpForLeaderEliminated == true then
+function killConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
+	if self.OpForLeadersEliminated == self.Settings.LeaderCount then
 		timer.Set("CheckOpForExfil", self, self.CheckOpForExfilTimer, 1.0, false)
 	end
 end
 
-function assassination:CheckOpForExfilTimer()
+function killConfirmed:CheckOpForExfilTimer()
 	local Overlaps = actor.GetOverlaps(self.ExtractionPoints[self.ExtractionPointIndex], 'GroundBranch.GBCharacter')
 	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, true)
-	
+
 	local bExfiltrated = false
 	local bLivingOverlap = false
 
@@ -263,17 +310,17 @@ function assassination:CheckOpForExfilTimer()
 	end
 end
 
-function assassination:PlayerCanEnterPlayArea(PlayerState)
+function killConfirmed:PlayerCanEnterPlayArea(PlayerState)
 	if player.GetInsertionPoint(PlayerState) ~= nil then
 		return true
 	end
 	return false
 end
 
-function assassination:LogOut(Exiting)
+function killConfirmed:LogOut(Exiting)
 	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
 		timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
 	end
 end
 
-return assassination
+return killConfirmed

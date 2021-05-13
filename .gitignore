@@ -2,16 +2,105 @@
 *
 # But check folders and keep gitignore
 !*/
-!.gitignore
 
-# Ground Branch Specific
+# Files to keep
+!.gitignore
+!*.md
+!*.lua
+!*.mis
 # Config files (AI only)
 !GroundBranch/Config/DefaultAISettings.ini
-# GameMode scripts
-!GroundBranch/Content/GroundBranch/Lua/331*.lua
-# Mission setups
-!GroundBranch/Content/GroundBranch/Mission/**/331*.mis
-# Player loadouts
-!GroundBranch/Content/GroundBranch/DefaultLoadouts/331*.kit
-# AI loadouts
-!GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/331*.kit
+
+# Ground Branch default files that would otherwise be included
+# Default GameMode scripts
+GroundBranch/Content/GroundBranch/Lua/Assassination.lua
+GroundBranch/Content/GroundBranch/Lua/Bomb.lua
+GroundBranch/Content/GroundBranch/Lua/Deathmatch.lua
+GroundBranch/Content/GroundBranch/Lua/Defuse.lua
+GroundBranch/Content/GroundBranch/Lua/Flag.lua
+GroundBranch/Content/GroundBranch/Lua/IntelRetrieval.lua
+GroundBranch/Content/GroundBranch/Lua/IntelTarget.lua
+GroundBranch/Content/GroundBranch/Lua/Laptop.lua
+GroundBranch/Content/GroundBranch/Lua/TeamElimination.lua
+GroundBranch/Content/GroundBranch/Lua/TerroristHunt.lua
+GroundBranch/Content/GroundBranch/Lua/Training.lua
+GroundBranch/Content/GroundBranch/Lua/Uplink.lua
+GroundBranch/Content/GroundBranch/Lua/UplinkTarget.lua
+# Default mission setups
+GroundBranch/Content/GroundBranch/Mission/747/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/747/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/747/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/747/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/747/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/Arena/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/Arena/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/Arena/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/Arena2/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/Arena2/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/Arena2/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/City/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/City/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/City/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/City/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/City/Test.mis
+GroundBranch/Content/GroundBranch/Mission/City/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/Depot/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/Depot/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/Depot/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/Depot_Compound/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/Depot_Compound/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/Depot_Compound/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/Paintball/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/StorageFacility/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/StorageFacility/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/StorageFacility/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/StorageFacility/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/Tanker/Deathmatch.mis
+GroundBranch/Content/GroundBranch/Mission/Tanker/IntelRetrieval.mis
+GroundBranch/Content/GroundBranch/Mission/Tanker/TeamElimination.mis
+GroundBranch/Content/GroundBranch/Mission/Tanker/TerroristHunt.mis
+GroundBranch/Content/GroundBranch/Mission/TheFarm/Training.mis
+# Default player loadouts
+GroundBranch/Content/GroundBranch/DefaultLoadouts/Blue.kit
+GroundBranch/Content/GroundBranch/DefaultLoadouts/Blue.res
+GroundBranch/Content/GroundBranch/DefaultLoadouts/MainMenuGuy_01.kit
+GroundBranch/Content/GroundBranch/DefaultLoadouts/MainMenuGuy_02.kit
+GroundBranch/Content/GroundBranch/DefaultLoadouts/NoTeam.kit
+GroundBranch/Content/GroundBranch/DefaultLoadouts/Red.kit
+GroundBranch/Content/GroundBranch/DefaultLoadouts/Red.res
+# Default AI loadouts
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuys01.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuys02.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuys03.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuysGunner.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuysShotgunner.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuysSniper.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_GunnerAK.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_GunnerLMG.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_GunnerM4.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_SubGunnerMP5.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerAK.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerGalil.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerLMG.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_Sniper.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_SubGunner.kit
