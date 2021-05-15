@@ -6,8 +6,9 @@
 # Files to keep
 !.gitignore
 !*.md
-!*.lua
-!*.mis
+!GroundBranch/Content/GroundBranch/Lua/*.lua
+!GroundBranch/Content/GroundBranch/Mission/**/*.mis
+!GroundBranch/Content/Localization/GroundBranch/en/*.csv
 # Config files (AI only)
 !GroundBranch/Config/DefaultAISettings.ini
 
@@ -104,3 +105,14 @@ GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerGalil.kit
 GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerLMG.kit
 GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_Sniper.kit
 GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_SubGunner.kit
+# Default localization
+GroundBranch/Content/Localization/GroundBranch/en/Assassination.csv
+GroundBranch/Content/Localization/GroundBranch/en/Defuse.csv
+GroundBranch/Content/Localization/GroundBranch/en/GameMode.csv
+GroundBranch/Content/Localization/GroundBranch/en/GroundBranch.locres
+GroundBranch/Content/Localization/GroundBranch/en/IntelRetrieval.csv
+GroundBranch/Content/Localization/GroundBranch/en/MissionNameAdjectives.csv
+GroundBranch/Content/Localization/GroundBranch/en/MissionNameNouns.csv
+GroundBranch/Content/Localization/GroundBranch/en/TeamElimination.csv
+GroundBranch/Content/Localization/GroundBranch/en/TerroristHunt.csv
+GroundBranch/Content/Localization/GroundBranch/en/Uplink.csv
