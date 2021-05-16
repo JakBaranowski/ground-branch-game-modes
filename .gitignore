@@ -6,7 +6,7 @@
 # Files to keep
 !.gitignore
 !*.md
-!GroundBranch/Content/GroundBranch/Lua/*.lua
+!GroundBranch/Content/GroundBranch/Lua/**.lua
 !GroundBranch/Content/GroundBranch/Mission/**/*.mis
 !GroundBranch/Content/Localization/GroundBranch/en/*.csv
 
