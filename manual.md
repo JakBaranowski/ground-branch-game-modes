@@ -43,17 +43,17 @@ It may fail if the file does not exist. To resolve just launch Ground Branch fir
 
 ### Lua scripts
 
-[Lua basics](/GroundBranch/Content/GroundBranch/Lua/Manual.md)
+[Lua game mode scripts](/GroundBranch/Content/GroundBranch/Lua/Manual.md)
 
-Directory: [/GroundBranch/Content/GroundBranch/Lua](/GroundBranch/Content/GroundBranch/Lua)
+Directory: [/GroundBranch/Content/GroundBranch/Lua/](/GroundBranch/Content/GroundBranch/Lua)
 
 Lua scripts in this directory define the rules of game modes availble in Ground Branch.
 
 ### Localization tables
 
-[Localization basics](/GroundBranch/Content/Localization/GroundBranch/manual.md)
+[Localization files](/GroundBranch/Content/Localization/GroundBranch/manual.md)
 
-Directory: [/GroundBranch/Content/Localization/GroundBranch](/GroundBranch/Content/Localization/GroundBranch)
+Directory: [/GroundBranch/Content/Localization/GroundBranch/](/GroundBranch/Content/Localization/GroundBranch)
 
 This directory contains tables with text localizations in a `.csv` format. We'll be mostly interested
 with the contents of the `/en/` folder as it contains tables with texts used by game modes. 

@@ -1,6 +1,6 @@
 [Back to start](/manual.md)
 
-# Ground Branch lua scripts unofficial doc
+# Lua game mode scripts
 
 Please keep in mind that all data presented here was acquired using the good old trial and
 error method and therefore most probably is not accurate. However as long as there is no 
@@ -8,11 +8,12 @@ official documentation I wanted to create a place where all this data can be gat
 
 On top of the above this is very much a WIP, and may never be finished.
 
-## gamemode
 
-These are function that you will be overloading (i.e.: overwriting) when creating your own game modes
+## Lua game mode object
 
-### function gamemode:OnRoundStageSet(RoundStage)
+These are function that you should overload when creating your own game mode.
+
+### OnRoundStageSet(RoundStage)
 
 Parameters:
 
@@ -26,7 +27,7 @@ Parameters:
 This method works as a callback for changing round stage. In other words code placed within this 
 method will be executed whenever a round stage is changed.
 
-### function gamemode:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
+### PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 
 Parameters:
 
@@ -35,7 +36,7 @@ Parameters:
 
 This method works as a callback for changing player insertion point. In other words code placed
 within this method will be executed whenever a player selects or changes an insertion point.
-### function gamemode:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+### PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 
 Parameters:
 
@@ -50,9 +51,9 @@ This method works as a callback for changing player ready status. In other words
 this method will be executed whenever a player changes their ready status (currently more or less 
 equal to selecting insertion point).
 
-## AI
+## ai
 
-### ai.CreateOverDuration(duration, amount, spawnsTable, tag)
+### CreateOverDuration(duration, amount, spawnsTable, tag)
 
 Parameters:
 
@@ -71,7 +72,7 @@ means it will not stop the execution of the remaining code in the script. Moreov
 one "instance" of this method running at any given time. This means that you will need to wait until
 the last call is finished before calling it again.
 
-### ai.Create(spawnPoint, tag, freezeTime)
+### Create(spawnPoint, tag, freezeTime)
 
 Parameters: 
 
@@ -83,7 +84,7 @@ without a tag unless you assign on here, regardless of whether the spawn point u
 This method will spawn a frozen AI at a given **spawnPoint**. The AI will unfreeze after time passed
 as **freezeTime**.
 
-### ai.CleanUp(tag)
+### CleanUp(tag)
 
 Parameters:
 
@@ -91,7 +92,37 @@ Parameters:
 
 This method will clean up all AI instances with a given **tag**.
 
-### ai.GetMaxCount()
+### GetMaxCount()
 
 This method will return an integer specifying the maximum amount of the AI that can be spawned.
 I assume that this is a value set up in the game itself, and can't be defined by the user.
+
+## gamemode
+
+### AddGameObjective
+
+### AddGameStat
+
+### AddObjectiveMarker
+
+### BroadcastGameMessage
+
+### EnterPlayArea
+
+### GetPlayerCount
+
+### GetPlayerListByLives
+
+### GetReadyPlayerTeamCounts
+
+### GetRoundStage
+
+### PrepLatecomer
+
+### SetRoundStage
+
+## gameplaystatics
+
+### GetAllActorsOfClass
+
+### GetAllActorsOfClassWithTag

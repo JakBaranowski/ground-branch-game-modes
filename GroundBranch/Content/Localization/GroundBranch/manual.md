@@ -13,13 +13,13 @@ adds a game objective with nice text `Locate and eliminate all threats in the ar
 
 ## 1. Creating a localization file for your game mode
 
-Simply create a `.csv` in the [/en](/en) folder. Name it whatever you want but remember to:
+Simply create a `.csv` in the [en](/GroundBranch\Content\Localization\GroundBranch\en) folder. Name it whatever you want but remember to:
 
 * Keep the `.csv` extension,
 * steer clear of white spaces or special characters,
 * note the file name you'll need it later.
 
-Better yet copy one of the files existing in the [/en](/en) folder, rename it to whatever you
+Better yet copy one of the files existing in the [en](/GroundBranch\Content\Localization\GroundBranch\en) folder, rename it to whatever you
 like and use it as a template.
 
 ## 2. Setting up the translations
