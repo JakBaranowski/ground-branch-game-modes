@@ -9,8 +9,6 @@
 !GroundBranch/Content/GroundBranch/Lua/*.lua
 !GroundBranch/Content/GroundBranch/Mission/**/*.mis
 !GroundBranch/Content/Localization/GroundBranch/en/*.csv
-# Config files (AI only)
-!GroundBranch/Config/DefaultAISettings.ini
 
 # Ground Branch default files that would otherwise be included
 # Default GameMode scripts
@@ -25,6 +23,7 @@ GroundBranch/Content/GroundBranch/Lua/Laptop.lua
 GroundBranch/Content/GroundBranch/Lua/TeamElimination.lua
 GroundBranch/Content/GroundBranch/Lua/TerroristHunt.lua
 GroundBranch/Content/GroundBranch/Lua/Training.lua
+GroundBranch/Content/GroundBranch/Lua/Testing.lua
 GroundBranch/Content/GroundBranch/Lua/Uplink.lua
 GroundBranch/Content/GroundBranch/Lua/UplinkTarget.lua
 # Default mission setups
