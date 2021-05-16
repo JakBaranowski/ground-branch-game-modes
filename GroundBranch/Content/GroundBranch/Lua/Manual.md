@@ -1,3 +1,5 @@
+[Back to start](/manual.md)
+
 # Ground Branch lua scripts unofficial doc
 
 Please keep in mind that all data presented here was acquired using the good old trial and
@@ -16,24 +18,29 @@ Parameters:
     * "InProgress" - The round has properly started and is currently in progress.
     * "PostRoundWait" - The round has finshed, but players are still in play area soon to be moved to ready room.
 
-This method works as a callback for changing round stage. In other words code placed within this method
-will be executed whenever a round stage is changed.
+This method works as a callback for changing round stage. In other words code placed within this 
+method will be executed whenever a round stage is changed.
 
-### function killConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
+### function gamemode:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 
 Parameters:
 
 * PlayerState - Information on player state. Dunno much more.
 * InsertionPoint - Information on the insertion point selected by the player. Dunno much more.
 
+This method works as a callback for changing player insertion point. In other words code placed
+within this method will be executed whenever a player selects or changes an insertion point.
 ### function gamemode:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 
 Parameters:
 
 * PlayerState - Information on player state. Dunno much more.
 * ReadyStatus - string, possible values:
-    * "WaitingToReadyUp" - Mission just started, or a round just finished, and players spawned in ready room.
-    * "DeclaredReady" - Player selected insertion point and therefore declared that he/she is ready to play.
+    * "WaitingToReadyUp" - Mission just started, or a round just finished, and players spawned in 
+    ready room.
+    * "DeclaredReady" - Player selected insertion point and therefore declared that they are ready 
+    to play.
 
-This method works as a callback for changing round stage. In other words code placed within this method
-will be executed whenever a round stage is changed.
+This method works as a callback for changing player ready status. In other words code placed within
+this method will be executed whenever a player changes their ready status (currently more or less 
+equal to selecting insertion point).

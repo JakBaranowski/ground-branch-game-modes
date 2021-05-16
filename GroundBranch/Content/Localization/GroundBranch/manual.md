@@ -34,11 +34,25 @@ commas `,`.
 
 ### Key
 
-is the string Ground Branch will use to try and match the string from the lua script to
-a pretty text in the localisation file. As far as I understand partial match is enough, i.e. key 
-*has* to contain the queried string, but it *can* have more characters before or after it. E.g. 
-`EliminateOpFor` will match `objective_EliminateOpFor`. Feel free to add prefixes to
-group your **key**s, but I would recommend to avoid adding suffixes.
+This is where most of the magic happens. Key is the string Ground Branch will use to try 
+and match the string from the lua script to a pretty text in the localisation file. Key 
+has two parts separated by the first underscore:
+
+* **prefix** is the part before the first underscore and has to be one of the following:
+    * `objective` if it is supposed to go on the objective board, 
+    used by `gamemode.AddGameObjective`
+    * `summary` if it is supposed to be displayed in the after action report,
+    used by `gamemode.AddGameStat("Summary=...")`
+    * `gamemessage` if it is supposed to be displayd as a in game message,
+    used by `gamemode.BroadcastGameMessage`
+    * `missionsetting` if it is supposed to be displayed as a mission setting, 
+    this is not used by any function but will be used to "translate" mission settings.
+* **name** this is the part that will be used to match the string provided in any of 
+the lua functions mentioned above.
+
+Note: `missionsetting` is a special case - the name provided in the `.csv` will be matched
+against the names of the variables in the game mode settings table. Also name of the 
+`missionsetting` should be all lower cap.
 
 ### SourceString
 
@@ -66,28 +80,53 @@ Now you start using the **Key**s you from your localisation file in your lua scr
 
 ## Example
 
-Given a localistaion file `GroundBranch\Content\Localization\GroundBranch\en\TerroristHunt.csv`
+Given a localistaion file `GroundBranch\Content\Localization\GroundBranch\en\KillConfirmed.csv`
 
 ```csv
 Key,SourceString,Comment
-...
-"objective_EliminateOpFor","Locate and eliminate all threats in the area.","Opsboard"
-...
+"missionsetting_opforcount","Expected resistance","Opsboard"
+"objective_ExtractionPoint","Locate and eliminate all threats in the area.","Opsboard"
+"gamemessage_HighValueTargetEliminated","HVT eliminated.","objective"
+"summary_OpForLeaderEliminated","High Value Targets were eliminated.","AAR"
 ``` 
 
-and a lua script `GroundBranch\Content\GroundBranch\Lua\TerroristHunt.lua`
+First tell the script where to look for the slugs:
 
 ```lua
 local terroristhunt = {
-    ...
-	StringTables = { "TerroristHunt" },
-    ...
-}
-gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpFor", 1)
+...
+	StringTables = { "KillConfirmed" },
+...
 ```
 
-the call `gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpFor", 1)` 
-from the script excerpt above will match the string `EliminateOpFor` with a part of the key 
-`objective_EliminateOpFor` in the 
-`GroundBranch\Content\Localization\GroundBranch\en\TerroristHunt.csv` table, and return the string
-`Locate and eliminate all threats in the area.`.
+Then the `missionsetting_opforcount` slug will match mission settings variable `OpForCount`
+like this:
+
+```lua
+...
+    Settings = {
+        OpForCount = {
+            Min = 0,
+            Max = 50,
+            Value = 15,
+        },
+    },
+...
+}
+...
+```
+
+And following that the code below will match
+
+* `ExfiltrateBluFor` with `objective_ExfiltrateBluFor`,
+* `HighValueTargetEliminated` with `gamemessage_HighValueTargetEliminated`, and last
+* `OpForLeaderEliminated` with `summary_OpForLeaderEliminated`.
+
+```lua
+    gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
+...
+    gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 5.0)
+...
+    gamemode.AddGameStat("Summary=OpForLeaderEliminated")
+...
+```
