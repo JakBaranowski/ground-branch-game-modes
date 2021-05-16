@@ -35,10 +35,12 @@ local killConfirmed = {
 	PriorityTags = { "AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
 		"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50" },
 	PriorityGroupedSpawns = {},
+	ShuffledStandardSpawns = {},
 	-- OpFor leader spawns
 	OpForLeaderTag = "OpForLeader",
 	OpForLeaderSpawns = {},
 	OpForLeaderSpawnMarkers = {},
+	ShuffledLeaderSpawns = {},
 	-- Extraction points
 	ExtractionPoints = {},
 	ExtractionPointMarkers = {},
@@ -125,9 +127,7 @@ end
 function killConfirmed:CheckReadyUpTimer()
 	if gamemode.GetRoundStage() == "WaitingForReady" or gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
-	
 		local BluForReady = ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId]
-	
 		if BluForReady >= gamemode.GetPlayerCount(true) then
 			gamemode.SetRoundStage("PreRoundWait")
 		elseif BluForReady > 0 then
@@ -139,7 +139,6 @@ end
 function killConfirmed:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == "ReadyCountdown" then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
-	
 		if ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId] < 1 then
 			gamemode.SetRoundStage("WaitingForReady")
 		end
@@ -172,15 +171,15 @@ function killConfirmed:OnRoundStageSet(RoundStage)
 end
 
 function killConfirmed:SpawnOpFor()
-	local OrderedLeaderSpawns = {}
-	local OrderedStandardSpawns = {}
+	self.ShuffledLeaderSpawns = {}
+	self.ShuffledStandardSpawns = {}
 
 	-- Shuffle leader spawns
 	local UnorderedLeaderSpawns = self.OpForLeaderSpawns
 	for i = #UnorderedLeaderSpawns, 1, -1 do
 		local j = umath.random(i)
 		UnorderedLeaderSpawns[i], UnorderedLeaderSpawns[j] = UnorderedLeaderSpawns[j], UnorderedLeaderSpawns[i]
-		table.insert(OrderedLeaderSpawns, UnorderedLeaderSpawns[i])
+		table.insert(self.ShuffledLeaderSpawns, UnorderedLeaderSpawns[i])
 	end
 
 	-- Shuffle spawns within priority groups and add them to ordered spawns
@@ -188,14 +187,18 @@ function killConfirmed:SpawnOpFor()
 		for i = #Group, 1, -1 do
 			local j = umath.random(i)
 			Group[i], Group[j] = Group[j], Group[i]
-			table.insert(OrderedStandardSpawns, Group[i])
+			table.insert(self.ShuffledStandardSpawns, Group[i])
 		end
 	end
 
-	for i = 1, self.Settings.LeaderCount.Value, 1 do
-		ai.Create(OrderedLeaderSpawns[i], self.OpForLeaderTag, 4.0)
-	end
-	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedStandardSpawns, self.OpForTeamTag)
+	ai.CreateOverDuration(3.5, self.Settings.OpForCount.Value, self.ShuffledStandardSpawns, self.OpForTeamTag)
+	-- We need to wait for the execution of the ai.CreateOverDuration to finish before calling it again
+	-- As a precaution I wait slightly longer than neccessary.
+	timer.Set("SpawnOpForLeaders", self, self.SpawnOpForLeadersTimer, 3.6, false)
+end
+
+function killConfirmed:SpawnOpForLeadersTimer()
+	ai.CreateOverDuration(0.4, self.Settings.LeaderCount.Value, self.ShuffledLeaderSpawns, self.OpForLeaderTag)
 end
 
 function killConfirmed:OnCharacterDied(Character, CharacterController, KillerController)
