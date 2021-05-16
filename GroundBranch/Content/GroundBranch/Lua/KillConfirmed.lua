@@ -89,20 +89,18 @@ function killConfirmed:PreInit()
 	-- Adds objective markers for all possible HVT locations.
 	for i = 1, #self.OpForLeaderSpawns do
 		local Location = actor.GetLocation(self.OpForLeaderSpawns[i])
-		self.OpForLeaderSpawnMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "PossibleTargetLocation", false)
+		self.OpForLeaderSpawnMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "HVT", false)
 	end
 
 	-- Gathers all extraction points placed in the mission
 	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C')
-
 	-- Adds objective markers for all possible extraction points
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
-		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "ExtractionPoint", false)
+		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "Exfil", false)
 	end
 end
 
--- BASIC PvE STUFF START
 function killConfirmed:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateOpForLeader", 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
@@ -117,7 +115,6 @@ function killConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 end
 
 function killConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
-	print("PlayerReadyStatusChanged, ReadyStatus: ".. ReadyStatus)
 	if ReadyStatus ~= "DeclaredReady" then
 		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
 	elseif gamemode.GetRoundStage() == "PreRoundWait" and gamemode.PrepLatecomer(PlayerState) then
@@ -148,10 +145,8 @@ function killConfirmed:CheckReadyDownTimer()
 		end
 	end
 end
--- BASIC PvE STUFF STOP
 
 function killConfirmed:OnRoundStageSet(RoundStage)
-	print("OnRoundStageSet, RoundStage: " .. RoundStage)
 	if RoundStage == "WaitingForReady" then
 		ai.CleanUp(self.OpForLeaderTag)
 		ai.CleanUp(self.OpForTeamTag)
@@ -197,9 +192,9 @@ function killConfirmed:SpawnOpFor()
 		end
 	end
 
-	print("Attempting to spawn leaders")
-	ai.CreateOverDuration(1.0, self.Settings.LeaderCount.Value, OrderedLeaderSpawns, self.OpForLeaderTag)
-	print("Attempting to spawn standard enemies")
+	for i = 1, self.Settings.LeaderCount.Value, 1 do
+		ai.Create(OrderedLeaderSpawns[i], self.OpForLeaderTag, 4.0)
+	end
 	ai.CreateOverDuration(4.0, self.Settings.OpForCount.Value, OrderedStandardSpawns, self.OpForTeamTag)
 end
 
@@ -211,7 +206,6 @@ function killConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				self.OpForLeadersEliminated = self.OpForLeadersEliminated + 1
 				if self.OpForLeadersEliminated >= self.Settings.LeaderCount.Value then
 					timer.Set("ShowAllKillConfirmed", self, self.ShowAllKillConfirmedTimer, 1.0, false)
-					timer.Set("ShowProceedToExtraction", self, self.ShowProceedToExtractionTimer, 3.0, false)
 				else
 					timer.Set("ShowKillConfirmed", self, self.ShowKillConfirmedTimer, 1.0, false)
 				end
@@ -227,15 +221,11 @@ function killConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 end
 
 function killConfirmed:ShowKillConfirmedTimer()
-	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 2.0)
+	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 5.0)
 end
 
 function killConfirmed:ShowAllKillConfirmedTimer()
-	gamemode.BroadcastGameMessage("AllHighValueTargetsEliminated", "Engine", 2.0)
-end
-
-function killConfirmed:ShowProceedToExtractionTimer()
-	gamemode.BroadcastGameMessage("ProceedToExtraction", "Engine", 2.0)
+	gamemode.BroadcastGameMessage("AllHighValueTargetsEliminated", "Engine", 5.0)
 end
 
 function killConfirmed:CheckBluForCountTimer()
