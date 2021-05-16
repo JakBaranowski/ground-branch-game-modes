@@ -1,3 +1,5 @@
+[Back to start](/manual.md)
+
 # Ground Branch localization tables
 
 Ever wondered why something like this:
@@ -30,7 +32,11 @@ Key,SourceString,Comment
 
 This line defines the order of data in each row. Now every following row should contain 
 of three strings each surrounded by double quotes `"` and separated from each other with
-commas `,`. 
+commas `,`, like so:
+
+```csv
+"missionsetting_opforcount","Expected resistance","Opsboard"
+```
 
 ### Key
 
@@ -52,7 +58,7 @@ the lua functions mentioned above.
 
 Note: `missionsetting` is a special case - the name provided in the `.csv` will be matched
 against the names of the variables in the game mode settings table. Also name of the 
-`missionsetting` should be all lower cap.
+`missionsetting` should be all lower case.
 
 ### SourceString
 
@@ -123,6 +129,7 @@ And following that the code below will match
 * `OpForLeaderEliminated` with `summary_OpForLeaderEliminated`.
 
 ```lua
+...
     gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
 ...
     gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 5.0)
