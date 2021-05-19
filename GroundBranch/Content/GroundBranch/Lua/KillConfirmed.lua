@@ -32,19 +32,21 @@ local killConfirmed = {
 	},
 	-- OpFor standard spawns
 	OpForTeamTag = "OpFor",
-	PriorityTags = { "AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
-		"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50" },
-	PriorityGroupedSpawns = {},
-	ShuffledStandardSpawns = {},
+	PriorityTags = {
+		"AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5", "AISpawn_6_10",
+		"AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50"
+	},
+	OpForPriorityGroupedSpawns = {},
+	OpForPriorityGroupedSpawnsShuffled = {},
 	-- OpFor leader spawns
 	OpForLeaderTag = "OpForLeader",
 	OpForLeaderSpawns = {},
+	OpForLeaderSpawnsShuffled = {},
 	OpForLeaderSpawnMarkers = {},
-	ShuffledLeaderSpawns = {},
 	-- Extraction points
 	ExtractionPoints = {},
-	ExtractionPointMarkers = {},
 	ExtractionPoint = nil,
+	ExtractionPointMarkers = {},
 	-- Game objective tracking variables
 	BluForExfiltrated = false,
 	OpForLeadersEliminated = 0,
@@ -55,18 +57,19 @@ function killConfirmed:PreInit()
 	local PriorityIndex = 1
 	local TotalSpawns = 0
 
-	-- Orders spawns by priority while allowing spawns of the same priority to be randomised.
+	-- Orders spawns by priority while allowing spawns of the same priority to be 
+	-- randomised.
 	for i, PriorityTag in ipairs(self.PriorityTags) do
 		local bFoundTag = false
 		for j, SpawnPoint in ipairs(AllSpawns) do
 			if actor.HasTag(SpawnPoint, PriorityTag) then
 				bFoundTag = true
-				if self.PriorityGroupedSpawns[PriorityIndex] == nil then
-					self.PriorityGroupedSpawns[PriorityIndex] = {}
+				if self.OpForPriorityGroupedSpawns[PriorityIndex] == nil then
+					self.OpForPriorityGroupedSpawns[PriorityIndex] = {}
 				end
 				-- Ensures we can't spawn more AI then this map can handle.
 				TotalSpawns = TotalSpawns + 1
-				table.insert(self.PriorityGroupedSpawns[PriorityIndex], SpawnPoint)
+				table.insert(self.OpForPriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
 		-- Ensures we don't create empty tables for unused priorities.
@@ -83,23 +86,44 @@ function killConfirmed:PreInit()
 	end
 
 	self.Settings.LeaderCount.Max = math.min(ai.GetMaxCount(), #self.OpForLeaderSpawns)
-	self.Settings.OpForCount.Value = math.min(self.Settings.LeaderCount.Value, self.Settings.LeaderCount.Max)
+	self.Settings.OpForCount.Value = math.min(
+		self.Settings.LeaderCount.Value,
+		self.Settings.LeaderCount.Max
+	)
 
-	self.Settings.OpForCount.Max = math.min(ai.GetMaxCount(), TotalSpawns)
-	self.Settings.OpForCount.Value = math.min(self.Settings.OpForCount.Value, self.Settings.OpForCount.Max)
+	self.Settings.OpForCount.Max = math.min(
+		ai.GetMaxCount(),
+		TotalSpawns
+	)
+	self.Settings.OpForCount.Value = math.min(
+		self.Settings.OpForCount.Value,
+		self.Settings.OpForCount.Max
+	)
 
 	-- Adds objective markers for all possible HVT locations.
 	for i = 1, #self.OpForLeaderSpawns do
 		local Location = actor.GetLocation(self.OpForLeaderSpawns[i])
-		self.OpForLeaderSpawnMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "HVT", false)
+		self.OpForLeaderSpawnMarkers[i] = gamemode.AddObjectiveMarker(
+			Location,
+			self.PlayerTeams.BluFor.TeamId,
+			"HVT",
+			false
+		)
 	end
 
 	-- Gathers all extraction points placed in the mission
-	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C')
+	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass(
+		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
+	)
 	-- Adds objective markers for all possible extraction points
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
-		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(Location, self.PlayerTeams.BluFor.TeamId, "Exfil", false)
+		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(
+			Location,
+			self.PlayerTeams.BluFor.TeamId,
+			"Extraction",
+			false
+		)
 	end
 end
 
@@ -119,13 +143,19 @@ end
 function killConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	if ReadyStatus ~= "DeclaredReady" then
 		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
-	elseif gamemode.GetRoundStage() == "PreRoundWait" and gamemode.PrepLatecomer(PlayerState) then
+	elseif
+		gamemode.GetRoundStage() == "PreRoundWait" and
+		gamemode.PrepLatecomer(PlayerState)
+	then
 		gamemode.EnterPlayArea(PlayerState)
 	end
 end
 
 function killConfirmed:CheckReadyUpTimer()
-	if gamemode.GetRoundStage() == "WaitingForReady" or gamemode.GetRoundStage() == "ReadyCountdown" then
+	if
+		gamemode.GetRoundStage() == "WaitingForReady" or
+		gamemode.GetRoundStage() == "ReadyCountdown"
+	then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 		local BluForReady = ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId]
 		if BluForReady >= gamemode.GetPlayerCount(true) then
@@ -158,6 +188,7 @@ function killConfirmed:OnRoundStageSet(RoundStage)
 		end
 
 		self.ExtractionPointIndex = math.random(#self.ExtractionPoints)
+		self.ExtractionPoint = self.ExtractionPoints[self.ExtractionPointIndex]
 
 		for i = 1, #self.ExtractionPoints do
 			local bActive = (i == self.ExtractionPointIndex)
@@ -171,53 +202,85 @@ function killConfirmed:OnRoundStageSet(RoundStage)
 end
 
 function killConfirmed:SpawnOpFor()
-	self.ShuffledLeaderSpawns = {}
-	self.ShuffledStandardSpawns = {}
+	self.OpForLeaderSpawnsShuffled = {}
+	self.OpForPriorityGroupedSpawnsShuffled ={}
 
-	-- Shuffle leader spawns
-	local UnorderedLeaderSpawns = self.OpForLeaderSpawns
-	for i = #UnorderedLeaderSpawns, 1, -1 do
-		local j = umath.random(i)
-		UnorderedLeaderSpawns[i], UnorderedLeaderSpawns[j] = UnorderedLeaderSpawns[j], UnorderedLeaderSpawns[i]
-		table.insert(self.ShuffledLeaderSpawns, UnorderedLeaderSpawns[i])
-	end
+	local tempTable = self.OpForLeaderSpawns
+    for i = #self.OpForLeaderSpawns, 1, -1 do
+        local j = math.random(i)
+        tempTable[i], tempTable[j] = tempTable[j], tempTable[i]
+        table.insert(self.OpForLeaderSpawnsShuffled, tempTable[i])
+    end
 
-	-- Shuffle spawns within priority groups and add them to ordered spawns
-	for Key, Group in ipairs(self.PriorityGroupedSpawns) do
-		for i = #Group, 1, -1 do
-			local j = umath.random(i)
-			Group[i], Group[j] = Group[j], Group[i]
-			table.insert(self.ShuffledStandardSpawns, Group[i])
-		end
-	end
+	for _, Group in ipairs(self.OpForPriorityGroupedSpawns) do
+        for i = #Group, 1, -1 do
+            local j = math.random(i)
+            Group[i], Group[j] = Group[j], Group[i]
+            table.insert(self.OpForPriorityGroupedSpawnsShuffled, Group[i])
+        end
+    end
 
-	ai.CreateOverDuration(3.5, self.Settings.OpForCount.Value, self.ShuffledStandardSpawns, self.OpForTeamTag)
-	-- We need to wait for the execution of the ai.CreateOverDuration to finish before calling it again
-	-- As a precaution I wait slightly longer than neccessary.
+	ai.CreateOverDuration(
+		3.5,
+		self.Settings.OpForCount.Value,
+		self.OpForPriorityGroupedSpawnsShuffled,
+		self.OpForTeamTag
+	)
+	-- We need to wait for the execution of the ai.CreateOverDuration to finish
+	-- before calling it again As a precaution I wait slightly longer than neccessary.
 	timer.Set("SpawnOpForLeaders", self, self.SpawnOpForLeadersTimer, 3.6, false)
 end
 
 function killConfirmed:SpawnOpForLeadersTimer()
-	ai.CreateOverDuration(0.4, self.Settings.LeaderCount.Value, self.ShuffledLeaderSpawns, self.OpForLeaderTag)
+	ai.CreateOverDuration(
+		0.4,
+		self.Settings.LeaderCount.Value,
+		self.OpForLeaderSpawnsShuffled,
+		self.OpForLeaderTag
+	)
 end
 
 function killConfirmed:OnCharacterDied(Character, CharacterController, KillerController)
-	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
+	if
+		gamemode.GetRoundStage() == "PreRoundWait" or
+		gamemode.GetRoundStage() == "InProgress"
+	then
 		if CharacterController ~= nil then
 			if actor.HasTag(CharacterController, self.OpForLeaderTag) then
 				-- OpFor leader eliminated
 				self.OpForLeadersEliminated = self.OpForLeadersEliminated + 1
 				if self.OpForLeadersEliminated >= self.Settings.LeaderCount.Value then
-					timer.Set("ShowAllKillConfirmed", self, self.ShowAllKillConfirmedTimer, 1.0, false)
+					timer.Set(
+						"ShowAllKillConfirmed",
+						self,
+						self.ShowAllKillConfirmedTimer,
+						1.0,
+						false
+					)
 				else
-					timer.Set("ShowKillConfirmed", self, self.ShowKillConfirmedTimer, 1.0, false)
+					timer.Set(
+						"ShowKillConfirmed",
+						self,
+						self.ShowKillConfirmedTimer,
+						1.0,
+						false
+					)
 				end
 			elseif actor.HasTag(CharacterController, self.OpForTeamTag) then
 				-- OpFor standard eliminated
 			else
 				-- BluFor standard eliminated
-				player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
-				timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
+				player.SetLives(
+					CharacterController,
+					player.GetLives(CharacterController) - 1
+				)
+				timer.Set(
+					"CheckBluForCount",
+					self,
+					self.CheckBluForCountTimer,
+					1.0,
+					false
+				)
 			end
 		end
 	end
@@ -228,11 +291,24 @@ function killConfirmed:ShowKillConfirmedTimer()
 end
 
 function killConfirmed:ShowAllKillConfirmedTimer()
+	local PlayersWithLives = gamemode.GetPlayerListByLives(
+		self.PlayerTeams.BluFor.TeamId,
+		1,
+		true
+	)
+	local ExtractionLocation = actor.GetLocation(self.ExtractionPoint)
 	gamemode.BroadcastGameMessage("AllHighValueTargetsEliminated", "Engine", 5.0)
+	for _, Player in ipairs(PlayersWithLives) do
+		player.ShowWorldPrompt(Player, ExtractionLocation, "Extraction", 10.0)
+	end
 end
 
 function killConfirmed:CheckBluForCountTimer()
-	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, true)
+	local PlayersWithLives = gamemode.GetPlayerListByLives(
+		self.PlayerTeams.BluFor.TeamId,
+		 1,
+		 true
+	)
 	if #PlayersWithLives == 0 then
 		timer.Clear(self, "CheckOpForExfil")
 		gamemode.AddGameStat("Result=None")
@@ -260,8 +336,15 @@ function killConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 end
 
 function killConfirmed:CheckOpForExfilTimer()
-	local Overlaps = actor.GetOverlaps(self.ExtractionPoints[self.ExtractionPointIndex], 'GroundBranch.GBCharacter')
-	local PlayersWithLives = gamemode.GetPlayerListByLives(self.PlayerTeams.BluFor.TeamId, 1, true)
+	local Overlaps = actor.GetOverlaps(
+		self.ExtractionPoint,
+		'GroundBranch.GBCharacter'
+	)
+	local PlayersWithLives = gamemode.GetPlayerListByLives(
+		self.PlayerTeams.BluFor.TeamId,
+		1,
+		true
+	)
 
 	local bExfiltrated = false
 	local bLivingOverlap = false
@@ -292,7 +375,9 @@ function killConfirmed:CheckOpForExfilTimer()
 			self.BluForExfiltrated = true
 			gamemode.AddGameStat("Result=Team1")
 			gamemode.AddGameStat("Summary=OpForLeaderEliminated")
-			gamemode.AddGameStat("CompleteObjectives=EliminateOpForLeader,ExfiltrateBluFor")
+			gamemode.AddGameStat(
+				"CompleteObjectives=EliminateOpForLeader,ExfiltrateBluFor"
+			)
 			gamemode.SetRoundStage("PostRoundWait")
 		else
 			timer.Set("CheckOpForExfil", self, self.CheckOpForExfilTimer, 1.0, false)
@@ -308,7 +393,10 @@ function killConfirmed:PlayerCanEnterPlayArea(PlayerState)
 end
 
 function killConfirmed:LogOut(Exiting)
-	if gamemode.GetRoundStage() == "PreRoundWait" or gamemode.GetRoundStage() == "InProgress" then
+	if
+		gamemode.GetRoundStage() == "PreRoundWait" or
+		gamemode.GetRoundStage() == "InProgress"
+	then
 		timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
 	end
 end

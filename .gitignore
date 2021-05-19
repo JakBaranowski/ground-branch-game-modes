@@ -1,17 +1,29 @@
-# Ignore everything
+# Flip the gitignore on it's head - ignore everything
 *
-# But check folders and keep gitignore
+# But check folders
 !*/
 
-# Files to keep
+# Keep
+## gitignore
 !.gitignore
+## Lua scritps
 !GroundBranch/Content/GroundBranch/Lua/*.lua
 !GroundBranch/Content/GroundBranch/Lua/**/*.lua
+## Mission files
 !GroundBranch/Content/GroundBranch/Mission/**/*.mis
+## Localization files
 !GroundBranch/Content/Localization/GroundBranch/en/*.csv
+## Loadout files
+!GroundBranch/Content/GroundBranch/**/*.kit
+## Workaround batch files
+!Workaround*.bat
+
+## Ignore experimental files
+*[Tt]est.mis
+*[Tt]est.lua
 
 # Ground Branch default files that would otherwise be included
-# Default GameMode scripts
+## Default GameMode scripts
 GroundBranch/Content/GroundBranch/Lua/Assassination.lua
 GroundBranch/Content/GroundBranch/Lua/Bomb.lua
 GroundBranch/Content/GroundBranch/Lua/Deathmatch.lua
@@ -27,7 +39,7 @@ GroundBranch/Content/GroundBranch/Lua/Testing.lua
 GroundBranch/Content/GroundBranch/Lua/Test.lua
 GroundBranch/Content/GroundBranch/Lua/Uplink.lua
 GroundBranch/Content/GroundBranch/Lua/UplinkTarget.lua
-# Default mission setups
+## Default mission setups
 GroundBranch/Content/GroundBranch/Mission/747/Deathmatch.mis
 GroundBranch/Content/GroundBranch/Mission/747/IntelRetrieval.mis
 GroundBranch/Content/GroundBranch/Mission/747/TeamElimination.mis
@@ -81,7 +93,7 @@ GroundBranch/Content/GroundBranch/Mission/Tanker/IntelRetrieval.mis
 GroundBranch/Content/GroundBranch/Mission/Tanker/TeamElimination.mis
 GroundBranch/Content/GroundBranch/Mission/Tanker/TerroristHunt.mis
 GroundBranch/Content/GroundBranch/Mission/TheFarm/Training.mis
-# Default player loadouts
+## Default player loadouts
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Blue.kit
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Blue.res
 GroundBranch/Content/GroundBranch/DefaultLoadouts/MainMenuGuy_01.kit
@@ -89,23 +101,23 @@ GroundBranch/Content/GroundBranch/DefaultLoadouts/MainMenuGuy_02.kit
 GroundBranch/Content/GroundBranch/DefaultLoadouts/NoTeam.kit
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Red.kit
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Red.res
-# Default AI loadouts
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuys01.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuys02.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuys03.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuysGunner.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuysShotgunner.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BadGuysSniper.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_GunnerAK.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_GunnerLMG.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_GunnerM4.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGLowVis_SubGunnerMP5.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerAK.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerGalil.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_GunnerLMG.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_Sniper.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/BGMilitant_SubGunner.kit
-# Default localization
+## Default AI loadouts
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuys01.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuys02.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuys03.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuysGunner.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuysShotgunner.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuysSniper.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGLowVis_GunnerAK.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGLowVis_GunnerLMG.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGLowVis_GunnerM4.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGLowVis_SubGunnerMP5.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGMilitant_GunnerAK.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGMilitant_GunnerGalil.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGMilitant_GunnerLMG.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGMilitant_Sniper.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGMilitant_SubGunner.kit
+## Default localization
 GroundBranch/Content/Localization/GroundBranch/en/Assassination.csv
 GroundBranch/Content/Localization/GroundBranch/en/Defuse.csv
 GroundBranch/Content/Localization/GroundBranch/en/GameMode.csv
