@@ -1,0 +1,6 @@
+Key,SourceString,Comment
+"BreakOut","Break Out",""
+"missionsetting_opforcount","Expected resistance","Opsboard"
+"objective_ExfiltrateBluFor","Exfiltrate to extraction point.","Opsboard"
+"summary_BluForExfilFailed","Failed to reach extraction point.","AAR"
+"summary_BluForEliminated","Your team was wiped out.","AAR"

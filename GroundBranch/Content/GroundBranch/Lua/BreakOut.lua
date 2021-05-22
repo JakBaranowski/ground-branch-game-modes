@@ -3,11 +3,11 @@ local tableOperations = require("common.tableOperations")
 local BreakOut = {
 	UseReadyRoom = true,
 	UseRounds = true,
-	StringTables = {"KillConfirmed"},
+	StringTables = {"BreakOut"},
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
-			Loadout = "NoTeam",
+			Loadout = "Captive",
 		},
 	},
 	Settings = {
@@ -78,11 +78,10 @@ function BreakOut:PreInit()
 		self.Settings.OpForCount.Max
 	)
 
-	-- Gathers all extraction points placed in the mission
 	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
-	-- Adds objective markers for all possible extraction points
+
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
 		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(
@@ -190,10 +189,7 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 		gamemode.GetRoundStage() == "InProgress"
 	then
 		if CharacterController ~= nil then
-			if actor.HasTag(CharacterController, self.OpForTeamTag) then
-				-- OpFor standard eliminated
-			else
-				-- BluFor standard eliminated
+			if not actor.HasTag(CharacterController, self.OpForTeamTag) then
 				player.SetLives(
 					CharacterController,
 					player.GetLives(CharacterController) - 1
@@ -213,8 +209,8 @@ end
 function BreakOut:CheckBluForCountTimer()
 	local PlayersWithLives = gamemode.GetPlayerListByLives(
 		self.PlayerTeams.BluFor.TeamId,
-		 1,
-		 true
+		1,
+		true
 	)
 	if #PlayersWithLives == 0 then
 		timer.Clear(self, "CheckOpForExfil")
