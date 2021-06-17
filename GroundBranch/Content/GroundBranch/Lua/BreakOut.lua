@@ -81,7 +81,9 @@ function BreakOut:PreInit()
 	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
+end
 
+function BreakOut:PostInit()
 	for i = 1, #self.ExtractionPoints do
 		local Location = actor.GetLocation(self.ExtractionPoints[i])
 		self.ExtractionPointMarkers[i] = gamemode.AddObjectiveMarker(
@@ -91,9 +93,6 @@ function BreakOut:PreInit()
 			false
 		)
 	end
-end
-
-function BreakOut:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
 end
 
