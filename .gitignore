@@ -16,7 +16,7 @@
 ## Loadout files
 !GroundBranch/Content/GroundBranch/**/*.kit
 ## Workaround batch files
-!Workaround*.bat
+!Workarounds/*
 
 ## Ignore experimental files
 *[Tt]est.mis
