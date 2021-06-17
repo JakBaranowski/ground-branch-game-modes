@@ -8,34 +8,37 @@ function Members.IterateMembers(object, parent)
 end
 
 function Members.IterateMembersInner(object, depth, current)
-	if depth <= 0 then
+	if current == nil then
+		current = 1
+	end
+
+	if depth <= current then
 		return
 	end
-	if current == nil then
-		current = 2
-	end
-	local tab = string.rep("#", current) .. " "
+
+	local tab = string.rep("#", current + 1) .. " "
 
 	if type(object) == "table" then
 		for key, value in pairs(object) do
-			if key ~= "script" then
-				local ret = Members.IterateMembersInner(value, depth - 1, current + 1)
-				if ret ~= nil then
-					print(tab .. key .. Members.IterateMembersInner(value, depth - 1))
-				else
-					print(tab .. key)
-				end
-			end
+			print(tab .. key .. " | " .. tostring(value))
+			Members.IterateMembersInner(value, depth, current + 1)
 		end
 
 	elseif type(object) == "userdata" then
 		for key, value in pairs(getmetatable(object)) do
-			return Members.IterateMembersInner(value, depth - 1)
+			print(tab .. key .. " | " .. tostring(value))
+			Members.IterateMembersInner(value, depth, current + 1)
 		end
 
 	elseif type(object) == "function" then
 		local info = debug.getinfo(object)
-		return " nparams: " .. info.nparams .. " vararg: " .. tostring(info.isvararg)
+		print(tab .. "nparams: " .. info.nparams .. " vararg: " .. tostring(info.isvararg))
+		return
+
+	else
+		print(tab .. tostring(object) .. " | " .. type(object))
+		return
+
 	end
 
 end
