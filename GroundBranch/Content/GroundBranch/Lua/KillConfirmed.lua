@@ -53,6 +53,7 @@ local KillConfirmed = {
 	ExtractionPoints = {},
 	ExtractionPoint = nil,
 	ExtractionPointMarkers = {},
+	PlayersInExtractionZone = 0,
 	-- Game objective tracking variables
 	OpForLeadersEliminatedNotConfirmed = {},
 	OpForLeadersEliminatedAndConfirmed = {},
@@ -192,7 +193,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 			true
 		)
 	elseif RoundStage == "PostRoundWait" then
-		timer.clearAll()
+		timer.ClearAll()
 	end
 end
 
@@ -246,8 +247,26 @@ function KillConfirmed:ShouldCheckForTeamKills()
 end
 
 function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	if #self.OpForLeadersEliminatedAndConfirmed >= self.Settings.LeaderCount.Value then
-		timer.Set("CheckOpForExfil", self, self.CheckBluForExfilTimer, 1.0, false)
+	local playerCharacter = player.GetCharacter(Player)
+	if playerCharacter ~= nil then
+		local teamId = actor.GetTeamId(playerCharacter)
+		if teamId == self.PlayerTeams.BluFor.TeamId and
+		GameTrigger == self.ExtractionPoint then
+			self.PlayersInExtractionZone = self.PlayersInExtractionZone + 1
+			timer.Set("CheckOpForExfil", self, self.CheckBluForExfilTimer, 1.0, false)
+		end
+	end
+end
+
+function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
+	local playerCharacter = player.GetCharacter(Player)
+	if playerCharacter ~= nil then
+		local teamId = actor.GetTeamId(playerCharacter)
+		if teamId == self.PlayerTeams.BluFor.TeamId and
+		GameTrigger == self.ExtractionPoint then
+			self.PlayersInExtractionZone = self.PlayersInExtractionZone - 1
+			timer.Set("CheckOpForExfil", self, self.CheckBluForExfilTimer, 1.0, false)
+		end
 	end
 end
 
@@ -355,6 +374,40 @@ function KillConfirmed:CheckIfKillConfirmedTimer()
 	end
 end
 
+function KillConfirmed:CheckBluForCountTimer()
+	if #self.PlayersWithLives == 0 then
+		timer.Clear(self, "CheckOpForExfil")
+		gamemode.AddGameStat("Result=None")
+		if self.OpForLeadersEliminatedNotConfirmed == self.Settings.LeaderCount.Value then
+			gamemode.AddGameStat("Summary=BluForExfilFailed")
+			gamemode.AddGameStat(
+				"CompleteObjectives=EliminateLeader,LastKnownLocation"
+			)
+		elseif self.OpForLeadersEliminatedAndConfirmed == self.Settings.LeaderCount.Value then
+			gamemode.AddGameStat("Summary=BluForExfilFailed")
+			gamemode.AddGameStat(
+				"CompleteObjectives=EliminateLeader,ConfirmLeaderElimination,LastKnownLocation"
+			)
+		else
+			gamemode.AddGameStat("Summary=BluForEliminated")
+		end
+		gamemode.SetRoundStage("PostRoundWait")
+	end
+end
+
+function KillConfirmed:CheckBluForExfilTimer()
+	if #self.OpForLeadersEliminatedAndConfirmed >= self.Settings.LeaderCount.Value and
+	self.PlayersInExtractionZone == #self.PlayersWithLives then
+		self.BluForExfiltrated = true
+		gamemode.AddGameStat("Result=Team1")
+		gamemode.AddGameStat("Summary=OpForLeaderEliminated")
+		gamemode.AddGameStat(
+			"CompleteObjectives=EliminateLeader,ConfirmLeaderElimination,LastKnownLocation,ExfiltrateBluFor"
+		)
+		gamemode.SetRoundStage("PostRoundWait")
+	end
+end
+
 function KillConfirmed:CheckReadyUpTimer()
 	if
 		gamemode.GetRoundStage() == "WaitingForReady" or
@@ -418,72 +471,6 @@ function KillConfirmed:GuideToEliminatedLeaderTimer()
 	for _, LeaderLocation in ipairs(self.OpForLeadersEliminatedNotConfirmed) do
 		for _, Player in ipairs(self.PlayersWithLives) do
 			player.ShowWorldPrompt(Player, LeaderLocation, "ConfirmKill", self.ObjectiveWorldPromptShowTime)
-		end
-	end
-end
-
-function KillConfirmed:CheckBluForCountTimer()
-	if #self.PlayersWithLives == 0 then
-		timer.Clear(self, "CheckOpForExfil")
-		gamemode.AddGameStat("Result=None")
-		if self.OpForLeadersEliminatedNotConfirmed == self.Settings.LeaderCount.Value then
-			gamemode.AddGameStat("Summary=BluForExfilFailed")
-			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateLeader,LastKnownLocation"
-			)
-		elseif self.OpForLeadersEliminatedAndConfirmed == self.Settings.LeaderCount.Value then
-			gamemode.AddGameStat("Summary=BluForExfilFailed")
-			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateLeader,ConfirmLeaderElimination,LastKnownLocation"
-			)
-		else
-			gamemode.AddGameStat("Summary=BluForEliminated")
-		end
-		gamemode.SetRoundStage("PostRoundWait")
-	end
-end
-
-function KillConfirmed:CheckBluForExfilTimer()
-	local Overlaps = actor.GetOverlaps(
-		self.ExtractionPoint,
-		'GroundBranch.GBCharacter'
-	)
-
-	local bExfiltrated = false
-	local bLivingOverlap = false
-
-	for i = 1, #self.PlayersWithLives do
-		bExfiltrated = false
-
-		local PlayerCharacter = player.GetCharacter(self.PlayersWithLives[i])
-
-		-- May have lives, but no character, alive or otherwise.
-		if PlayerCharacter ~= nil then
-			for j = 1, #Overlaps do
-				if Overlaps[j] == PlayerCharacter then
-					bLivingOverlap = true
-					bExfiltrated = true
-					break
-				end
-			end
-		end
-
-		if bExfiltrated == false then
-			break
-		end
-	end
-
-	if bLivingOverlap == true then
-		if bExfiltrated == true then
-			self.BluForExfiltrated = true
-			gamemode.AddGameStat("Result=Team1")
-			gamemode.AddGameStat("Summary=OpForLeaderEliminated")
-			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateLeader,ConfirmLeaderElimination,LastKnownLocation,ExfiltrateBluFor"
-			)
-			gamemode.SetRoundStage("PostRoundWait")
-		else
-			timer.Set("CheckOpForExfil", self, self.CheckBluForExfilTimer, 1.0, false)
 		end
 	end
 end
