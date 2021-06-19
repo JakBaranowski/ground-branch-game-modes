@@ -141,8 +141,8 @@ function KillConfirmed:PostInit()
 		)
 	end
 	-- Add game objectives
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateLeader", 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ConfirmLeaderElimination", 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "EliminateHighValueTargets", 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ConfirmHighValueTargets", 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "LastKnownLocation", 1)
 end
@@ -407,12 +407,12 @@ function KillConfirmed:CheckBluForCountTimer()
 		if #self.OpForLeadersEliminatedNotConfirmed == self.Settings.LeaderCount.Value then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateLeader,LastKnownLocation"
+				"CompleteObjectives=EliminateHighValueTargets,LastKnownLocation"
 			)
 		elseif #self.OpForLeadersEliminatedAndConfirmed == self.Settings.LeaderCount.Value then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateLeader,ConfirmLeaderElimination,LastKnownLocation"
+				"CompleteObjectives=EliminateHighValueTargets,ConfirmHighValueTargets,LastKnownLocation"
 			)
 		else
 			gamemode.AddGameStat("Summary=BluForEliminated")
@@ -426,9 +426,9 @@ function KillConfirmed:CheckBluForExfilTimer()
 	self.PlayersInExtractionZone >= #self.PlayersWithLives then
 		self.BluForExfiltrated = true
 		gamemode.AddGameStat("Result=Team1")
-		gamemode.AddGameStat("Summary=OpForLeaderEliminated")
+		gamemode.AddGameStat("Summary=HighValueTargetsConfirmed")
 		gamemode.AddGameStat(
-			"CompleteObjectives=EliminateLeader,ConfirmLeaderElimination,LastKnownLocation,ExfiltrateBluFor"
+			"CompleteObjectives=EliminateHighValueTargets,ConfirmHighValueTargets,LastKnownLocation,ExfiltrateBluFor"
 		)
 		gamemode.SetRoundStage("PostRoundWait")
 	end
@@ -468,15 +468,15 @@ function KillConfirmed:SpawnOpForLeadersTimer()
 end
 
 function KillConfirmed:ShowHVTEliminatedTimer()
-	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 5.0)
+	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 10.0)
 end
 
 function KillConfirmed:ShowKillConfirmedTimer()
-	gamemode.BroadcastGameMessage("HighValueTargetConfirmed", "Engine", 5.0)
+	gamemode.BroadcastGameMessage("HighValueTargetConfirmed", "Engine", 10.0)
 end
 
 function KillConfirmed:ShowAllKillConfirmedTimer()
-	gamemode.BroadcastGameMessage("AllHighValueTargetsConfirmed", "Engine", 5.0)
+	gamemode.BroadcastGameMessage("AllHighValueTargetsConfirmed", "Engine", 10.0)
 	timer.Set(
 		"GuideToExtraction",
 		self,
