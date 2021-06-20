@@ -21,7 +21,35 @@ end
 ---shuffled tables.
 ---@param tableWithOrderedTables table
 ---@return table
-function TableOperations.ShuffleTables(tableWithOrderedTables)
+function TableOperations.ShuffleKeyValueTables(tableWithOrderedTables)
+    local tableWithShuffledTables = {}
+    for orderedTableKey, orderedTable in pairs(tableWithOrderedTables) do
+        tableWithShuffledTables[orderedTableKey] = TableOperations.ShuffleTable(
+            orderedTable
+        )
+    end
+    return tableWithShuffledTables
+end
+
+---Takes an 2 level table and returns a single level table containing entries from
+---all 2nd level tables
+---@param twoLevelsTable table
+---@return table
+function TableOperations.GetTableFromKeyValueTables(twoLevelsTable)
+    local singleLevelTable = {}
+    for _, secondLevelTable in pairs(twoLevelsTable) do
+        for _, entry in ipairs(secondLevelTable) do
+            table.insert(singleLevelTable, entry)
+        end
+    end
+    return singleLevelTable
+end
+
+---Takes an ordered table containing ordered tables and returns an ordered table off
+---shuffled tables.
+---@param tableWithOrderedTables table
+---@return table
+function TableOperations.ShuffleIndexedTables(tableWithOrderedTables)
     local tableWithShuffledTables = {}
     for orderedTableIndex, orderedTable in ipairs(tableWithOrderedTables) do
         tableWithShuffledTables[orderedTableIndex] = TableOperations.ShuffleTable(
@@ -35,7 +63,7 @@ end
 ---all 2nd level tables
 ---@param twoLevelsTable table
 ---@return table
-function TableOperations.GetTableFromTables(twoLevelsTable)
+function TableOperations.GetTableFromIndexedTables(twoLevelsTable)
     local singleLevelTable = {}
     for _, secondLevelTable in ipairs(twoLevelsTable) do
         for _, entry in ipairs(secondLevelTable) do
