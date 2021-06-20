@@ -1,5 +1,5 @@
-local tableOperations = require("common.tableOperations")
-local stringOperations = require("common.StringOperations")
+local TableOperations = require("common.tableOperations")
+local StringOperations = require("common.StringOperations")
 
 local BreakOut = {
 	UseReadyRoom = true,
@@ -78,7 +78,7 @@ function BreakOut:PreInit()
 	for _, SpawnPoint in ipairs(AllSpawns) do
 		local actorTags = actor.GetTags(SpawnPoint)
 		for _, actorTag in ipairs(actorTags) do
-			if stringOperations.StartsWith(actorTag, "Exfil") then
+			if StringOperations.StartsWith(actorTag, "Exfil") then
 				if self.OpForExfilGuardSpawnPoints[actorTag] == nil then
 					self.OpForExfilGuardSpawnPoints[actorTag] = {}
 				end
@@ -257,10 +257,10 @@ end
 --#region Spawn OpFor
 
 function BreakOut:ShuffleSpawns()
-	local tableWithShuffledSpawns = tableOperations.ShuffleKeyValueTables(
+	local tableWithShuffledSpawns = TableOperations.ShuffleKeyValueTables(
 		self.OpForPriorityGroupedSpawns
 	)
-	self.OpForPriorityGroupedSpawnsShuffled = tableOperations.GetTableFromKeyValueTables(
+	self.OpForPriorityGroupedSpawnsShuffled = TableOperations.GetTableFromKeyValueTables(
 		tableWithShuffledSpawns
 	)
 end
@@ -298,7 +298,7 @@ function BreakOut:SetUpObjectiveMarkers()
 	end
 	local exfilTags = actor.GetTags(self.ExtractionPoint)
 	for _, exfilTag in ipairs(exfilTags) do
-		if stringOperations.StartsWith(exfilTag, "Exfil") then
+		if StringOperations.StartsWith(exfilTag, "Exfil") then
 			self.ExtractionPointTag = exfilTag
 		end
 	end
