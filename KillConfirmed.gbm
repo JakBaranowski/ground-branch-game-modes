@@ -1,0 +1,20 @@
+{
+    "name" : "KillConfirmed",
+    "version" : "0.1",
+    "files" : [
+        "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
+        "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
+        "GroundBranch/Content/GroundBranch/Lua/common/StringOperations.lua",
+        "GroundBranch/Content/GroundBranch/Lua/common/TableOperations.lua",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_AR_BLACK.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_AR_WDLND.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_CQB_BLACK.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_CQB_WDLND.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_SNP_BLACK.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_SNP_WDLND.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_STG_BLACK.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/EurAsi_HVT_STG_WDLND.kit",
+        "GroundBranch/Content/GroundBranch/Mission/City/KillConfirmed.mis",
+        "GroundBranch/Content/GroundBranch/Mission/Creek/KillConfirmed.mis"
+    ]
+}

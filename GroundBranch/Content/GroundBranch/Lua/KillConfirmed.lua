@@ -1,6 +1,5 @@
 local TableOperations = require("common.TableOperations")
-local StringOpertations = require("common.StringOperations")
-local StringOperations = require "GroundBranch.Content.GroundBranch.Lua.common.StringOperations"
+local StringOperations = require("common.StringOperations")
 
 --#region variables
 
