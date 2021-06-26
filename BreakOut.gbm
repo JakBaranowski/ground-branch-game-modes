@@ -1,0 +1,13 @@
+{
+    "name" : "BreakOut",
+    "version" : "0.1",
+    "files" : [
+        "GroundBranch/Content/GroundBranch/DefaultLoadouts/Captive.kit",
+        "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
+        "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
+        "GroundBranch/Content/GroundBranch/Lua/common/StringOperations.lua",
+        "GroundBranch/Content/GroundBranch/Lua/common/TableOperations.lua",
+        "GroundBranch/Content/GroundBranch/Mission/Tanker/BreakOut.mis",
+        "GroundBranch/Content/GroundBranch/Mission/RunDown/BreakOut.mis"
+    ]
+}
