@@ -6,6 +6,7 @@
 # Keep
 ## gitignore
 !.gitignore
+!license.md
 ## Lua scritps
 !GroundBranch/Content/GroundBranch/Lua/*.lua
 !GroundBranch/Content/GroundBranch/Lua/**/*.lua
