@@ -14,9 +14,9 @@
 ## Localization files
 !GroundBranch/Content/Localization/GroundBranch/en/*.csv
 ## Loadout files
-!GroundBranch/Content/GroundBranch/**/*.kit
-## Workaround batch files
-!Workarounds/*
+!GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/*.kit
+## Manifest files
+!*.gbm
 
 ## Ignore experimental files
 *[Tt]est.mis
