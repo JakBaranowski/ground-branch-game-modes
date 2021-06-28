@@ -15,7 +15,7 @@
 ## Localization files
 !GroundBranch/Content/Localization/GroundBranch/en/*.csv
 ## Loadout files
-!GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/*.kit
+!GroundBranch/Content/GroundBranch/AI/Loadouts/*/*.kit
 ## Manifest files
 !*.gbm
 
