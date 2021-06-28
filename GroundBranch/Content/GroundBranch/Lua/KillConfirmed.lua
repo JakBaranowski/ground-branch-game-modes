@@ -107,7 +107,7 @@ function KillConfirmed:PreInit()
 	)
 	self.LastLeaderCount = self.Settings.LeaderCount.Value
 	self.Settings.OpForCount.Max = math.min(
-		ai.GetMaxCount(),
+		ai.GetMaxCount() - self.Settings.LeaderCount.Max,
 		TotalSpawns
 	)
 	self.Settings.OpForCount.Value = math.min(
