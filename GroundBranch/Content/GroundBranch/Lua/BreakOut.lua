@@ -267,19 +267,19 @@ end
 
 function BreakOut:SpawnOpFor()
 	ai.CreateOverDuration(
-		3.5,
-		self.Settings.OpForCount.Value-3,
-		self.OpForPriorityGroupedSpawnsShuffled,
-		self.OpForTeamTag
-	)
-	timer.Set("SpawnOpForExfilGuards", self, self.SpawnOpForExfilGuardsTimer, 3.6, false)
-end
-
-function BreakOut:SpawnOpForExfilGuardsTimer()
-	ai.CreateOverDuration(
 		0.4,
 		3,
 		self.OpForExfilGuardSpawnPoints[self.ExtractionPointTag],
+		self.OpForTeamTag
+	)
+	timer.Set("SpawnStandardOpFor", self, self.SpawnStandardOpForTimer, 0.5, false)
+end
+
+function BreakOut:SpawnStandardOpForTimer()
+	ai.CreateOverDuration(
+		3.5,
+		self.Settings.OpForCount.Value-3,
+		self.OpForPriorityGroupedSpawnsShuffled,
 		self.OpForTeamTag
 	)
 end

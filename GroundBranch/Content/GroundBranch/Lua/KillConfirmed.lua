@@ -358,22 +358,20 @@ end
 
 function KillConfirmed:SpawnOpFor()
 	ai.CreateOverDuration(
-		3.5,
-		self.Settings.OpForCount.Value,
-		self.OpForPriorityGroupedSpawnsShuffled,
-		self.OpForTeamTag
-	)
-	-- We need to wait for the execution of the ai.CreateOverDuration to finish
-	-- before calling it again. As a precaution wait is slightly longer than neccessary.
-	timer.Set("SpawnOpForLeaders", self, self.SpawnOpForLeadersTimer, 3.6, false)
-end
-
-function KillConfirmed:SpawnOpForLeadersTimer()
-	ai.CreateOverDuration(
 		0.4,
 		self.Settings.LeaderCount.Value,
 		self.OpForLeaderSpawnsShuffled,
 		self.OpForLeaderTag
+	)
+	timer.Set("SpawnStandardOpFor", self, self.SpawnStandardOpForTimer, 0.5, false)
+end
+
+function KillConfirmed:SpawnStandardOpForTimer()
+	ai.CreateOverDuration(
+		3.5,
+		self.Settings.OpForCount.Value,
+		self.OpForPriorityGroupedSpawnsShuffled,
+		self.OpForTeamTag
 	)
 end
 
