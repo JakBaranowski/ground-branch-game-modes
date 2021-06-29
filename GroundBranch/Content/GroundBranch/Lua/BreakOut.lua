@@ -65,7 +65,7 @@ function BreakOut:PreInit()
 					self.OpForPriorityGroupedSpawns[PriorityIndex] = {}
 				end
 				-- Ensures we can't spawn more AI then this map can handle.
-				TotalSpawns = TotalSpawns + 1 
+				TotalSpawns = TotalSpawns + 1
 				table.insert(self.OpForPriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
@@ -344,7 +344,6 @@ function BreakOut:CleanUp()
 	self.PlayersWithLives = {}
 	self.PlayersInExtractionZone = 0
 	self.OpForPriorityGroupedSpawnsShuffled = {}
-	self.OpForExfilGuardSpawnPoints = {}
 	self.ExtractionPoint = nil
 	self.ExtractionPointTag = ""
 	self.BluForExfiltrated = false
