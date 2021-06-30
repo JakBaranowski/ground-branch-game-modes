@@ -73,4 +73,19 @@ function TableOperations.GetTableFromIndexedTables(twoLevelsTable)
     return singleLevelTable
 end
 
+---Concatenates two indexed tables. It keeps the order provided in argument,
+---i.e. elements of table1 will start at first index, and elements of table2
+---will start at #table1+1.
+---Only supports concatenation of two indexed tables (not key, value tables).
+---@param table1 table
+---@param table2 table
+---@return table
+function TableOperations.ConcatenateTables(table1, table2)
+    local concatenatedTable = {table.unpack(table1)}
+    for _, value in ipairs(table2) do
+       table.insert(concatenatedTable, value)
+    end
+    return concatenatedTable
+end
+
 return TableOperations

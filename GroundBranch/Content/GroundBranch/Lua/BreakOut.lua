@@ -1,5 +1,5 @@
-local TableOperations = require("common.tableOperations")
-local StringOperations = require("common.StringOperations")
+local TabOps = require("common.TableOperations")
+local StrOps = require("common.StringOperations")
 
 local BreakOut = {
 	UseReadyRoom = true,
@@ -46,7 +46,12 @@ local BreakOut = {
 	ExtractionPointTag = "",
 	ExtractionPointMarkers = {},
 	-- Game objective tracking variables
-	BluForExfiltrated = false,
+	ExfiltrationTimer = {
+		DefaultTime = 4.0,
+		CurrentTime = 4.0,
+		TimeStep = 1.0,
+		TimerInProgress = false,
+	},
 }
 
 --#region Overloads
@@ -65,7 +70,7 @@ function BreakOut:PreInit()
 					self.OpForPriorityGroupedSpawns[PriorityIndex] = {}
 				end
 				-- Ensures we can't spawn more AI then this map can handle.
-				TotalSpawns = TotalSpawns + 1 
+				TotalSpawns = TotalSpawns + 1
 				table.insert(self.OpForPriorityGroupedSpawns[PriorityIndex], SpawnPoint)
 			end
 		end
@@ -78,7 +83,7 @@ function BreakOut:PreInit()
 	for _, SpawnPoint in ipairs(AllSpawns) do
 		local actorTags = actor.GetTags(SpawnPoint)
 		for _, actorTag in ipairs(actorTags) do
-			if StringOperations.StartsWith(actorTag, "Exfil") then
+			if StrOps.StartsWith(actorTag, "Exfil") then
 				if self.OpForExfilGuardSpawnPoints[actorTag] == nil then
 					self.OpForExfilGuardSpawnPoints[actorTag] = {}
 				end
@@ -162,6 +167,7 @@ end
 
 function BreakOut:OnRoundStageSet(RoundStage)
 	if RoundStage == "WaitingForReady" then
+		self:CleanUp()
 		self:ShuffleSpawns()
 		self:SetUpObjectiveMarkers()
 	elseif RoundStage == "PreRoundWait" then
@@ -174,7 +180,6 @@ function BreakOut:OnRoundStageSet(RoundStage)
 		)
 	elseif RoundStage == "PostRoundWait" then
 		timer.ClearAll()
-		self:CleanUp()
 	end
 end
 
@@ -210,9 +215,12 @@ function BreakOut:OnGameTriggerBeginOverlap(GameTrigger, Player)
 		local teamId = actor.GetTeamId(playerCharacter)
 		if teamId == self.PlayerTeams.BluFor.TeamId and
 		GameTrigger == self.ExtractionPoint then
-			local total = self.PlayersInExtractionZone + 1
+			local total = math.min(self.PlayersInExtractionZone + 1, #self.PlayersWithLives)
 			self.PlayersInExtractionZone = total
-			timer.Set("CheckBluForExfil", self, self.CheckBluForExfilTimer, 1.0, false)
+			if not self.ExfiltrationTimer.TimerInProgress then
+				self.ExfiltrationTimer.TimerInProgress = true
+				timer.Set("CheckBluForExfilTimer", self, self.CheckBluForExfilTimer, 0.1, false)
+			end
 		end
 	end
 end
@@ -257,29 +265,23 @@ end
 --#region Spawn OpFor
 
 function BreakOut:ShuffleSpawns()
-	local tableWithShuffledSpawns = TableOperations.ShuffleKeyValueTables(
+	local tableWithShuffledSpawns = TabOps.ShuffleKeyValueTables(
 		self.OpForPriorityGroupedSpawns
 	)
-	self.OpForPriorityGroupedSpawnsShuffled = TableOperations.GetTableFromKeyValueTables(
+	self.OpForPriorityGroupedSpawnsShuffled = TabOps.GetTableFromKeyValueTables(
 		tableWithShuffledSpawns
 	)
 end
 
 function BreakOut:SpawnOpFor()
-	ai.CreateOverDuration(
-		3.5,
-		self.Settings.OpForCount.Value-3,
-		self.OpForPriorityGroupedSpawnsShuffled,
-		self.OpForTeamTag
-	)
-	timer.Set("SpawnOpForExfilGuards", self, self.SpawnOpForExfilGuardsTimer, 3.6, false)
-end
-
-function BreakOut:SpawnOpForExfilGuardsTimer()
-	ai.CreateOverDuration(
-		0.4,
-		3,
+	local allAiSpawns = TabOps.ConcatenateTables(
 		self.OpForExfilGuardSpawnPoints[self.ExtractionPointTag],
+		self.OpForPriorityGroupedSpawnsShuffled
+	)
+	ai.CreateOverDuration(
+		4.0,
+		self.Settings.OpForCount.Value,
+		allAiSpawns,
 		self.OpForTeamTag
 	)
 end
@@ -298,7 +300,7 @@ function BreakOut:SetUpObjectiveMarkers()
 	end
 	local exfilTags = actor.GetTags(self.ExtractionPoint)
 	for _, exfilTag in ipairs(exfilTags) do
-		if StringOperations.StartsWith(exfilTag, "Exfil") then
+		if StrOps.StartsWith(exfilTag, "Exfil") then
 			self.ExtractionPointTag = exfilTag
 		end
 	end
@@ -310,17 +312,41 @@ end
 
 function BreakOut:CheckBluForExfilTimer()
 	if self.PlayersInExtractionZone >= #self.PlayersWithLives then
-		self.BluForExfiltrated = true
-		gamemode.AddGameStat("Result=Team1")
-		if #self.PlayersWithLives >= gamemode.GetPlayerCount(true) then
-			gamemode.AddGameStat("CompleteObjectives=ExfiltrateBluFor,ExfiltrateAll")
-			gamemode.AddGameStat("Summary=BluForExfilSuccess")
-		else
-			gamemode.AddGameStat("CompleteObjectives=ExfiltrateBluFor")
-			gamemode.AddGameStat("Summary=BluForExfilPartialSuccess")
-		end
-		gamemode.SetRoundStage("PostRoundWait")
+		self.ExfiltrationTimer.CurrentTime = self.ExfiltrationTimer.CurrentTime - self.ExfiltrationTimer.TimeStep
+		gamemode.BroadcastGameMessage("ExfiltrationInProgress.T-" .. math.floor(self.ExfiltrationTimer.CurrentTime), "Engine", self.ExfiltrationTimer.TimeStep)
+	elseif self.PlayersInExtractionZone > 0 then
+		gamemode.BroadcastGameMessage("ExfiltrationPaused.T-" .. math.floor(self.ExfiltrationTimer.CurrentTime), "Engine", self.ExfiltrationTimer.TimeStep)
+	else
+		self.ExfiltrationTimer.CurrentTime = self.ExfiltrationTimer.DefaultTime
+		gamemode.BroadcastGameMessage("ExfiltrationCancelled.TeamLeftExtractionZone.", "Engine", self.ExfiltrationTimer.TimeStep*2)
+		timer.Clear(self, "CheckBluForExfilTimer")
+		self.ExfiltrationTimer.TimerInProgress = false
+		return
 	end
+	if self.ExfiltrationTimer.CurrentTime > 0 then
+		timer.Set("CheckBluForExfilTimer", self, self.CheckBluForExfilTimer, self.ExfiltrationTimer.TimeStep, false)
+		self.ExfiltrationTimer.TimerInProgress = true
+	else
+		self:Exfiltrate()
+		timer.Clear(self, "CheckBluForExfilTimer")
+		self.ExfiltrationTimer.TimerInProgress = false
+		self.ExfiltrationTimer.CurrentTime = self.ExfiltrationTimer.DefaultTime
+	end
+end
+
+function BreakOut:Exfiltrate()
+	if gamemode.GetRoundStage() ~= "InProgress" then
+		return
+	end
+	gamemode.AddGameStat("Result=Team1")
+	if #self.PlayersWithLives >= gamemode.GetPlayerCount(true) then
+		gamemode.AddGameStat("CompleteObjectives=ExfiltrateBluFor,ExfiltrateAll")
+		gamemode.AddGameStat("Summary=BluForExfilSuccess")
+	else
+		gamemode.AddGameStat("CompleteObjectives=ExfiltrateBluFor")
+		gamemode.AddGameStat("Summary=BluForExfilPartialSuccess")
+	end
+	gamemode.SetRoundStage("PostRoundWait")
 end
 
 --#endregion
@@ -328,6 +354,9 @@ end
 --#region Fail condition
 
 function BreakOut:CheckBluForCountTimer()
+	if gamemode.GetRoundStage() ~= "InProgress" then
+		return
+	end
 	if #self.PlayersWithLives == 0 then
 		timer.Clear(self, "CheckBluForExfil")
 		gamemode.AddGameStat("Result=None")
@@ -344,10 +373,8 @@ function BreakOut:CleanUp()
 	self.PlayersWithLives = {}
 	self.PlayersInExtractionZone = 0
 	self.OpForPriorityGroupedSpawnsShuffled = {}
-	self.OpForExfilGuardSpawnPoints = {}
 	self.ExtractionPoint = nil
 	self.ExtractionPointTag = ""
-	self.BluForExfiltrated = false
 	ai.CleanUp(self.OpForTeamTag)
 end
 
