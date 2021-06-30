@@ -1,11 +1,16 @@
 {
-    "name" : "KillConfirmed",
+    "name" : "All",
     "version" : "0.1.0",
     "files" : [
+        "GroundBranch/Content/GroundBranch/DefaultLoadouts/Captive.kit",
+        "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
         "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
+        "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
         "GroundBranch/Content/GroundBranch/Lua/common/StringOperations.lua",
         "GroundBranch/Content/GroundBranch/Lua/common/TableOperations.lua",
+        "GroundBranch/Content/GroundBranch/Mission/Tanker/BreakOut.mis",
+        "GroundBranch/Content/GroundBranch/Mission/RunDown/BreakOut.mis",
         "GroundBranch/Content/GroundBranch/Mission/City/KillConfirmed.mis",
         "GroundBranch/Content/GroundBranch/Mission/Creek/KillConfirmed.mis",
         "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_BLACK.kit",
