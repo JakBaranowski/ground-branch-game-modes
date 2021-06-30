@@ -1,5 +1,5 @@
-local TableOperations = require("common.TableOperations")
-local StringOperations = require("common.StringOperations")
+local TabOps = require("common.TableOperations")
+local StrOps = require("common.StringOperations")
 
 --#region variables
 
@@ -58,7 +58,12 @@ local KillConfirmed = {
 	-- Game objective tracking variables
 	OpForLeadersEliminatedNotConfirmed = {},
 	OpForLeadersEliminatedAndConfirmed = {},
-	BluForExfiltrated = false,
+	ExfiltrationTimer = {
+		DefaultTime = 4.0,
+		CurrentTime = 4.0,
+		TimeStep = 1.0,
+		TimerInProgress = false,
+	},
 	-- Objective world prompt timers
 	ObjectiveWorldPromptShowTime = 5.0,
 	ObjectiveWorldPromptDelay = 15.0,
@@ -228,13 +233,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 		if CharacterController ~= nil then
 			if actor.HasTag(CharacterController, self.OpForLeaderTag) then
 				-- OpFor leader eliminated
-				timer.Set(
-					"ShowHVTEliminated",
-					self,
-					self.ShowHVTEliminatedTimer,
-					1.0,
-					false
-				)
+				self:ShowHVTEliminated()
 				table.insert(
 					self.OpForLeadersEliminatedNotConfirmed,
 					actor.GetLocation(Character)
@@ -345,13 +344,13 @@ end
 --#region Spawn OpFor
 
 function KillConfirmed:ShuffleSpawns()
-	local tableWithShuffledSpawns = TableOperations.ShuffleIndexedTables(
+	local tableWithShuffledSpawns = TabOps.ShuffleIndexedTables(
 		self.OpForPriorityGroupedSpawns
 	)
-	self.OpForPriorityGroupedSpawnsShuffled = TableOperations.GetTableFromIndexedTables(
+	self.OpForPriorityGroupedSpawnsShuffled = TabOps.GetTableFromIndexedTables(
 		tableWithShuffledSpawns
 	)
-	self.OpForLeaderSpawnsShuffled = TableOperations.ShuffleTable(
+	self.OpForLeaderSpawnsShuffled = TabOps.ShuffleTable(
 		self.OpForLeaderSpawns
 	)
 end
@@ -379,23 +378,16 @@ end
 
 --#region Game messages and world prompts
 
-function KillConfirmed:ShowHVTEliminatedTimer()
-	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 10.0)
+function KillConfirmed:ShowHVTEliminated()
+	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 5.0)
 end
 
-function KillConfirmed:ShowKillConfirmedTimer()
-	gamemode.BroadcastGameMessage("HighValueTargetConfirmed", "Engine", 10.0)
+function KillConfirmed:ShowKillConfirmed()
+	gamemode.BroadcastGameMessage("HighValueTargetConfirmed", "Engine", 5.0)
 end
 
-function KillConfirmed:ShowAllKillConfirmedTimer()
-	gamemode.BroadcastGameMessage("AllHighValueTargetsConfirmed", "Engine", 10.0)
-	timer.Set(
-		"GuideToExtraction",
-		self,
-		self.GuideToExtractionTimer,
-		self.ObjectiveWorldPromptDelay,
-		true
-	)
+function KillConfirmed:ShowAllKillConfirmed()
+	gamemode.BroadcastGameMessage("AllHighValueTargetsConfirmed", "Engine", 5.0)
 end
 
 function KillConfirmed:GuideToExtractionTimer()
@@ -438,8 +430,7 @@ function KillConfirmed:CheckIfKillConfirmedTimer()
 			local DistVector = PlayerLocation - LeaderLocation
 			local Dist = vector.Size(DistVector)
 			LowestDist = math.min(LowestDist, Dist)
-			if vector.Size2D({DistVector.x, DistVector.y}) <= 250 and
-			math.abs(DistVector.z) < 110 then
+			if Dist <= 250 and math.abs(DistVector.z) < 110 then
 				table.insert(self.OpForLeadersEliminatedAndConfirmed, LeaderLocation)
 				table.remove(self.OpForLeadersEliminatedNotConfirmed, index)
 				self:ConfirmKill()
@@ -460,21 +451,19 @@ end
 
 function KillConfirmed:ConfirmKill()
 	if #self.OpForLeadersEliminatedAndConfirmed >= self.Settings.LeaderCount.Value then
+		self:ShowAllKillConfirmed()
 		timer.Set(
-			"ShowAllKillConfirmed",
+			"GuideToExtraction",
 			self,
-			self.ShowAllKillConfirmedTimer,
-			1.0,
-			false
+			self.GuideToExtractionTimer,
+			self.ObjectiveWorldPromptDelay,
+			true
 		)
+		if self.PlayersInExtractionZone > 0 then
+			timer.Set("CheckBluForExfilTimer", self, self.CheckBluForExfilTimer, 0.1, false)
+		end
 	else
-		timer.Set(
-			"ShowKillConfirmed",
-			self,
-			self.ShowKillConfirmedTimer,
-			1.0,
-			false
-		)
+		self:ShowKillConfirmed()
 	end
 end
 
@@ -488,8 +477,13 @@ function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 		local teamId = actor.GetTeamId(playerCharacter)
 		if teamId == self.PlayerTeams.BluFor.TeamId and
 		GameTrigger == self.ExtractionPoint then
-			self.PlayersInExtractionZone = self.PlayersInExtractionZone + 1
-			timer.Set("CheckBluForExfil", self, self.CheckBluForExfilTimer, 1.0, false)
+			local total = math.min(self.PlayersInExtractionZone + 1, #self.PlayersWithLives)
+			self.PlayersInExtractionZone = total
+			if not self.ExfiltrationTimer.TimerInProgress and
+			#self.OpForLeadersEliminatedAndConfirmed >= self.Settings.LeaderCount.Value then
+				self.ExfiltrationTimer.TimerInProgress = true
+				timer.Set("CheckBluForExfilTimer", self, self.CheckBluForExfilTimer, 0.1, false)
+			end
 		end
 	end
 end
@@ -500,23 +494,47 @@ function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
 		local teamId = actor.GetTeamId(playerCharacter)
 		if teamId == self.PlayerTeams.BluFor.TeamId and
 		GameTrigger == self.ExtractionPoint then
-			self.PlayersInExtractionZone = math.max(self.PlayersInExtractionZone - 1, 0)
+			local total = math.max(self.PlayersInExtractionZone - 1, 0)
+			self.PlayersInExtractionZone = total
 		end
 	end
 end
 
 function KillConfirmed:CheckBluForExfilTimer()
-	if #self.OpForLeadersEliminatedAndConfirmed >= self.Settings.LeaderCount.Value and
-	self.PlayersInExtractionZone >= #self.PlayersWithLives then
-		self.BluForExfiltrated = true
-		gamemode.AddGameStat("Result=Team1")
-		gamemode.AddGameStat("Summary=HighValueTargetsConfirmed")
-		gamemode.AddGameStat(
-			"CompleteObjectives=EliminateHighValueTargets,ConfirmHighValueTargets," ..
-			"LastKnownLocation,ExfiltrateBluFor"
-		)
-		gamemode.SetRoundStage("PostRoundWait")
+	if self.PlayersInExtractionZone >= #self.PlayersWithLives then
+		self.ExfiltrationTimer.CurrentTime = self.ExfiltrationTimer.CurrentTime - self.ExfiltrationTimer.TimeStep
+		gamemode.BroadcastGameMessage("ExfiltrationInProgress.T-" .. math.floor(self.ExfiltrationTimer.CurrentTime), "Engine", self.ExfiltrationTimer.TimeStep)
+	elseif self.PlayersInExtractionZone > 0 then
+		gamemode.BroadcastGameMessage("ExfiltrationPaused.T-" .. math.floor(self.ExfiltrationTimer.CurrentTime), "Engine", self.ExfiltrationTimer.TimeStep)
+	else
+		self.ExfiltrationTimer.CurrentTime = self.ExfiltrationTimer.DefaultTime
+		gamemode.BroadcastGameMessage("ExfiltrationCancelled.TeamLeftExtractionZone.", "Engine", self.ExfiltrationTimer.TimeStep*2)
+		timer.Clear(self, "CheckBluForExfilTimer")
+		self.ExfiltrationTimer.TimerInProgress = false
+		return
 	end
+	if self.ExfiltrationTimer.CurrentTime > 0 then
+		timer.Set("CheckBluForExfilTimer", self, self.CheckBluForExfilTimer, self.ExfiltrationTimer.TimeStep, false)
+		self.ExfiltrationTimer.TimerInProgress = true
+	else
+		self:Exfiltrate()
+		timer.Clear(self, "CheckBluForExfilTimer")
+		self.ExfiltrationTimer.TimerInProgress = false
+		self.ExfiltrationTimer.CurrentTime = self.ExfiltrationTimer.DefaultTime
+	end
+end
+
+function KillConfirmed:Exfiltrate()
+	if gamemode.GetRoundStage() ~= "InProgress" then
+		return
+	end
+	gamemode.AddGameStat("Result=Team1")
+	gamemode.AddGameStat("Summary=HighValueTargetsConfirmed")
+	gamemode.AddGameStat(
+		"CompleteObjectives=EliminateHighValueTargets,ConfirmHighValueTargets," ..
+		"LastKnownLocation,ExfiltrateBluFor"
+	)
+	gamemode.SetRoundStage("PostRoundWait")
 end
 
 --#endregion
@@ -558,13 +576,12 @@ function KillConfirmed:CleanUp()
 	self.OpForLeadersEliminatedNotConfirmed = {}
 	self.OpForLeadersEliminatedAndConfirmed = {}
 	self.PlayersInExtractionZone = 0
-	self.BluForExfiltrated = false
 end
 
 function KillConfirmed:GetSuffixFromActorTag(actorWithTag, tagPrefix)
 	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
-		if StringOperations.StartsWith(actorTag, tagPrefix) then
-			return StringOperations.GetSuffix(actorTag, tagPrefix)
+		if StrOps.StartsWith(actorTag, tagPrefix) then
+			return StrOps.GetSuffix(actorTag, tagPrefix)
 		end
 	end
 end
