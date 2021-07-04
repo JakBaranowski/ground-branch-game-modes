@@ -1,4 +1,4 @@
-local Template = {
+local Test = {
 	UseReadyRoom = true,	-- * Should this game mode use ready room.
 	UseRounds = true, 		-- * Should this game mode use rounds.
 	StringTables = {}, 		-- * Name of the `.csv` localization file (w/o extension).
@@ -14,31 +14,36 @@ local Template = {
 			Max = 30,
 			Value = 10,
 		},
+	},
+	OpFor = {
+		Tag = "OpFor",
+		Spawns = {},
 	}
 }
 
-Template.__index = Template
+Test.__index = Test
 
-function Template:new()
-	local template = {}
-	setmetatable(self, Template)
-	return template
+function Test:new()
+	local test = {}
+	setmetatable(self, Test)
+	return test
 end
 
 --#region Initialization
 
 ---Method called right after the mission is loaded.
-function Template:PreInit()
+function Test:PreInit()
 	print("PreInit")
+	self.OpFor.Spawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
 end
 
 ---Method called just before player gets control.
-function Template:PostInit()
+function Test:PostInit()
 	print("PostInit")
 end
 
 ---Method called just after player gets control.
-function Template:PostRun()
+function Test:PostRun()
 	print("PostRun")
 end
 
@@ -55,8 +60,20 @@ end
 ---| "PreRoundWait"
 ---| "InProgress"
 ---| "PostRoundWait"
-function Template:OnRoundStageSet(RoundStage)
+function Test:OnRoundStageSet(RoundStage)
 	print("OnRoundStageSet " .. RoundStage)
+	if RoundStage == "PreRoundWait" then
+		ai.CreateOverDuration(
+			4,
+			3,
+			self.OpFor.Spawns,
+			self.OpFor.Tag
+		)
+	end
+end
+
+function Test:TestTimer()
+	
 end
 
 ---Triggered when a round stage time elapse. Round stage can be anything set by
@@ -68,7 +85,7 @@ end
 ---| "PreRoundWait"
 ---| "InProgress"
 ---| "PostRoundWait"
-function Template:OnRoundStageTimeElapsed(RoundStage)
+function Test:OnRoundStageTimeElapsed(RoundStage)
 	print("OnRoundStageTimeElapsed " .. RoundStage)
 end
 
@@ -76,7 +93,7 @@ end
 ---@param Character any Character that died.
 ---@param CharacterController any Controller of the character that died.
 ---@param KillerController any Controller of the character that killed the character.
-function Template:OnCharacterDied(Character, CharacterController, KillerController)
+function Test:OnCharacterDied(Character, CharacterController, KillerController)
 	print("OnCharacterDied")
 end
 
@@ -84,7 +101,7 @@ end
 ---triggers as well.
 ---@param GameTrigger any
 ---@param Player any
-function Template:OnGameTriggerBeginOverlap(GameTrigger, Player)
+function Test:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print("OnGameTriggerBeginOverlap")
 end
 
@@ -95,7 +112,7 @@ end
 ---Method called when a player changes the selected insertion point.
 ---@param PlayerState any
 ---@param InsertionPoint any
-function Template:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
+function Test:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	print("PlayerInsertionPointChanged")
 end
 
@@ -105,7 +122,7 @@ end
 ---@param ReadyStatus string
 ---| "WaitingToReadyUp"
 ---| "DeclaredReady"
-function Template:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+function Test:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	print("PlayerReadyStatusChanged " .. ReadyStatus)
 end
 
@@ -113,14 +130,14 @@ end
 ---@param PlayerState any
 ---@return boolean PlayerCanEnterPlayArea whether or not should we allow users to enter
 ---play area.
-function Template:PlayerCanEnterPlayArea(PlayerState)
+function Test:PlayerCanEnterPlayArea(PlayerState)
 	print("PlayerCanEnterPlayArea")
 	return true
 end
 
 ---Called when any player enters the play area.
 ---@param PlayerState any
-function Template:PlayerEnteredPlayArea(PlayerState)
+function Test:PlayerEnteredPlayArea(PlayerState)
 	print("PlayerEnteredPlayArea")
 end
 
@@ -128,7 +145,7 @@ end
 ---@param PlayerState any
 ---@param Request string
 ---| "join"
-function Template:PlayerGameModeRequest(PlayerState, Request)
+function Test:PlayerGameModeRequest(PlayerState, Request)
 	print("PlayerGameModeRequest " .. Request)
 end
 
@@ -136,14 +153,14 @@ end
 ---the player. Has to return a spawn point in which the user will be spawned.
 ---@param PlayerState any
 ---@return any SpawnPoint the spawn point we want the user to spawn in.
-function Template:GetSpawnInfo(PlayerState)
-	print("GetSpawnInfo")
-	return SpawnPoint
-end
+-- function Test:GetSpawnInfo(PlayerState)
+-- 	print("GetSpawnInfo")
+-- 	return SpawnPoint
+-- end
 
 ---Triggered whenever a player leaves the game.
 ---@param Exiting any
-function Template:LogOut(Exiting)
+function Test:LogOut(Exiting)
 	print("LogOut")
 end
 
@@ -153,11 +170,11 @@ end
 
 ---Whether or not we should check for team kills at this point.
 ---@return boolean ShouldCheckForTeamKills should we check for team kills.
-function Template:ShouldCheckForTeamKills()
+function Test:ShouldCheckForTeamKills()
 	print("ShouldCheckForTeamKills")
 	return true
 end
 
 --#endregion
 
-return Template
+return Test
