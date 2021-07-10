@@ -1,5 +1,6 @@
 local TabOps = require("common.TableOperations")
 local StrOps = require("common.StringOperations")
+local Cdnms = require("common.Codenames")
 
 --#region Properties
 
@@ -16,8 +17,13 @@ local KillConfirmed = {
 	Settings = {
 		OpForCount = {
 			Min = 0,
-			Max = 50,
-			Value = 15,
+			Max = 3,
+			Value = 1,
+		},
+		SpawnMethod = {
+			Min = 0,
+			Max = 1,
+			Value = 0,
 		},
 		HVTCount = {
 			Min = 1,
@@ -45,7 +51,9 @@ local KillConfirmed = {
 			"AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50"
 		},
 		SpawnsPriorityGrouped = {},
+		SpawnsSquadGrouped = {},
 		SpawnsShuffled = {},
+		TotalSpawns = 0,
 	},
 	HVT = {
 		Tag = "HVT",
@@ -89,19 +97,36 @@ local KillConfirmed = {
 
 function KillConfirmed:PreInit()
 	local PriorityIndex = 1
-	local TotalSpawns = 0
-	-- Gathers all OpFor spawn points
-	for _, PriorityTag in ipairs(self.OpFor.PriorityTags) do
+	local TotalSpawnsPriority = 0
+	-- Gathers all OpFor spawn points by priority
+	for _, priorityTag in ipairs(self.OpFor.PriorityTags) do
 		local spawnsWithTag = gameplaystatics.GetAllActorsOfClassWithTag(
 			'GroundBranch.GBAISpawnPoint',
-			PriorityTag
+			priorityTag
 		)
 		if #spawnsWithTag > 0 then
 			self.OpFor.SpawnsPriorityGrouped[PriorityIndex] = spawnsWithTag
-			TotalSpawns = TotalSpawns + #spawnsWithTag
+			TotalSpawnsPriority = TotalSpawnsPriority + #spawnsWithTag
 			PriorityIndex = PriorityIndex + 1
 		end
 	end
+	print("Found " .. TotalSpawnsPriority .. " priority spawns.")
+	-- Gathers all OpFor spawn points by squads
+	local SquadIndex = 1
+	local TotalSpawnsSquad = 0
+	for _, phonetic in ipairs(Cdnms.phonetic) do
+		local squadTag = "Squad" .. phonetic
+		local spawnsWithTag = gameplaystatics.GetAllActorsOfClassWithTag(
+			'GroundBranch.GBAISpawnPoint',
+			squadTag
+		)
+		if #spawnsWithTag > 0 then
+			self.OpFor.SpawnsSquadGrouped[SquadIndex] = spawnsWithTag
+			TotalSpawnsSquad = TotalSpawnsSquad + #spawnsWithTag
+			SquadIndex = SquadIndex + 1
+		end
+	end
+	print("Found " .. TotalSpawnsSquad .. " squad spawns.")
 	-- Gathers all HVT spawn points
 	self.HVT.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
 		'GroundBranch.GBAISpawnPoint',
@@ -118,14 +143,16 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Max
 	)
 	-- Set maximum OpFor count and ensure that value is within limit
-	self.Settings.OpForCount.Max = math.min(
-		ai.GetMaxCount() - self.Settings.HVTCount.Max,
-		TotalSpawns
-	)
-	self.Settings.OpForCount.Value = math.min(
-		self.Settings.OpForCount.Value,
-		self.Settings.OpForCount.Max
-	)
+	-- TODO set TotalSpawns based on selected spawn method
+	self.OpFor.TotalSpawns = math.min(TotalSpawnsPriority, TotalSpawnsSquad)
+	-- self.Settings.OpForCount.Max = math.min(
+	-- 	ai.GetMaxCount() - self.Settings.HVTCount.Max,
+	-- 	TotalSpawns
+	-- )
+	-- self.Settings.OpForCount.Value = math.min(
+	-- 	self.Settings.OpForCount.Value,
+	-- 	self.Settings.OpForCount.Max
+	-- )
 	-- Set last HVT count for tracking if the setting has changed.
 	-- This is neccessary for adding objective markers on map.
 	self.SettingsTracker.LastHVTCount = self.Settings.HVTCount.Value
@@ -353,12 +380,17 @@ end
 --#region Spawn OpFor
 
 function KillConfirmed:ShuffleSpawns()
-	local tableWithShuffledSpawns = TabOps.ShuffleIndexedTables(
-		self.OpFor.SpawnsPriorityGrouped
-	)
-	self.OpFor.SpawnsShuffled = TabOps.GetTableFromIndexedTables(
-		tableWithShuffledSpawns
-	)
+	if self.Settings.SpawnMethod.Value == 0 then
+		-- Spawn OpFor by priority.
+		local tableWithShuffledSpawns = TabOps.ShuffleIndexedTables(
+			self.OpFor.SpawnsPriorityGrouped
+		)
+		self.OpFor.SpawnsShuffled = TabOps.GetTableFromIndexedTables(
+			tableWithShuffledSpawns
+		)
+	else
+		-- Spawn OpFor by squad.
+	end
 	self.HVT.SpawnsShuffled = TabOps.ShuffleTable(
 		self.HVT.Spawns
 	)
@@ -375,9 +407,22 @@ function KillConfirmed:SpawnOpFor()
 end
 
 function KillConfirmed:SpawnStandardOpForTimer()
+	local playerCount = gamemode.GetPlayerCount(true)
+	local aiCount = 5 + playerCount * 5 + self.Settings.OpForCount.Value * 5
+	print("Player count: " .. playerCount .. " Op For Count: " .. self.Settings.OpForCount.Value .. " Initial AI count: " .. aiCount)
+	local aiCountRandomFactor = math.ceil(0.1 * aiCount)
+	print("AI count random factor: " .. aiCountRandomFactor)
+	local aiCountRandom = math.random(-aiCountRandomFactor, aiCountRandomFactor)
+	print("AI count random: " .. aiCountRandom)
+	aiCount = aiCount + aiCountRandom
+	print("AI count after applying random: " .. aiCount)
+	aiCount = math.min(aiCount, self.OpFor.TotalSpawns)
+	print("Almost final AI count: " .. aiCount)
+	aiCount = math.min(aiCount, ai.GetMaxCount())
+	print("Final AI count: " .. aiCount)
 	ai.CreateOverDuration(
 		3.5,
-		self.Settings.OpForCount.Value,
+		aiCount,
 		self.OpFor.SpawnsShuffled,
 		self.OpFor.Tag
 	)
