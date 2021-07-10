@@ -123,3 +123,17 @@ GroundBranch/Content/Localization/GroundBranch/en/MissionNameNouns.csv
 GroundBranch/Content/Localization/GroundBranch/en/TeamElimination.csv
 GroundBranch/Content/Localization/GroundBranch/en/TerroristHunt.csv
 GroundBranch/Content/Localization/GroundBranch/en/Uplink.csv
+
+## Rendezvous
+GroundBranch/Content/GroundBranch/Lua/Rendezvous.lua
+GroundBranch/Content/Localization/GroundBranch/en/Rendezvous.csv
+GroundBranch/Content/GroundBranch/Mission/City/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/Depot_Compound/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/747/Rendezvous.mis
+
+## DTAS
+GroundBranch/Content/Localization/GroundBranch/en/DTAS.csv
