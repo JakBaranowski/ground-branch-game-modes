@@ -1,6 +1,6 @@
 local TabOps = require("common.TableOperations")
 local StrOps = require("common.StringOperations")
-local Cdnms = require("common.Codenames")
+local Spawns = require("common.Spawns")
 
 --#region Properties
 
@@ -15,10 +15,10 @@ local KillConfirmed = {
 		},
 	},
 	Settings = {
-		OpForCount = {
+		OpForPreset = {
 			Min = 0,
-			Max = 3,
-			Value = 1,
+			Max = 4,
+			Value = 2,
 		},
 		SpawnMethod = {
 			Min = 0,
@@ -41,19 +41,25 @@ local KillConfirmed = {
 			Value = 60,
 		},
 	},
+	SettingTrackers = {
+		LastHVTCount = 0,
+	},
 	Players = {
 		WithLives = {},
 	},
 	OpFor = {
 		Tag = "OpFor",
 		PriorityTags = {
-			"AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5", "AISpawn_6_10",
-			"AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40", "AISpawn_41_50"
+			"AISpawn_1", "AISpawn_2", "AISpawn_3", "AISpawn_4", "AISpawn_5",
+			"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40",
+			"AISpawn_41_50"
 		},
-		SpawnsPriorityGrouped = {},
-		SpawnsSquadGrouped = {},
-		SpawnsShuffled = {},
-		TotalSpawns = 0,
+		SpawnsByPriority = {},
+		TotalSpawnsWithPriority = 0,
+		SpawnsByGroup = {},
+		TotalSpawnsWithGroup = 0,
+		RoundSpawnList = {},
+		CalculatedAiCount = 0,
 	},
 	HVT = {
 		Tag = "HVT",
@@ -61,7 +67,8 @@ local KillConfirmed = {
 		SpawnsShuffled = {},
 		SpawnMarkers = {},
 		EliminatedNotConfirmed = {},
-		EliminatedAndConfirmed = {},
+		EliminatedAndConfirmed = 0,
+		MaxDistanceForGroupConsideration = 20 * 100.0,
 	},
 	Extraction = {
 		AllPoints = {},
@@ -73,21 +80,48 @@ local KillConfirmed = {
 		ObjectiveWorldPromptShowTime = 5.0,
 		ObjectiveWorldPromptDelay = 15.0,
 	},
-	SettingsTracker = {
-		LastHVTCount = 0
-	},
 	Timers = {
+		-- Count down timer with pause and reset
 		Exfiltration = {
 			Name = "ExfilTimer",
 			DefaultTime = 4.0,
 			CurrentTime = 4.0,
 			TimeStep = 1.0,
-			InProgress = false
 		},
-	},
-	Subscriptions = {
-		OnGameTriggerBeginOverlap = {},
-		OnGameTriggerEndOverlap = {},
+		-- Repeating timer with variable delay
+		KillConfirm = {
+			Name = "KillConfirmTimer",
+			TimeStep = {
+				Max = 1.0,
+				Min = 0.1,
+				Value = 1.0,
+			},
+		},
+		-- Repeating timers with constant delay
+		SettingsChanged = {
+			Name = "SettingsChanged",
+			TimeStep = 1.0,
+		},
+		GuideToObjective = {
+			Name = "GuideToObjective",
+		},
+		-- Delays
+		CheckBluForCount = {
+			Name = "CheckBluForCount",
+			TimeStep = 1.0,
+		},
+		CheckReadyUp = {
+			Name = "CheckReadyUp",
+			TimeStep = 0.25,
+		},
+		CheckReadyDown = {
+			Name = "CheckReadyDown",
+			TimeStep = 0.1,
+		},
+		SpawnOpFor = {
+			Name = "SpawnOpFor",
+			TimeStep = 0.5,
+		},
 	},
 }
 
@@ -96,73 +130,72 @@ local KillConfirmed = {
 --#region Preparation
 
 function KillConfirmed:PreInit()
-	local PriorityIndex = 1
-	local TotalSpawnsPriority = 0
+	print("Initializing Kill Confirmed")
 	-- Gathers all OpFor spawn points by priority
+	local priorityIndex = 1
 	for _, priorityTag in ipairs(self.OpFor.PriorityTags) do
 		local spawnsWithTag = gameplaystatics.GetAllActorsOfClassWithTag(
 			'GroundBranch.GBAISpawnPoint',
 			priorityTag
 		)
 		if #spawnsWithTag > 0 then
-			self.OpFor.SpawnsPriorityGrouped[PriorityIndex] = spawnsWithTag
-			TotalSpawnsPriority = TotalSpawnsPriority + #spawnsWithTag
-			PriorityIndex = PriorityIndex + 1
+			self.OpFor.SpawnsByPriority[priorityIndex] = spawnsWithTag
+			self.OpFor.TotalSpawnsWithPriority =
+				self.OpFor.TotalSpawnsWithPriority + #spawnsWithTag
+			priorityIndex = priorityIndex + 1
 		end
 	end
-	print("Found " .. TotalSpawnsPriority .. " priority spawns.")
-	-- Gathers all OpFor spawn points by squads
-	local SquadIndex = 1
-	local TotalSpawnsSquad = 0
-	for _, phonetic in ipairs(Cdnms.phonetic) do
-		local squadTag = "Squad" .. phonetic
-		local spawnsWithTag = gameplaystatics.GetAllActorsOfClassWithTag(
+	print(
+		"Found " .. self.OpFor.TotalSpawnsWithPriority ..
+		" spawns by priority"
+	)
+	-- Gathers all OpFor spawn points by groups
+	local groupIndex = 1
+	for i = 1, 32, 1 do
+		local groupTag = "Group" .. tostring(i)
+		local spawnsWithGroupTag = gameplaystatics.GetAllActorsOfClassWithTag(
 			'GroundBranch.GBAISpawnPoint',
-			squadTag
+			groupTag
 		)
-		if #spawnsWithTag > 0 then
-			self.OpFor.SpawnsSquadGrouped[SquadIndex] = spawnsWithTag
-			TotalSpawnsSquad = TotalSpawnsSquad + #spawnsWithTag
-			SquadIndex = SquadIndex + 1
+		if #spawnsWithGroupTag > 0 then
+			self.OpFor.SpawnsByGroup[groupIndex] = spawnsWithGroupTag
+			self.OpFor.TotalSpawnsWithGroup =
+				self.OpFor.TotalSpawnsWithGroup + #spawnsWithGroupTag
+			groupIndex = groupIndex + 1
 		end
 	end
-	print("Found " .. TotalSpawnsSquad .. " squad spawns.")
+	print(
+		"Found " .. #self.OpFor.SpawnsByGroup ..
+		" groups and a total of " .. self.OpFor.TotalSpawnsWithGroup ..
+		" spawns"
+	)
 	-- Gathers all HVT spawn points
 	self.HVT.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
 		'GroundBranch.GBAISpawnPoint',
 		self.HVT.Tag
 	)
+	print("Found " .. #self.HVT.Spawns .. " HVT spawns")
 	-- Gathers all extraction points placed in the mission
 	self.Extraction.AllPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
+	print("Found " .. #self.Extraction.AllPoints .. " extraction points")
 	-- Set maximum HVT count and ensure that HVT value is within limit
 	self.Settings.HVTCount.Max = math.min(ai.GetMaxCount(), #self.HVT.Spawns)
 	self.Settings.HVTCount.Value = math.min(
 		self.Settings.HVTCount.Value,
 		self.Settings.HVTCount.Max
 	)
-	-- Set maximum OpFor count and ensure that value is within limit
-	-- TODO set TotalSpawns based on selected spawn method
-	self.OpFor.TotalSpawns = math.min(TotalSpawnsPriority, TotalSpawnsSquad)
-	-- self.Settings.OpForCount.Max = math.min(
-	-- 	ai.GetMaxCount() - self.Settings.HVTCount.Max,
-	-- 	TotalSpawns
-	-- )
-	-- self.Settings.OpForCount.Value = math.min(
-	-- 	self.Settings.OpForCount.Value,
-	-- 	self.Settings.OpForCount.Max
-	-- )
 	-- Set last HVT count for tracking if the setting has changed.
 	-- This is neccessary for adding objective markers on map.
-	self.SettingsTracker.LastHVTCount = self.Settings.HVTCount.Value
+	self.SettingTrackers.LastHVTCount = self.Settings.HVTCount.Value
 end
 
 function KillConfirmed:PostInit()
 	-- Add inactive objective markers to all possible HVT spawn points.
 	for _, SpawnPoint in ipairs(self.HVT.Spawns) do
 		local description = "HVT"
-		description = self:GetSuffixFromActorTag(SpawnPoint, "ObjectiveMarker")
+		description = StrOps.GetSuffixFromActorTag(SpawnPoint, "ObjectiveMarker")
 		self.HVT.SpawnMarkers[description] = gamemode.AddObjectiveMarker(
 			actor.GetLocation(SpawnPoint),
 			self.PlayerTeams.BluFor.TeamId,
@@ -170,6 +203,7 @@ function KillConfirmed:PostInit()
 			false
 		)
 	end
+	print("Added objective markers for HVTs")
 	-- Adds inactive objective markers for all possible extraction points.
 	for i = 1, #self.Extraction.AllPoints do
 		local Location = actor.GetLocation(self.Extraction.AllPoints[i])
@@ -180,6 +214,7 @@ function KillConfirmed:PostInit()
 			false
 		)
 	end
+	print("Added objective markers for extraction points")
 	-- Add game mode objectives
 	gamemode.AddGameObjective(
 		self.PlayerTeams.BluFor.TeamId,
@@ -193,6 +228,7 @@ function KillConfirmed:PostInit()
 	)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "LastKnownLocation", 2)
+	print("Added game mode objectives")
 end
 
 --#endregion
@@ -200,22 +236,25 @@ end
 --#region Common
 
 function KillConfirmed:OnRoundStageSet(RoundStage)
+	print("Started round stage " .. RoundStage)
 	-- On every round stage change clear all timers.
 	timer.ClearAll()
 	if RoundStage == "WaitingForReady" then
 		-- At this stage players have been assigned to teams.
-		self:ShuffleSpawns()
-		self:SetUpExtractionObjectiveMarkers()
-		self:SetUpLeaderObjectiveMarkeres()
+		self:PreRoundCleanUp()
+		self:SetUpOpForHvtSpawns()
+		self:ShuffleExtractionAndSetUpObjectiveMarkers()
+		self:SetUpHvtObjectiveMarkers()
 		timer.Set(
-			"CheckIfHVTCountChanged",
+			self.Timers.SettingsChanged.Name,
 			self,
-			self.CheckIfHVTCountChanged,
-			1,
+			self.CheckIfSettingsChanged,
+			self.Timers.SettingsChanged.TimeStep,
 			true
 		)
 	elseif RoundStage == "PreRoundWait" then
 		-- At this stage players are already spawned in AO, but still frozen.
+		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == "InProgress" then
 		-- At this stage players become unfrozen, and the round is properly started.
@@ -225,7 +264,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 			false
 		)
 		timer.Set(
-			"GuideToEliminatedLeaders",
+			self.Timers.GuideToObjective.Name,
 			self,
 			self.GuideToEliminatedLeaderTimer,
 			self.UI.ObjectiveWorldPromptDelay,
@@ -234,7 +273,6 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	elseif RoundStage == "PostRoundWait" then
 		-- The round have ended, either with victory or loss. Players will be moved
 		-- to ready room soon.
-		self:PostRoundCleanUp()
 	end
 end
 
@@ -257,22 +295,25 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 	gamemode.GetRoundStage() == "InProgress" then
 		if CharacterController ~= nil then
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
-				-- OpFor leader eliminated.
+				-- OpFor HVT eliminated.
+				print("OpFor HVT eliminated")
 				self:ShowHVTEliminated()
 				table.insert(
 					self.HVT.EliminatedNotConfirmed,
 					actor.GetLocation(Character)
 				)
 				timer.Set(
-					"CheckIfConfirmed",
+					self.Timers.KillConfirm.Name,
 					self,
 					self.CheckIfKillConfirmedTimer,
-					0.1,
+					self.Timers.KillConfirm.TimeStep.Min,
 					false
 				)
 			elseif actor.HasTag(CharacterController, self.OpFor.Tag) then
+				print("OpFor standard eliminated")
 				-- OpFor standard eliminated.
 			else
+				print("BluFor eliminated")
 				-- BluFor eliminated.
 				player.SetLives(
 					CharacterController,
@@ -284,10 +325,10 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 					false
 				)
 				timer.Set(
-					"CheckBluForCount",
+					self.Timers.CheckBluForCount.Name,
 					self,
 					self.CheckBluForCountTimer,
-					1.0,
+					self.Timers.CheckBluForCount.TimeStep,
 					false
 				)
 			end
@@ -297,9 +338,16 @@ end
 
 function KillConfirmed:LogOut(Exiting)
 	-- Player lef the game.
+	print("Player left the game")
 	if gamemode.GetRoundStage() == "PreRoundWait" or
 	gamemode.GetRoundStage() == "InProgress" then
-		timer.Set("CheckBluForCount", self, self.CheckBluForCountTimer, 1.0, false)
+		timer.Set(
+			self.Timers.CheckBluForCount.Name,
+			self,
+			self.CheckBluForCountTimer,
+			self.Timers.CheckBluForCount.TimeStep,
+			false
+		)
 	end
 end
 
@@ -310,17 +358,35 @@ end
 function KillConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	if InsertionPoint == nil then
 		-- Player unchecked insertion point.
-		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
+		timer.Set(
+			self.Timers.CheckReadyDown.Name,
+			self,
+			self.CheckReadyDownTimer,
+			self.Timers.CheckReadyDown.TimeStep,
+			false
+		)
 	else
 		-- Player checked insertion point.
-		timer.Set("CheckReadyUp", self, self.CheckReadyUpTimer, 0.25, false)
+		timer.Set(
+			self.Timers.CheckReadyUp.Name,
+			self,
+			self.CheckReadyUpTimer,
+			self.Timers.CheckReadyUp.TimeStep,
+			false
+		)
 	end
 end
 
 function KillConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	if ReadyStatus ~= "DeclaredReady" then
-		-- Player declared they're ready.
-		timer.Set("CheckReadyDown", self, self.CheckReadyDownTimer, 0.1, false)
+		-- Player declared ready.
+		timer.Set(
+			self.Timers.CheckReadyDown.Name,
+			self,
+			self.CheckReadyDownTimer,
+			self.Timers.CheckReadyDown.TimeStep,
+			false
+		)
 	elseif gamemode.GetRoundStage() == "PreRoundWait" and
 	gamemode.PrepLatecomer(PlayerState) then
 		-- Player did not declare ready, but the timer run out.
@@ -354,22 +420,23 @@ end
 
 --#region Objective Markers
 
-function KillConfirmed:SetUpLeaderObjectiveMarkeres()
+function KillConfirmed:SetUpHvtObjectiveMarkers()
+	print("Setting up HVT objective markers " .. #self.HVT.SpawnsShuffled)
 	for i, v in ipairs(self.HVT.SpawnsShuffled) do
-		local spawnTag = self:GetSuffixFromActorTag(v, "ObjectiveMarker")
-		if i <= self.Settings.HVTCount.Value then
-			actor.SetActive(self.HVT.SpawnMarkers[spawnTag], true)
-		else
-			actor.SetActive(self.HVT.SpawnMarkers[spawnTag], false)
-		end
+		local spawnTag = StrOps.GetSuffixFromActorTag(v, "ObjectiveMarker")
+		local bActive = i <= self.Settings.HVTCount.Value
+		print("Setting HVT marker " .. spawnTag .. " to " .. tostring(bActive))
+		actor.SetActive(self.HVT.SpawnMarkers[spawnTag], bActive)
 	end
 end
 
-function KillConfirmed:SetUpExtractionObjectiveMarkers()
+function KillConfirmed:ShuffleExtractionAndSetUpObjectiveMarkers()
+	print("Setting up Extraction objective markers")
 	self.ExtractionPointIndex = math.random(#self.Extraction.AllPoints)
 	self.Extraction.ActivePoint = self.Extraction.AllPoints[self.ExtractionPointIndex]
 	for i = 1, #self.Extraction.AllPoints do
 		local bActive = (i == self.ExtractionPointIndex)
+		print("Setting Exfil marker " .. i .. " to " .. tostring(bActive))
 		actor.SetActive(self.Extraction.AllPoints[i], bActive)
 		actor.SetActive(self.Extraction.AllMarkers[i], bActive)
 	end
@@ -377,55 +444,122 @@ end
 
 --#endregion
 
---#region Spawn OpFor
+--#region Ai
 
-function KillConfirmed:ShuffleSpawns()
-	if self.Settings.SpawnMethod.Value == 0 then
-		-- Spawn OpFor by priority.
-		local tableWithShuffledSpawns = TabOps.ShuffleIndexedTables(
-			self.OpFor.SpawnsPriorityGrouped
-		)
-		self.OpFor.SpawnsShuffled = TabOps.GetTableFromIndexedTables(
-			tableWithShuffledSpawns
-		)
-	else
-		-- Spawn OpFor by squad.
-	end
+function KillConfirmed:SetUpOpForHvtSpawns()
+	self.HVT.SpawnsShuffled = {}
 	self.HVT.SpawnsShuffled = TabOps.ShuffleTable(
 		self.HVT.Spawns
+	)
+	print("Shuffled HVT spawns")
+end
+
+function KillConfirmed:SetUpOpForStandardSpawns()
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithGroup,
+		ai.GetMaxCount() - self.Settings.HVTCount.Value
+	)
+	self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
+	if self.Settings.SpawnMethod.Value == 0 then
+		print("Selected spawn method by group")
+		self:SetUpOpForSpawnsByGroups()
+	else
+		print("Selected spawn method by priority")
+		self:SetUpOpForSpawnsByPriorities()
+	end
+end
+
+function KillConfirmed:SetUpOpForSpawnsByGroups()
+	print("Shuffling AI spawn points by groups")
+	local remainingGroups =	{table.unpack(self.OpFor.SpawnsByGroup)}
+	local selectedSpawns = {}
+	local reserveSpawns = {}
+	-- Select groups guarding the HVTs and add their spawn points to spawn list
+	local aiCountPerGroup = Spawns.CalculateBaseAiCountPerGroup(
+		2,
+		gamemode.GetPlayerCount(true),
+		2,
+		self.Settings.OpForPreset.Value,
+		2
+	)
+	local maxAiCountPerGroup = math.floor(
+		self.OpFor.CalculatedAiCount / self.Settings.HVTCount.Value
+	)
+	math.min(aiCountPerGroup, maxAiCountPerGroup)
+	for i = 1, self.Settings.HVTCount.Value do
+		local hvtLocation = actor.GetLocation(self.HVT.SpawnsShuffled[i])
+		Spawns.AddSpawnsFromClosestGroupWithinDistance(
+			remainingGroups,
+			selectedSpawns,
+			reserveSpawns,
+			aiCountPerGroup,
+			hvtLocation,
+			self.HVT.MaxDistanceForGroupConsideration
+		)
+	end
+	-- Select random groups and add their spawn points to spawn list
+	aiCountPerGroup = Spawns.CalculateBaseAiCountPerGroup(
+		2,
+		gamemode.GetPlayerCount(true),
+		1,
+		self.Settings.OpForPreset.Value,
+		1
+	)
+	while #selectedSpawns < self.OpFor.CalculatedAiCount do
+		Spawns.AddSpawnsFromRandomGroup(
+			remainingGroups,
+			selectedSpawns,
+			reserveSpawns,
+			aiCountPerGroup
+		)
+	end
+	self.OpFor.RoundSpawnList = selectedSpawns
+end
+
+function KillConfirmed:SetUpOpForSpawnsByPriorities()
+	print("Shuffling AI spawns by priority")
+	self.OpFor.RoundSpawnList = {}
+	local tableWithShuffledSpawns = TabOps.ShuffleTables(
+		self.OpFor.SpawnsByPriority
+	)
+	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
+		tableWithShuffledSpawns
 	)
 end
 
 function KillConfirmed:SpawnOpFor()
 	ai.CreateOverDuration(
-		0.4,
+		self.Timers.SpawnOpFor.TimeStep - 0.1,
 		self.Settings.HVTCount.Value,
 		self.HVT.SpawnsShuffled,
 		self.HVT.Tag
 	)
-	timer.Set("SpawnStandardOpFor", self, self.SpawnStandardOpForTimer, 0.5, false)
+	print("Spawned " .. self.Settings.HVTCount.Value .. " OpFor HVT.")
+	timer.Set(
+		self.Timers.SpawnOpFor.Name,
+		self,
+		self.SpawnStandardOpForTimer,
+		self.Timers.SpawnOpFor.TimeStep,
+		false
+	)
 end
 
 function KillConfirmed:SpawnStandardOpForTimer()
-	local playerCount = gamemode.GetPlayerCount(true)
-	local aiCount = 5 + playerCount * 5 + self.Settings.OpForCount.Value * 5
-	print("Player count: " .. playerCount .. " Op For Count: " .. self.Settings.OpForCount.Value .. " Initial AI count: " .. aiCount)
-	local aiCountRandomFactor = math.ceil(0.1 * aiCount)
-	print("AI count random factor: " .. aiCountRandomFactor)
-	local aiCountRandom = math.random(-aiCountRandomFactor, aiCountRandomFactor)
-	print("AI count random: " .. aiCountRandom)
-	aiCount = aiCount + aiCountRandom
-	print("AI count after applying random: " .. aiCount)
-	aiCount = math.min(aiCount, self.OpFor.TotalSpawns)
-	print("Almost final AI count: " .. aiCount)
-	aiCount = math.min(aiCount, ai.GetMaxCount())
-	print("Final AI count: " .. aiCount)
 	ai.CreateOverDuration(
-		3.5,
-		aiCount,
-		self.OpFor.SpawnsShuffled,
+		4.0 - self.Timers.SpawnOpFor.TimeStep,
+		self.OpFor.CalculatedAiCount,
+		self.OpFor.RoundSpawnList,
 		self.OpFor.Tag
 	)
+	print("Spawned " .. self.OpFor.CalculatedAiCount .. " OpFor standard.")
 end
 
 --#endregion
@@ -477,8 +611,7 @@ end
 --#region Objective: Kill confirmed
 
 function KillConfirmed:CheckIfKillConfirmedTimer()
-	local LowestDist = 1000.0
-	local TimeTillNextCheck = 1.0
+	local LowestDist = self.Timers.KillConfirm.TimeStep.Max * 1000.0
 	for index, LeaderLocation in ipairs(self.HVT.EliminatedNotConfirmed) do
 		for _, PlayerController in ipairs(self.Players.WithLives) do
 			local PlayerLocation = actor.GetLocation(
@@ -488,38 +621,52 @@ function KillConfirmed:CheckIfKillConfirmedTimer()
 			local Dist = vector.Size(DistVector)
 			LowestDist = math.min(LowestDist, Dist)
 			if Dist <= 250 and math.abs(DistVector.z) < 110 then
-				table.insert(self.HVT.EliminatedAndConfirmed, LeaderLocation)
-				table.remove(self.HVT.EliminatedNotConfirmed, index)
-				self:ConfirmKill()
+				self:ConfirmKill(index)
 			end
 		end
 	end
 	if #self.HVT.EliminatedNotConfirmed > 0 then
-		TimeTillNextCheck = math.max(math.min(LowestDist/1000, 1.0), 0.1)
+		self.Timers.KillConfirm.TimeStep.Value = math.max(
+			math.min(
+				LowestDist/1000,
+				self.Timers.KillConfirm.TimeStep.Max
+			),
+			self.Timers.KillConfirm.TimeStep.Min
+		)
 		timer.Set(
-			"CheckIfKillConfirmedTimer",
+			self.Timers.KillConfirm.Name,
 			self,
 			self.CheckIfKillConfirmedTimer,
-			TimeTillNextCheck,
+			self.Timers.KillConfirm.TimeStep.Value,
 			false
 		)
 	end
 end
 
-function KillConfirmed:ConfirmKill()
-	if #self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
+function KillConfirmed:ConfirmKill(index)
+	self.HVT.EliminatedAndConfirmed = self.HVT.EliminatedAndConfirmed + 1
+	table.remove(self.HVT.EliminatedNotConfirmed, index)
+	if self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
+		print("All HVT kills confirmed")
 		self:ShowAllKillConfirmed()
 		timer.Set(
-			"GuideToExtraction",
+			self.Timers.GuideToObjective.Name,
 			self,
 			self.GuideToExtractionTimer,
 			self.UI.ObjectiveWorldPromptDelay,
 			true
 		)
 		if self.Extraction.PlayersIn > 0 then
-			timer.Set(self.Timers.Exfiltration.Name, self, self.CheckBluForExfilTimer, 0.1, false)
+			timer.Set(
+				self.Timers.Exfiltration.Name,
+				self,
+				self.CheckBluForExfilTimer,
+				0.1,
+				false
+			)
 		end
 	else
+		print("HVT kill confirmed")
 		self:ShowKillConfirmed()
 	end
 end
@@ -534,14 +681,22 @@ function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 		local teamId = actor.GetTeamId(playerCharacter)
 		if teamId == self.PlayerTeams.BluFor.TeamId and
 		GameTrigger == self.Extraction.ActivePoint then
-			local total = math.min(self.Extraction.PlayersIn + 1, #self.Players.WithLives)
-			self.Extraction.PlayersIn = total
-			if not self.Timers.Exfiltration.InProgress and
-			#self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
-				self.Timers.Exfiltration.InProgress = true
-				timer.Set(self.Timers.Exfiltration.Name, self, self.CheckBluForExfilTimer, 0.1, false)
-			end
+			self:PlayerEnteredExfiltration()
 		end
+	end
+end
+
+function KillConfirmed:PlayerEnteredExfiltration()
+	local total = math.min(self.Extraction.PlayersIn + 1, #self.Players.WithLives)
+	self.Extraction.PlayersIn = total
+	if self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
+		timer.Set(
+			self.Timers.Exfiltration.Name,
+			self,
+			self.CheckBluForExfilTimer,
+			0.1,
+			false
+		)
 	end
 end
 
@@ -551,32 +706,53 @@ function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
 		local teamId = actor.GetTeamId(playerCharacter)
 		if teamId == self.PlayerTeams.BluFor.TeamId and
 		GameTrigger == self.Extraction.ActivePoint then
-			local total = math.max(self.Extraction.PlayersIn - 1, 0)
-			self.Extraction.PlayersIn = total
+			self:PlayerLeftExfiltration()
 		end
 	end
 end
 
+function KillConfirmed:PlayerLeftExfiltration()
+	local total = math.max(self.Extraction.PlayersIn - 1, 0)
+	self.Extraction.PlayersIn = total
+end
+
 function KillConfirmed:CheckBluForExfilTimer()
 	if self.Extraction.PlayersIn >= #self.Players.WithLives then
-		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.CurrentTime - self.Timers.Exfiltration.TimeStep
-		gamemode.BroadcastGameMessage("ExfiltrationInProgress.T-" .. math.floor(self.Timers.Exfiltration.CurrentTime), "Engine", self.Timers.Exfiltration.TimeStep)
+		self.Timers.Exfiltration.CurrentTime =
+			self.Timers.Exfiltration.CurrentTime -
+			self.Timers.Exfiltration.TimeStep
+		gamemode.BroadcastGameMessage(
+			"ExfiltrationInProgress,T-"..math.floor(self.Timers.Exfiltration.CurrentTime),
+			"Engine",
+			self.Timers.Exfiltration.TimeStep
+		)
 	elseif self.Extraction.PlayersIn > 0 then
-		gamemode.BroadcastGameMessage("ExfiltrationPaused.T-" .. math.floor(self.Timers.Exfiltration.CurrentTime), "Engine", self.Timers.Exfiltration.TimeStep)
+		gamemode.BroadcastGameMessage(
+			"ExfiltrationPaused,GetEntireTeamToExtractionZone",
+			"Engine",
+			self.Timers.Exfiltration.TimeStep
+		)
 	else
 		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
-		gamemode.BroadcastGameMessage("ExfiltrationCancelled.TeamLeftExtractionZone.", "Engine", self.Timers.Exfiltration.TimeStep*2)
+		gamemode.BroadcastGameMessage(
+			"ExfiltrationCancelled,TeamLeftExtractionZone",
+			"Engine",
+			self.Timers.Exfiltration.TimeStep*2
+		)
 		timer.Clear(self, self.Timers.Exfiltration.Name)
-		self.Timers.Exfiltration.InProgress = false
 		return
 	end
 	if self.Timers.Exfiltration.CurrentTime > 0 then
-		timer.Set(self.Timers.Exfiltration.Name, self, self.CheckBluForExfilTimer, self.Timers.Exfiltration.TimeStep, false)
-		self.Timers.Exfiltration.InProgress = true
+		timer.Set(
+			self.Timers.Exfiltration.Name,
+			self,
+			self.CheckBluForExfilTimer,
+			self.Timers.Exfiltration.TimeStep,
+			false
+		)
 	else
 		self:Exfiltrate()
 		timer.Clear(self, self.Timers.Exfiltration.Name)
-		self.Timers.Exfiltration.InProgress = false
 		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
 	end
 end
@@ -608,7 +784,7 @@ function KillConfirmed:CheckBluForCountTimer()
 			gamemode.AddGameStat(
 				"CompleteObjectives=EliminateHighValueTargets,LastKnownLocation"
 			)
-		elseif #self.HVT.EliminatedAndConfirmed ==
+		elseif self.HVT.EliminatedAndConfirmed >=
 		self.Settings.HVTCount.Value then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat(
@@ -626,27 +802,21 @@ end
 
 --#region Helpers
 
-function KillConfirmed:PostRoundCleanUp()
+function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.OpFor.Tag)
 	self.Players.WithLives = {}
 	self.HVT.EliminatedNotConfirmed = {}
-	self.HVT.EliminatedAndConfirmed = {}
+	self.HVT.EliminatedAndConfirmed = 0
 	self.Extraction.PlayersIn = 0
 end
 
-function KillConfirmed:CheckIfHVTCountChanged()
-	if self.SettingsTracker.LastHVTCount ~= self.Settings.HVTCount.Value then
-		self:SetUpLeaderObjectiveMarkeres()
-		self.SettingsTracker.LastHVTCount = self.Settings.HVTCount.Value
-	end
-end
-
-function KillConfirmed:GetSuffixFromActorTag(actorWithTag, tagPrefix)
-	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
-		if StrOps.StartsWith(actorTag, tagPrefix) then
-			return StrOps.GetSuffix(actorTag, tagPrefix)
-		end
+function KillConfirmed:CheckIfSettingsChanged()
+	if self.SettingTrackers.LastHVTCount ~= self.Settings.HVTCount.Value then
+		print("Leader count changed, reshuffling spawns & updating objective markers.")
+		self:SetUpOpForHvtSpawns()
+		self:SetUpHvtObjectiveMarkers()
+		self.SettingTrackers.LastHVTCount = self.Settings.HVTCount.Value
 	end
 end
 

@@ -26,4 +26,12 @@ function StringOperations.GetSuffix(stringCheck, prefix)
     return ""
 end
 
+function StringOperations.GetSuffixFromActorTag(actorWithTag, tagPrefix)
+	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+		if StringOperations.StartsWith(actorTag, tagPrefix) then
+			return StringOperations.GetSuffix(actorTag, tagPrefix)
+		end
+	end
+end
+
 return StringOperations
