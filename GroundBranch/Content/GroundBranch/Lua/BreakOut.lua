@@ -265,10 +265,10 @@ end
 --#region Spawn OpFor
 
 function BreakOut:ShuffleSpawns()
-	local tableWithShuffledSpawns = TabOps.ShuffleKeyValueTables(
-		self.OpForPriorityGroupedSpawns
+	local tableWithShuffledSpawns = TabOps.ShuffleTables(
+		self.OpFor.SpawnsPriorityGrouped
 	)
-	self.OpForPriorityGroupedSpawnsShuffled = TabOps.GetTableFromKeyValueTables(
+	self.OpFor.SpawnsShuffled = TabOps.GetTableFromTables(
 		tableWithShuffledSpawns
 	)
 end
