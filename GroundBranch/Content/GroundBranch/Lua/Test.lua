@@ -18,6 +18,10 @@ local Test = {
 	OpFor = {
 		Tag = "OpFor",
 		Spawns = {},
+		Controllers = {},
+	},
+	Players = {
+		Alive = {},
 	}
 }
 
@@ -35,6 +39,9 @@ end
 function Test:PreInit()
 	print("PreInit")
 	self.OpFor.Spawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
+	for _, value in pairs(self.OpFor.Spawns) do
+		print(value)
+	end
 end
 
 ---Method called just before player gets control.
@@ -62,18 +69,71 @@ end
 ---| "PostRoundWait"
 function Test:OnRoundStageSet(RoundStage)
 	print("OnRoundStageSet " .. RoundStage)
+	if RoundStage == "ReadyCountdown" then
+		local readyPlayers = gamemode.GetReadyPlayerTeamCounts(true)
+		if readyPlayers[self.PlayerTeams.Blue.TeamId] >= gamemode.GetPlayerCount(true) then
+			gamemode.SetRoundStage("PreRoundWait")
+		end
+	end
 	if RoundStage == "PreRoundWait" then
+		print("Spawning AI")
 		ai.CreateOverDuration(
-			4,
-			3,
+			4.0,
+			1,
 			self.OpFor.Spawns,
 			self.OpFor.Tag
+		)
+	elseif RoundStage == "InProgress" then
+		timer.Set(
+			"Test1",
+			self,
+			self.Test1Timer,
+			4.5,
+			false
 		)
 	end
 end
 
-function Test:TestTimer()
-	
+function Test:Test1Timer()
+	self.OpFor.Controllers = ai.GetControllers(
+		'GroundBranch.GBAIController',
+		self.OpFor.Tag,
+		255,
+		255
+	)
+	self.Players.Alive = gamemode.GetPlayerListByLives(
+		self.PlayerTeams.Blue.TeamId,
+		1,
+		false
+	)
+	timer.Set(
+		"Test2",
+		self,
+		self.Test2Timer,
+		1,
+		true
+	)
+end
+
+function Test:Test2Timer()
+	for _, ctrl in ipairs(self.OpFor.Controllers) do
+		local ctrlLocation = actor.GetLocation(ctrl)
+		-- local charLocation = actor.GetLocation(ai.GetCharacter(ctrlLocation))
+		for _, p in ipairs(self.Players.Alive) do
+			-- player.ShowWorldPrompt(
+			-- 	p,
+			-- 	charLocation,
+			-- 	"Character",
+			-- 	1
+			-- )
+			player.ShowWorldPrompt(
+				p,
+				ctrlLocation,
+				"Controller",
+				1
+			)
+		end
+	end
 end
 
 ---Triggered when a round stage time elapse. Round stage can be anything set by
@@ -124,6 +184,9 @@ end
 ---| "DeclaredReady"
 function Test:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	print("PlayerReadyStatusChanged " .. ReadyStatus)
+	if ReadyStatus == "DeclaredReady" then
+		gamemode.SetRoundStage("ReadyCountdown")
+	end
 end
 
 ---Called by the game to check if the player should be allowed to enter play area.
