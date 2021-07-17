@@ -1,5 +1,4 @@
 local StrOps = require("common.StringOperations")
-local TabOps = require("common.TableOperations")
 
 local Spawns = {}
 
@@ -17,16 +16,17 @@ function Spawns.CalculateAiCount(
     local calculatedAiCount
     print("Calculating max AI count.")
     print(
-        "PlayerCount: " .. playerCount ..
-        " PlayerCountFactor: " .. playerCountFactor ..
-        " OpForCountPreset: " .. aiCountSetting ..
-        " OpForCountPreset: " .. aiCountSettingFactor
+        "baseAiCount: " .. baseAiCount ..
+        " maxAiCount: " .. maxAiCount ..
+        " playerCount: " .. playerCount ..
+        " playerCountFactor: " .. playerCountFactor ..
+        " aiCountSetting: " .. aiCountSetting ..
+        " aiCountSettingFactor: " .. aiCountSettingFactor ..
+        " deviationPercent: " .. deviationPercent
     )
-    calculatedAiCount =
-        baseAiCount +
+    calculatedAiCount = baseAiCount +
         playerCount * playerCountFactor +
         aiCountSetting * aiCountSettingFactor
-    calculatedAiCount = math.ceil(calculatedAiCount)
     print("Initial max AI count: " .. calculatedAiCount)
     local aiCountDeviationMax = deviationPercent * calculatedAiCount
     aiCountDeviationMax = math.ceil(aiCountDeviationMax)
@@ -54,16 +54,17 @@ function Spawns.CalculateBaseAiCountPerGroup(
 )
     print("Calculating AI count per group")
     print(
-        "PlayerCount: " .. playerCount ..
-        " PlayerCountFactor: " .. playerCountFactor ..
-        " OpForCountPreset: " .. aiCountSetting ..
-        " OpForCountPreset: " .. aiCountSettingFactor
+        "baseAiCount: " .. baseAiCount ..
+        " playerCount: " .. playerCount ..
+        " playerCountFactor: " .. playerCountFactor ..
+        " aiCountSetting: " .. aiCountSetting ..
+        " aiCountSettingFactor: " .. aiCountSettingFactor
     )
     local baseAiCountPerGroup = baseAiCount +
         playerCount * playerCountFactor +
         aiCountSetting * aiCountSettingFactor
     print("Initial AI per group count: " .. baseAiCountPerGroup)
-    baseAiCount = Spawns.RoundNumber(baseAiCount)
+    baseAiCountPerGroup = Spawns.RoundNumber(baseAiCountPerGroup)
     print("Final AI per group count: " .. baseAiCountPerGroup)
     return baseAiCountPerGroup
 end

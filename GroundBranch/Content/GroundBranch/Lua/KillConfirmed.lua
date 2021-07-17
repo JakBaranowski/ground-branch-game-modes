@@ -15,6 +15,11 @@ local KillConfirmed = {
 		},
 	},
 	Settings = {
+		HVTCount = {
+			Min = 1,
+			Max = 5,
+			Value = 1,
+		},
 		OpForPreset = {
 			Min = 0,
 			Max = 4,
@@ -22,13 +27,8 @@ local KillConfirmed = {
 		},
 		SpawnMethod = {
 			Min = 0,
-			Max = 1,
+			Max = 2,
 			Value = 0,
-		},
-		HVTCount = {
-			Min = 1,
-			Max = 5,
-			Value = 1,
 		},
 		Difficulty = {
 			Min = 0,
@@ -77,8 +77,9 @@ local KillConfirmed = {
 		PlayersIn = 0,
 	},
 	UI = {
-		ObjectiveWorldPromptShowTime = 5.0,
-		ObjectiveWorldPromptDelay = 15.0,
+		WorldPromptShowTime = 5.0,
+		WorldPromptDelay = 15.0,
+		PlayerShowGameMessageTime = 5.0
 	},
 	Timers = {
 		-- Count down timer with pause and reset
@@ -218,12 +219,12 @@ function KillConfirmed:PostInit()
 	-- Add game mode objectives
 	gamemode.AddGameObjective(
 		self.PlayerTeams.BluFor.TeamId,
-		"EliminateHighValueTargets",
+		"NeutralizeHVTs",
 		1
 	)
 	gamemode.AddGameObjective(
 		self.PlayerTeams.BluFor.TeamId,
-		"ConfirmHighValueTargets",
+		"ConfirmEliminatedHVTs",
 		1
 	)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, "ExfiltrateBluFor", 1)
@@ -267,7 +268,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 			self.Timers.GuideToObjective.Name,
 			self,
 			self.GuideToEliminatedLeaderTimer,
-			self.UI.ObjectiveWorldPromptDelay,
+			self.UI.WorldPromptDelay,
 			true
 		)
 	elseif RoundStage == "PostRoundWait" then
@@ -297,7 +298,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				-- OpFor HVT eliminated.
 				print("OpFor HVT eliminated")
-				self:ShowHVTEliminated()
+				self:ShowHvtEliminated()
 				table.insert(
 					self.HVT.EliminatedNotConfirmed,
 					actor.GetLocation(Character)
@@ -469,11 +470,14 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 		0.1
 	)
 	if self.Settings.SpawnMethod.Value == 0 then
-		print("Selected spawn method by group")
 		self:SetUpOpForSpawnsByGroups()
-	else
-		print("Selected spawn method by priority")
+	elseif self.Settings.SpawnMethod.Value == 1 then
 		self:SetUpOpForSpawnsByPriorities()
+	elseif self.Settings.SpawnMethod.Value == 2 then
+		self:SetUpOpForSpawnsByPureRandomness()
+	else
+		print("Unknown spawn method selected, using default.")
+		self:SetUpOpForSpawnsByGroups()
 	end
 end
 
@@ -482,57 +486,85 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 	local remainingGroups =	{table.unpack(self.OpFor.SpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
+	local missingAiCount = self.OpFor.CalculatedAiCount
 	-- Select groups guarding the HVTs and add their spawn points to spawn list
-	local aiCountPerGroup = Spawns.CalculateBaseAiCountPerGroup(
+	local aiCountPerHvtGroup = Spawns.CalculateBaseAiCountPerGroup(
 		2,
 		gamemode.GetPlayerCount(true),
 		2,
 		self.Settings.OpForPreset.Value,
 		2
 	)
-	local maxAiCountPerGroup = math.floor(
-		self.OpFor.CalculatedAiCount / self.Settings.HVTCount.Value
+	local maxAiCountPerHvtGroup = math.floor(
+		missingAiCount / self.Settings.HVTCount.Value
 	)
-	math.min(aiCountPerGroup, maxAiCountPerGroup)
+	aiCountPerHvtGroup = math.min(aiCountPerHvtGroup, maxAiCountPerHvtGroup)
+	print("Adding group spawns closest to HVTs")
 	for i = 1, self.Settings.HVTCount.Value do
 		local hvtLocation = actor.GetLocation(self.HVT.SpawnsShuffled[i])
 		Spawns.AddSpawnsFromClosestGroupWithinDistance(
 			remainingGroups,
 			selectedSpawns,
 			reserveSpawns,
-			aiCountPerGroup,
+			aiCountPerHvtGroup,
 			hvtLocation,
 			self.HVT.MaxDistanceForGroupConsideration
 		)
+		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	end
 	-- Select random groups and add their spawn points to spawn list
-	aiCountPerGroup = Spawns.CalculateBaseAiCountPerGroup(
+	local baseAiCountPerStandardGroup = Spawns.CalculateBaseAiCountPerGroup(
 		2,
 		gamemode.GetPlayerCount(true),
 		1,
 		self.Settings.OpForPreset.Value,
 		1
 	)
-	while #selectedSpawns < self.OpFor.CalculatedAiCount do
+	local minAiCountPerStandardGroup = math.max(2, baseAiCountPerStandardGroup / 2)
+	print("Adding random group spawns")
+	while missingAiCount > 0 do
+		if #reserveSpawns >= missingAiCount and
+		minAiCountPerStandardGroup > missingAiCount then
+			print("Remaining AI count is not enough to fill group")
+			break
+		end
+		local aiCountPerStandardGroup =
+			baseAiCountPerStandardGroup + math.random(-1,1)
 		Spawns.AddSpawnsFromRandomGroup(
 			remainingGroups,
 			selectedSpawns,
 			reserveSpawns,
-			aiCountPerGroup
+			aiCountPerStandardGroup
 		)
+		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
+	end
+	-- Select random spawns from reserve
+	print("Adding random spawns from reserve")
+	while missingAiCount > 0 and #reserveSpawns > 0 do
+		local randIndex = math.random(#reserveSpawns)
+		table.insert(selectedSpawns, reserveSpawns[randIndex])
+		table.remove(reserveSpawns, randIndex)
+		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	end
 	self.OpFor.RoundSpawnList = selectedSpawns
 end
 
 function KillConfirmed:SetUpOpForSpawnsByPriorities()
-	print("Shuffling AI spawns by priority")
-	self.OpFor.RoundSpawnList = {}
+	print("Setting up AI spawns by priority")
 	local tableWithShuffledSpawns = TabOps.ShuffleTables(
 		self.OpFor.SpawnsByPriority
 	)
 	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
 		tableWithShuffledSpawns
 	)
+end
+
+function KillConfirmed:SetUpOpForSpawnsByPureRandomness()
+	print("Setting up AI spawns by pure randomness")
+	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
+		self.OpFor.SpawnsByPriority
+	)
+	self.OpFor.RoundSpawnList = TabOps.ShuffleTable(self.OpFor.RoundSpawnList)
 end
 
 function KillConfirmed:SpawnOpFor()
@@ -566,26 +598,47 @@ end
 
 --#region Game Messages and World Prompts
 
-function KillConfirmed:ShowHVTEliminated()
-	gamemode.BroadcastGameMessage("HighValueTargetEliminated", "Engine", 5.0)
+function KillConfirmed:ShowHvtEliminated()
+	for _, playerInstance in ipairs(self.Players.WithLives) do
+		player.ShowGameMessage(
+			playerInstance,
+			"HVTEliminated",
+			"Upper",
+			self.UI.PlayerShowGameMessageTime
+		)
+	end
 end
 
 function KillConfirmed:ShowKillConfirmed()
-	gamemode.BroadcastGameMessage("HighValueTargetConfirmed", "Engine", 5.0)
+	for _, playerInstance in ipairs(self.Players.WithLives) do
+		player.ShowGameMessage(
+			playerInstance,
+			"HVTConfirmed",
+			"Upper",
+			self.UI.PlayerShowGameMessageTime
+		)
+	end
 end
 
 function KillConfirmed:ShowAllKillConfirmed()
-	gamemode.BroadcastGameMessage("AllHighValueTargetsConfirmed", "Engine", 5.0)
+	for _, playerInstance in ipairs(self.Players.WithLives) do
+		player.ShowGameMessage(
+			playerInstance,
+			"HVTConfirmedAll",
+			"Upper",
+			self.UI.PlayerShowGameMessageTime
+		)
+	end
 end
 
 function KillConfirmed:GuideToExtractionTimer()
 	local ExtractionLocation = actor.GetLocation(self.Extraction.ActivePoint)
-	for _, Player in ipairs(self.Players.WithLives) do
+	for _, playerInstance in ipairs(self.Players.WithLives) do
 		player.ShowWorldPrompt(
-			Player,
+			playerInstance,
 			ExtractionLocation,
 			"Extraction",
-			self.UI.ObjectiveWorldPromptShowTime
+			self.UI.WorldPromptShowTime
 		)
 	end
 end
@@ -600,7 +653,7 @@ function KillConfirmed:GuideToEliminatedLeaderTimer()
 				Player,
 				LeaderLocation,
 				"ConfirmKill",
-				self.UI.ObjectiveWorldPromptShowTime
+				self.UI.WorldPromptShowTime
 			)
 		end
 	end
@@ -653,7 +706,7 @@ function KillConfirmed:ConfirmKill(index)
 			self.Timers.GuideToObjective.Name,
 			self,
 			self.GuideToExtractionTimer,
-			self.UI.ObjectiveWorldPromptDelay,
+			self.UI.WorldPromptDelay,
 			true
 		)
 		if self.Extraction.PlayersIn > 0 then
@@ -721,24 +774,33 @@ function KillConfirmed:CheckBluForExfilTimer()
 		self.Timers.Exfiltration.CurrentTime =
 			self.Timers.Exfiltration.CurrentTime -
 			self.Timers.Exfiltration.TimeStep
-		gamemode.BroadcastGameMessage(
-			"ExfiltrationInProgress,T-"..math.floor(self.Timers.Exfiltration.CurrentTime),
-			"Engine",
-			self.Timers.Exfiltration.TimeStep
-		)
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilInProgress_"..math.floor(self.Timers.Exfiltration.CurrentTime),
+				"Upper",
+				self.Timers.Exfiltration.TimeStep-0.1
+			)
+		end
 	elseif self.Extraction.PlayersIn > 0 then
-		gamemode.BroadcastGameMessage(
-			"ExfiltrationPaused,GetEntireTeamToExtractionZone",
-			"Engine",
-			self.Timers.Exfiltration.TimeStep
-		)
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilPaused",
+				"Upper",
+				self.Timers.Exfiltration.TimeStep
+			)
+		end
 	else
 		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
-		gamemode.BroadcastGameMessage(
-			"ExfiltrationCancelled,TeamLeftExtractionZone",
-			"Engine",
-			self.Timers.Exfiltration.TimeStep*2
-		)
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilCancelled",
+				"Upper",
+				self.Timers.Exfiltration.TimeStep*2
+			)
+		end
 		timer.Clear(self, self.Timers.Exfiltration.Name)
 		return
 	end
@@ -762,9 +824,9 @@ function KillConfirmed:Exfiltrate()
 		return
 	end
 	gamemode.AddGameStat("Result=Team1")
-	gamemode.AddGameStat("Summary=HighValueTargetsConfirmed")
+	gamemode.AddGameStat("Summary=HVTsConfirmed")
 	gamemode.AddGameStat(
-		"CompleteObjectives=EliminateHighValueTargets,ConfirmHighValueTargets," ..
+		"CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs," ..
 		"LastKnownLocation,ExfiltrateBluFor"
 	)
 	gamemode.SetRoundStage("PostRoundWait")
@@ -782,14 +844,14 @@ function KillConfirmed:CheckBluForCountTimer()
 		self.Settings.HVTCount.Value then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateHighValueTargets,LastKnownLocation"
+				"CompleteObjectives=NeutralizeHVTs,LastKnownLocation"
 			)
 		elseif self.HVT.EliminatedAndConfirmed >=
 		self.Settings.HVTCount.Value then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat(
-				"CompleteObjectives=EliminateHighValueTargets," ..
-				"ConfirmHighValueTargets,LastKnownLocation"
+				"CompleteObjectives=NeutralizeHVTs," ..
+				"ConfirmEliminatedHVTs,LastKnownLocation"
 			)
 		else
 			gamemode.AddGameStat("Summary=BluForEliminated")

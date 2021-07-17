@@ -51,7 +51,7 @@ end
 ---Concatenates two indexed tables. It keeps the order provided in argument,
 ---i.e. elements of table1 will start at first index, and elements of table2
 ---will start at #table1+1.
----Only supports concatenation of two indexed tables (not key, value tables).
+---Only supports concatenation of two indexed tables (not key-value tables).
 ---@param table1 table
 ---@param table2 table
 ---@return table
