@@ -433,12 +433,12 @@ end
 
 function KillConfirmed:ShuffleExtractionAndSetUpObjectiveMarkers()
 	print("Setting up Extraction objective markers")
-	self.ExtractionPointIndex = math.random(#self.Extraction.AllPoints)
-	self.Extraction.ActivePoint = self.Extraction.AllPoints[self.ExtractionPointIndex]
+	local ExtractionPointIndex = math.random(#self.Extraction.AllPoints)
+	self.Extraction.ActivePoint = self.Extraction.AllPoints[ExtractionPointIndex]
 	for i = 1, #self.Extraction.AllPoints do
-		local bActive = (i == self.ExtractionPointIndex)
+		local bActive = (i == ExtractionPointIndex)
 		print("Setting Exfil marker " .. i .. " to " .. tostring(bActive))
-		actor.SetActive(self.Extraction.AllPoints[i], bActive)
+		actor.SetActive(self.Extraction.AllPoints[i], false)
 		actor.SetActive(self.Extraction.AllMarkers[i], bActive)
 	end
 end
@@ -709,6 +709,7 @@ function KillConfirmed:ConfirmKill(index)
 			self.UI.WorldPromptDelay,
 			true
 		)
+		actor.SetActive(self.Extraction.ActivePoint, true)
 		if self.Extraction.PlayersIn > 0 then
 			timer.Set(
 				self.Timers.Exfiltration.Name,
