@@ -69,6 +69,22 @@ function Spawns.CalculateBaseAiCountPerGroup(
     return baseAiCountPerGroup
 end
 
+function Spawns.GetGroupAverageLocation(group)
+    local averageLocation = {
+        x = 0,
+        y = 0,
+        z = 0
+    }
+    for _, member in ipairs(group) do
+        averageLocation = averageLocation + actor.GetLocation(member)
+    end
+    averageLocation.x = averageLocation.x / #group
+    averageLocation.y = averageLocation.y / #group
+    averageLocation.z = averageLocation.z / #group
+    print("Average group location " .. tostring(averageLocation))
+    return averageLocation
+end
+
 function Spawns.RoundNumber(number)
     local roundNumber = 0
     local floatingPoint = number - math.floor(number)
@@ -96,16 +112,17 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
     local groupsToConsider = {}
 
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = actor.GetLocation(group[1])
-        local distanceFromGroupToLocation = vector.Size(groupLocation - location)
-        if distanceFromGroupToLocation < maxDistance then
+        local groupLocation = Spawns.GetGroupAverageLocation(group)
+        local distanceVector = groupLocation - location
+        local distance = vector.Size(distanceVector)
+        if distance < maxDistance then
             local groupName = StrOps.GetSuffixFromActorTag(
                 remainingGroups[groupIndex][1],
                 "Group"
             )
             print(
                 "Found " .. groupName ..
-                " group at distance " .. distanceFromGroupToLocation
+                " group at distance " .. distance
             )
             table.insert(groupsToConsider, groupIndex)
         end
@@ -142,18 +159,19 @@ function Spawns.AddSpawnsFromClosestGroupWithinDistance(
     local selectedGroupIndex = 0
     local lowestDistance = maxDistance
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = actor.GetLocation(group[1])
-        local distanceFromGroupToLocation = vector.Size(groupLocation - location)
-        if distanceFromGroupToLocation < lowestDistance then
+        local groupLocation = Spawns.GetGroupAverageLocation(group)
+        local distanceVector = groupLocation - location
+        local distance = vector.Size(distanceVector)
+        if distance < lowestDistance then
             local groupName = StrOps.GetSuffixFromActorTag(
                 remainingGroups[groupIndex][1],
                 "Group"
             )
             print(
                 "Found new closest group " .. groupName ..
-                " at distance " .. distanceFromGroupToLocation
+                " at distance " .. distance
             )
-            lowestDistance = distanceFromGroupToLocation
+            lowestDistance = distance
             selectedGroupIndex = groupIndex
         end
     end
