@@ -8,7 +8,7 @@ Key,SourceString,Comment
 "missionsetting_opforpreset_3","High","Opsboard"
 "missionsetting_opforpreset_4","Overwhelming","Opsboard"
 "missionsetting_spawnmethod","Spawn AI by:","Opsboard"
-"missionsetting_spawnmethod_0","Squad","Opsboard"
+"missionsetting_spawnmethod_0","Group","Opsboard"
 "missionsetting_spawnmethod_1","Priority","Opsboard"
 "missionsetting_spawnmethod_2","Random","Opsboard"
 "objective_NeutralizeHVTs","Locate and neutralize High Value Targets (HVTs).","Opsboard"

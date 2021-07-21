@@ -54,9 +54,9 @@ local KillConfirmed = {
 			"AISpawn_6_10", "AISpawn_11_20", "AISpawn_21_30", "AISpawn_31_40",
 			"AISpawn_41_50"
 		},
-		SpawnsByPriority = {},
+		AllSpawnsByPriority = {},
 		TotalSpawnsWithPriority = 0,
-		SpawnsByGroup = {},
+		AllSpawnsByGroup = {},
 		TotalSpawnsWithGroup = 0,
 		RoundSpawnList = {},
 		CalculatedAiCount = 0,
@@ -140,7 +140,7 @@ function KillConfirmed:PreInit()
 			priorityTag
 		)
 		if #spawnsWithTag > 0 then
-			self.OpFor.SpawnsByPriority[priorityIndex] = spawnsWithTag
+			self.OpFor.AllSpawnsByPriority[priorityIndex] = spawnsWithTag
 			self.OpFor.TotalSpawnsWithPriority =
 				self.OpFor.TotalSpawnsWithPriority + #spawnsWithTag
 			priorityIndex = priorityIndex + 1
@@ -159,14 +159,14 @@ function KillConfirmed:PreInit()
 			groupTag
 		)
 		if #spawnsWithGroupTag > 0 then
-			self.OpFor.SpawnsByGroup[groupIndex] = spawnsWithGroupTag
+			self.OpFor.AllSpawnsByGroup[groupIndex] = spawnsWithGroupTag
 			self.OpFor.TotalSpawnsWithGroup =
 				self.OpFor.TotalSpawnsWithGroup + #spawnsWithGroupTag
 			groupIndex = groupIndex + 1
 		end
 	end
 	print(
-		"Found " .. #self.OpFor.SpawnsByGroup ..
+		"Found " .. #self.OpFor.AllSpawnsByGroup ..
 		" groups and a total of " .. self.OpFor.TotalSpawnsWithGroup ..
 		" spawns"
 	)
@@ -271,24 +271,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 			self.UI.WorldPromptDelay,
 			true
 		)
-	elseif RoundStage == "PostRoundWait" then
-		-- The round have ended, either with victory or loss. Players will be moved
-		-- to ready room soon.
 	end
-end
-
-function KillConfirmed:ShouldCheckForTeamKills()
-	if gamemode.GetRoundStage() == "InProgress" then
-		return true
-	end
-	return false
-end
-
-function KillConfirmed:PlayerCanEnterPlayArea(PlayerState)
-	if player.GetInsertionPoint(PlayerState) ~= nil then
-		return true
-	end
-	return false
 end
 
 function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerController)
@@ -337,21 +320,6 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 	end
 end
 
-function KillConfirmed:LogOut(Exiting)
-	-- Player lef the game.
-	print("Player left the game")
-	if gamemode.GetRoundStage() == "PreRoundWait" or
-	gamemode.GetRoundStage() == "InProgress" then
-		timer.Set(
-			self.Timers.CheckBluForCount.Name,
-			self,
-			self.CheckBluForCountTimer,
-			self.Timers.CheckBluForCount.TimeStep,
-			false
-		)
-	end
-end
-
 --#endregion
 
 --#region Player Status
@@ -388,16 +356,20 @@ function KillConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 			self.Timers.CheckReadyDown.TimeStep,
 			false
 		)
-	elseif gamemode.GetRoundStage() == "PreRoundWait" and
-	gamemode.PrepLatecomer(PlayerState) then
+	elseif
+		gamemode.GetRoundStage() == "PreRoundWait" and
+		gamemode.PrepLatecomer(PlayerState)
+	then
 		-- Player did not declare ready, but the timer run out.
 		gamemode.EnterPlayArea(PlayerState)
 	end
 end
 
 function KillConfirmed:CheckReadyUpTimer()
-	if gamemode.GetRoundStage() == "WaitingForReady" or
-	gamemode.GetRoundStage() == "ReadyCountdown" then
+	if
+		gamemode.GetRoundStage() == "WaitingForReady" or
+		gamemode.GetRoundStage() == "ReadyCountdown"
+	then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 		local BluForReady = ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId]
 		if BluForReady >= gamemode.GetPlayerCount(true) then
@@ -414,6 +386,35 @@ function KillConfirmed:CheckReadyDownTimer()
 		if ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId] < 1 then
 			gamemode.SetRoundStage("WaitingForReady")
 		end
+	end
+end
+
+function KillConfirmed:ShouldCheckForTeamKills()
+	if gamemode.GetRoundStage() == "InProgress" then
+		return true
+	end
+	return false
+end
+
+function KillConfirmed:PlayerCanEnterPlayArea(PlayerState)
+	if player.GetInsertionPoint(PlayerState) ~= nil then
+		return true
+	end
+	return false
+end
+
+function KillConfirmed:LogOut(Exiting)
+	-- Player lef the game.
+	print("Player left the game")
+	if gamemode.GetRoundStage() == "PreRoundWait" or
+	gamemode.GetRoundStage() == "InProgress" then
+		timer.Set(
+			self.Timers.CheckBluForCount.Name,
+			self,
+			self.CheckBluForCountTimer,
+			self.Timers.CheckBluForCount.TimeStep,
+			false
+		)
 	end
 end
 
@@ -445,7 +446,7 @@ end
 
 --#endregion
 
---#region Ai
+--#region Spawns
 
 function KillConfirmed:SetUpOpForHvtSpawns()
 	self.HVT.SpawnsShuffled = {}
@@ -483,17 +484,17 @@ end
 
 function KillConfirmed:SetUpOpForSpawnsByGroups()
 	print("Shuffling AI spawn points by groups")
-	local remainingGroups =	{table.unpack(self.OpFor.SpawnsByGroup)}
+	local remainingGroups =	{table.unpack(self.OpFor.AllSpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
 	local missingAiCount = self.OpFor.CalculatedAiCount
 	-- Select groups guarding the HVTs and add their spawn points to spawn list
 	local aiCountPerHvtGroup = Spawns.CalculateBaseAiCountPerGroup(
-		2,
+		3,
 		gamemode.GetPlayerCount(true),
-		2,
+		1,
 		self.Settings.OpForPreset.Value,
-		2
+		1
 	)
 	local maxAiCountPerHvtGroup = math.floor(
 		missingAiCount / self.Settings.HVTCount.Value
@@ -510,13 +511,13 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 			hvtLocation,
 			self.HVT.MaxDistanceForGroupConsideration
 		)
-		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	end
+	missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	-- Select random groups and add their spawn points to spawn list
 	local baseAiCountPerStandardGroup = Spawns.CalculateBaseAiCountPerGroup(
 		2,
 		gamemode.GetPlayerCount(true),
-		1,
+		0.5,
 		self.Settings.OpForPreset.Value,
 		1
 	)
@@ -552,7 +553,7 @@ end
 function KillConfirmed:SetUpOpForSpawnsByPriorities()
 	print("Setting up AI spawns by priority")
 	local tableWithShuffledSpawns = TabOps.ShuffleTables(
-		self.OpFor.SpawnsByPriority
+		self.OpFor.AllSpawnsByPriority
 	)
 	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
 		tableWithShuffledSpawns
@@ -562,7 +563,7 @@ end
 function KillConfirmed:SetUpOpForSpawnsByPureRandomness()
 	print("Setting up AI spawns by pure randomness")
 	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
-		self.OpFor.SpawnsByPriority
+		self.OpFor.AllSpawnsByPriority
 	)
 	self.OpFor.RoundSpawnList = TabOps.ShuffleTable(self.OpFor.RoundSpawnList)
 end
