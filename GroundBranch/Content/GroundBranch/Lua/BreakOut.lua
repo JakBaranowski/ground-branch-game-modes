@@ -63,8 +63,8 @@ local BreakOut = {
 		-- Count down timer with pause and reset
 		Exfiltration = {
 			Name = "ExfilTimer",
-			DefaultTime = 4.0,
-			CurrentTime = 4.0,
+			DefaultTime = 6.0,
+			CurrentTime = 6.0,
 			TimeStep = 1.0,
 		},
 		-- Delays
@@ -127,6 +127,13 @@ function BreakOut:PreInit()
 		" groups and a total of " .. self.OpFor.TotalSpawnsWithGroup ..
 		" spawns"
 	)
+	-- Failsafe for missions that don't have AI spawn points with group assigned
+	if self.OpFor.TotalSpawnsWithGroup <= 0 then
+		self.Settings.SpawnMethod.Min = 1
+		if self.Settings.SpawnMethod.Value < self.Settings.SpawnMethod.Min then
+			self.Settings.SpawnMethod.Value = 1
+		end
+	end
 	-- Gathers all extraction points placed in the mission
 	self.Extraction.AllPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
@@ -509,7 +516,7 @@ function BreakOut:CheckBluForExfilTimer()
 				playerInstance,
 				"ExfilInProgress_"..math.floor(self.Timers.Exfiltration.CurrentTime),
 				"Upper",
-				self.Timers.Exfiltration.TimeStep-0.1
+				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
 	elseif self.Extraction.PlayersIn > 0 then
@@ -518,7 +525,7 @@ function BreakOut:CheckBluForExfilTimer()
 				playerInstance,
 				"ExfilPaused",
 				"Upper",
-				self.Timers.Exfiltration.TimeStep
+				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
 	else

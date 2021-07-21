@@ -85,8 +85,8 @@ local KillConfirmed = {
 		-- Count down timer with pause and reset
 		Exfiltration = {
 			Name = "ExfilTimer",
-			DefaultTime = 4.0,
-			CurrentTime = 4.0,
+			DefaultTime = 6.0,
+			CurrentTime = 6.0,
 			TimeStep = 1.0,
 		},
 		-- Repeating timer with variable delay
@@ -170,6 +170,13 @@ function KillConfirmed:PreInit()
 		" groups and a total of " .. self.OpFor.TotalSpawnsWithGroup ..
 		" spawns"
 	)
+	-- Failsafe for missions that don't have AI spawn points with group assigned
+	if self.OpFor.TotalSpawnsWithGroup <= 0 then
+		self.Settings.SpawnMethod.Min = 1
+		if self.Settings.SpawnMethod.Value < self.Settings.SpawnMethod.Min then
+			self.Settings.SpawnMethod.Value = 1
+		end
+	end
 	-- Gathers all HVT spawn points
 	self.HVT.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
 		'GroundBranch.GBAISpawnPoint',
@@ -781,7 +788,7 @@ function KillConfirmed:CheckBluForExfilTimer()
 				playerInstance,
 				"ExfilInProgress_"..math.floor(self.Timers.Exfiltration.CurrentTime),
 				"Upper",
-				self.Timers.Exfiltration.TimeStep-0.1
+				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
 	elseif self.Extraction.PlayersIn > 0 then
@@ -790,7 +797,7 @@ function KillConfirmed:CheckBluForExfilTimer()
 				playerInstance,
 				"ExfilPaused",
 				"Upper",
-				self.Timers.Exfiltration.TimeStep
+				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
 	else
