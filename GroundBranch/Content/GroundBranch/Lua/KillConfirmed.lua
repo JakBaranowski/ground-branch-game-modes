@@ -85,8 +85,8 @@ local KillConfirmed = {
 		-- Count down timer with pause and reset
 		Exfiltration = {
 			Name = "ExfilTimer",
-			DefaultTime = 6.0,
-			CurrentTime = 6.0,
+			DefaultTime = 5.0,
+			CurrentTime = 5.0,
 			TimeStep = 1.0,
 		},
 		-- Repeating timer with variable delay
@@ -293,13 +293,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 					self.HVT.EliminatedNotConfirmed,
 					actor.GetLocation(Character)
 				)
-				timer.Set(
-					self.Timers.KillConfirm.Name,
-					self,
-					self.CheckIfKillConfirmedTimer,
-					self.Timers.KillConfirm.TimeStep.Min,
-					false
-				)
+				self:CheckIfKillConfirmedTimer()
 			elseif actor.HasTag(CharacterController, self.OpFor.Tag) then
 				print("OpFor standard eliminated")
 				-- OpFor standard eliminated.
@@ -464,33 +458,56 @@ function KillConfirmed:SetUpOpForHvtSpawns()
 end
 
 function KillConfirmed:SetUpOpForStandardSpawns()
-	local maxAiCount = math.min(
-		self.OpFor.TotalSpawnsWithGroup,
-		ai.GetMaxCount() - self.Settings.HVTCount.Value
-	)
-	self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-		5,
-		maxAiCount,
-		gamemode.GetPlayerCount(true),
-		5,
-		self.Settings.OpForPreset.Value,
-		5,
-		0.1
-	)
-	if self.Settings.SpawnMethod.Value == 0 then
-		self:SetUpOpForSpawnsByGroups()
-	elseif self.Settings.SpawnMethod.Value == 1 then
+	if self.Settings.SpawnMethod.Value == 1 then
+		local maxAiCount = math.min(
+			self.OpFor.TotalSpawnsWithPriority,
+			ai.GetMaxCount() - self.Settings.HVTCount.Value
+		)
+		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
+			5,
+			maxAiCount,
+			gamemode.GetPlayerCount(true),
+			5,
+			self.Settings.OpForPreset.Value,
+			5,
+			0.1
+		)
 		self:SetUpOpForSpawnsByPriorities()
 	elseif self.Settings.SpawnMethod.Value == 2 then
+		local maxAiCount = math.min(
+			self.OpFor.TotalSpawnsWithPriority,
+			ai.GetMaxCount() - self.Settings.HVTCount.Value
+		)
+		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
+			5,
+			maxAiCount,
+			gamemode.GetPlayerCount(true),
+			5,
+			self.Settings.OpForPreset.Value,
+			5,
+			0.1
+		)
 		self:SetUpOpForSpawnsByPureRandomness()
 	else
-		print("Unknown spawn method selected, using default.")
+		local maxAiCount = math.min(
+			self.OpFor.TotalSpawnsWithGroup,
+			ai.GetMaxCount() - self.Settings.HVTCount.Value
+		)
+		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
+			5,
+			maxAiCount,
+			gamemode.GetPlayerCount(true),
+			5,
+			self.Settings.OpForPreset.Value,
+			5,
+			0.1
+		)
 		self:SetUpOpForSpawnsByGroups()
 	end
 end
 
 function KillConfirmed:SetUpOpForSpawnsByGroups()
-	print("Shuffling AI spawn points by groups")
+	print("Setting up AI spawn points by groups")
 	local remainingGroups =	{table.unpack(self.OpFor.AllSpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
@@ -510,7 +527,7 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 	print("Adding group spawns closest to HVTs")
 	for i = 1, self.Settings.HVTCount.Value do
 		local hvtLocation = actor.GetLocation(self.HVT.SpawnsShuffled[i])
-		Spawns.AddSpawnsFromClosestGroupWithinDistance(
+		Spawns.AddSpawnsFromClosestGroup(
 			remainingGroups,
 			selectedSpawns,
 			reserveSpawns,
@@ -547,13 +564,25 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	end
 	-- Select random spawns from reserve
-	print("Adding random spawns from reserve")
-	while missingAiCount > 0 and #reserveSpawns > 0 do
-		local randIndex = math.random(#reserveSpawns)
-		table.insert(selectedSpawns, reserveSpawns[randIndex])
-		table.remove(reserveSpawns, randIndex)
-		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
+	if missingAiCount > 0 then
+		if #remainingGroups > 0 then
+			print("Adding random spawns")
+			local randomSpawns = TabOps.GetTableFromTables(
+				remainingGroups
+			)
+			randomSpawns = TabOps.ShuffleTable(randomSpawns)
+			selectedSpawns = TabOps.ConcatenateTables(selectedSpawns, randomSpawns)
+		elseif #reserveSpawns > 0 then
+			print("Adding random spawns from reserve")
+			while missingAiCount > 0 and #reserveSpawns > 0 do
+				local randIndex = math.random(#reserveSpawns)
+				table.insert(selectedSpawns, reserveSpawns[randIndex])
+				table.remove(reserveSpawns, randIndex)
+				missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
+			end
+		end
 	end
+	print("Selected spawns " .. #selectedSpawns)
 	self.OpFor.RoundSpawnList = selectedSpawns
 end
 
@@ -719,13 +748,7 @@ function KillConfirmed:ConfirmKill(index)
 		)
 		actor.SetActive(self.Extraction.ActivePoint, true)
 		if self.Extraction.PlayersIn > 0 then
-			timer.Set(
-				self.Timers.Exfiltration.Name,
-				self,
-				self.CheckBluForExfilTimer,
-				0.1,
-				false
-			)
+			self:CheckBluForExfilTimer()
 		end
 	else
 		print("HVT kill confirmed")
@@ -752,13 +775,7 @@ function KillConfirmed:PlayerEnteredExfiltration()
 	local total = math.min(self.Extraction.PlayersIn + 1, #self.Players.WithLives)
 	self.Extraction.PlayersIn = total
 	if self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
-		timer.Set(
-			self.Timers.Exfiltration.Name,
-			self,
-			self.CheckBluForExfilTimer,
-			0.1,
-			false
-		)
+		self:CheckBluForExfilTimer()
 	end
 end
 
@@ -779,10 +796,13 @@ function KillConfirmed:PlayerLeftExfiltration()
 end
 
 function KillConfirmed:CheckBluForExfilTimer()
+	if self.Timers.Exfiltration.CurrentTime <= 0 then
+		self:Exfiltrate()
+		timer.Clear(self, self.Timers.Exfiltration.Name)
+		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
+		return
+	end
 	if self.Extraction.PlayersIn >= #self.Players.WithLives then
-		self.Timers.Exfiltration.CurrentTime =
-			self.Timers.Exfiltration.CurrentTime -
-			self.Timers.Exfiltration.TimeStep
 		for _, playerInstance in ipairs(self.Players.WithLives) do
 			player.ShowGameMessage(
 				playerInstance,
@@ -791,6 +811,16 @@ function KillConfirmed:CheckBluForExfilTimer()
 				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
+		timer.Set(
+			self.Timers.Exfiltration.Name,
+			self,
+			self.CheckBluForExfilTimer,
+			self.Timers.Exfiltration.TimeStep,
+			false
+		)
+		self.Timers.Exfiltration.CurrentTime =
+			self.Timers.Exfiltration.CurrentTime -
+			self.Timers.Exfiltration.TimeStep
 	elseif self.Extraction.PlayersIn > 0 then
 		for _, playerInstance in ipairs(self.Players.WithLives) do
 			player.ShowGameMessage(
@@ -800,20 +830,6 @@ function KillConfirmed:CheckBluForExfilTimer()
 				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
-	else
-		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
-		for _, playerInstance in ipairs(self.Players.WithLives) do
-			player.ShowGameMessage(
-				playerInstance,
-				"ExfilCancelled",
-				"Upper",
-				self.Timers.Exfiltration.TimeStep*2
-			)
-		end
-		timer.Clear(self, self.Timers.Exfiltration.Name)
-		return
-	end
-	if self.Timers.Exfiltration.CurrentTime > 0 then
 		timer.Set(
 			self.Timers.Exfiltration.Name,
 			self,
@@ -822,8 +838,14 @@ function KillConfirmed:CheckBluForExfilTimer()
 			false
 		)
 	else
-		self:Exfiltrate()
-		timer.Clear(self, self.Timers.Exfiltration.Name)
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilCancelled",
+				"Upper",
+				self.Timers.Exfiltration.TimeStep*2
+			)
+		end
 		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
 	end
 end

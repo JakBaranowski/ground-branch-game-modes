@@ -143,7 +143,7 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
     )
 end
 
-function Spawns.AddSpawnsFromClosestGroupWithinDistance(
+function Spawns.AddSpawnsFromClosestGroup(
     remainingGroups,
     selectedSpawns,
     reserveSpawns,
@@ -155,23 +155,75 @@ function Spawns.AddSpawnsFromClosestGroupWithinDistance(
         "Searching for groups within " .. maxDistance ..
         " from location " .. tostring(location)
     )
-
     local selectedGroupIndex = 0
-    local lowestDistance = maxDistance
+    local lowestDistance = maxDistance ^ 2
     for groupIndex, group in ipairs(remainingGroups) do
         local groupLocation = Spawns.GetGroupAverageLocation(group)
+        local groupName = StrOps.GetSuffixFromActorTag(
+            remainingGroups[groupIndex][1],
+            "Group"
+        )
         local distanceVector = groupLocation - location
-        local distance = vector.Size(distanceVector)
+        local distance = vector.SizeSq(distanceVector)
+        print(
+            "Group " .. groupName ..
+            " at distance " .. distance
+        )
         if distance < lowestDistance then
-            local groupName = StrOps.GetSuffixFromActorTag(
-                remainingGroups[groupIndex][1],
-                "Group"
-            )
-            print(
-                "Found new closest group " .. groupName ..
-                " at distance " .. distance
-            )
+            print("Found new closest group " .. groupName)
             lowestDistance = distance
+            selectedGroupIndex = groupIndex
+        end
+    end
+
+    if selectedGroupIndex == 0 then
+        print("No groups within max distance found")
+        return
+    end
+
+    Spawns.addSpawnsFromGroup(
+        remainingGroups,
+        selectedSpawns,
+        reserveSpawns,
+        aiPerGroupAmount,
+        selectedGroupIndex
+    )
+end
+
+function Spawns.AddSpawnsFromClosestGroupWithZLimit(
+    remainingGroups,
+    selectedSpawns,
+    reserveSpawns,
+    aiPerGroupAmount,
+    location,
+    maxDistance,
+    maxZDistance
+)
+    print(
+        "Searching for groups within " .. maxDistance ..
+        " from location " .. tostring(location) ..
+        " within max z distance " .. maxZDistance
+    )
+    local selectedGroupIndex = 0
+    local lowestDistance = maxDistance ^ 2
+    for groupIndex, group in ipairs(remainingGroups) do
+        local groupLocation = Spawns.GetGroupAverageLocation(group)
+        local groupName = StrOps.GetSuffixFromActorTag(
+            remainingGroups[groupIndex][1],
+            "Group"
+        )
+        local distanceVector = groupLocation - location
+        local horizontalDistance = distanceVector.x ^ 2 + distanceVector.y ^ 2
+        print(
+            "Group " .. groupName ..
+            " at distance " .. horizontalDistance
+        )
+        if
+            horizontalDistance < lowestDistance and
+            math.abs(distanceVector.z) < maxZDistance
+        then
+            print("Found new closest group " .. groupName)
+            lowestDistance = horizontalDistance
             selectedGroupIndex = groupIndex
         end
     end

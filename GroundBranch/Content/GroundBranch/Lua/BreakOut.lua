@@ -63,8 +63,8 @@ local BreakOut = {
 		-- Count down timer with pause and reset
 		Exfiltration = {
 			Name = "ExfilTimer",
-			DefaultTime = 6.0,
-			CurrentTime = 6.0,
+			DefaultTime = 5.0,
+			CurrentTime = 5.0,
 			TimeStep = 1.0,
 		},
 		-- Delays
@@ -323,22 +323,7 @@ end
 --#region Spawns
 
 function BreakOut:SetUpOpForSpawns()
-	if self.Settings.SpawnMethod.Value == 0 then
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithGroup,
-			ai.GetMaxCount()
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
-		self:SetUpOpForSpawnsByGroups()
-	elseif self.Settings.SpawnMethod.Value == 1 then
+	if self.Settings.SpawnMethod.Value == 1 then
 		local maxAiCount = math.min(
 			self.OpFor.TotalSpawnsWithPriority,
 			ai.GetMaxCount()
@@ -369,18 +354,31 @@ function BreakOut:SetUpOpForSpawns()
 		)
 		self:SetUpOpForSpawnsByPureRandomness()
 	else
-		print("Unknown spawn method selected, using default.")
+		local maxAiCount = math.min(
+			self.OpFor.TotalSpawnsWithGroup,
+			ai.GetMaxCount()
+		)
+		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
+			5,
+			maxAiCount,
+			gamemode.GetPlayerCount(true),
+			5,
+			self.Settings.OpForPreset.Value,
+			5,
+			0.1
+		)
 		self:SetUpOpForSpawnsByGroups()
 	end
 end
 
 function BreakOut:SetUpOpForSpawnsByGroups()
-	print("Shuffling AI spawn points by groups")
+	print("Setting up AI spawns by groups")
 	local remainingGroups =	{table.unpack(self.OpFor.AllSpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
 	local missingAiCount = self.OpFor.CalculatedAiCount
 	-- Select groups guarding extraction and add their spawn points to spawn list
+	print("Adding group closest to exfil")
 	local aiCountPerExfilGroup = Spawns.CalculateBaseAiCountPerGroup(
 		3,
 		gamemode.GetPlayerCount(true),
@@ -390,50 +388,24 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 	)
 	aiCountPerExfilGroup = math.min(aiCountPerExfilGroup, missingAiCount)
 	local exfilLocation = actor.GetLocation(self.Extraction.ActivePoint)
-	Spawns.AddSpawnsFromClosestGroupWithinDistance(
+	Spawns.AddSpawnsFromClosestGroupWithZLimit(
 		remainingGroups,
 		selectedSpawns,
 		reserveSpawns,
 		aiCountPerExfilGroup,
 		exfilLocation,
-		self.Extraction.MaxDistanceForGroupConsideration
+		self.Extraction.MaxDistanceForGroupConsideration,
+		250.0
 	)
-	missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
-	-- Select random groups and add their spawn points to spawn list
-	local baseAiCountPerStandardGroup = Spawns.CalculateBaseAiCountPerGroup(
-		2,
-		gamemode.GetPlayerCount(true),
-		0.5,
-		self.Settings.OpForPreset.Value,
-		1
+	-- Select random spawns from remaining groups
+	print("Adding remaining spawns in random order")
+	local randomSpawns = TabOps.GetTableFromTables(
+		remainingGroups
 	)
-	local minAiCountPerStandardGroup = math.max(2, baseAiCountPerStandardGroup / 2)
-	print("Adding random group spawns")
-	while missingAiCount > 0 do
-		if #reserveSpawns >= missingAiCount and
-		minAiCountPerStandardGroup > missingAiCount then
-			print("Remaining AI count is not enough to fill group")
-			break
-		end
-		local aiCountPerStandardGroup =
-			baseAiCountPerStandardGroup + math.random(-1,1)
-		Spawns.AddSpawnsFromRandomGroup(
-			remainingGroups,
-			selectedSpawns,
-			reserveSpawns,
-			aiCountPerStandardGroup
-		)
-		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
-	end
-	-- Select random spawns from reserve
-	print("Adding random spawns from reserve")
-	while missingAiCount > 0 and #reserveSpawns > 0 do
-		local randIndex = math.random(#reserveSpawns)
-		table.insert(selectedSpawns, reserveSpawns[randIndex])
-		table.remove(reserveSpawns, randIndex)
-		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
-	end
-	self.OpFor.RoundSpawnList = selectedSpawns
+	randomSpawns = TabOps.ShuffleTable(randomSpawns)
+	selectedSpawns = TabOps.ConcatenateTables(selectedSpawns, randomSpawns)
+	print("Selected spawns " .. #selectedSpawns)
+	self.OpFor.RoundSpawnList = TabOps.ConcatenateTables(selectedSpawns, randomSpawns)
 end
 
 function BreakOut:SetUpOpForSpawnsByPriorities()
@@ -461,6 +433,7 @@ function BreakOut:SpawnOpFor()
 		self.OpFor.RoundSpawnList,
 		self.OpFor.Tag
 	)
+	print("Spawned " .. self.OpFor.CalculatedAiCount .. " AI")
 end
 
 --#endregion
@@ -481,13 +454,7 @@ end
 function BreakOut:PlayerEnteredExfiltration()
 	local total = math.min(self.Extraction.PlayersIn + 1, #self.Players.WithLives)
 	self.Extraction.PlayersIn = total
-	timer.Set(
-		self.Timers.Exfiltration.Name,
-		self,
-		self.CheckBluForExfilTimer,
-		0.1,
-		false
-	)
+	self:CheckBluForExfilTimer()
 end
 
 function BreakOut:OnGameTriggerEndOverlap(GameTrigger, Player)
@@ -507,10 +474,13 @@ function BreakOut:PlayerLeftExfiltration()
 end
 
 function BreakOut:CheckBluForExfilTimer()
+	if self.Timers.Exfiltration.CurrentTime <= 0 then
+		self:Exfiltrate()
+		timer.Clear(self, self.Timers.Exfiltration.Name)
+		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
+		return
+	end
 	if self.Extraction.PlayersIn >= #self.Players.WithLives then
-		self.Timers.Exfiltration.CurrentTime =
-			self.Timers.Exfiltration.CurrentTime -
-			self.Timers.Exfiltration.TimeStep
 		for _, playerInstance in ipairs(self.Players.WithLives) do
 			player.ShowGameMessage(
 				playerInstance,
@@ -519,6 +489,16 @@ function BreakOut:CheckBluForExfilTimer()
 				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
+		self.Timers.Exfiltration.CurrentTime =
+			self.Timers.Exfiltration.CurrentTime -
+			self.Timers.Exfiltration.TimeStep
+		timer.Set(
+			self.Timers.Exfiltration.Name,
+			self,
+			self.CheckBluForExfilTimer,
+			self.Timers.Exfiltration.TimeStep,
+			false
+		)
 	elseif self.Extraction.PlayersIn > 0 then
 		for _, playerInstance in ipairs(self.Players.WithLives) do
 			player.ShowGameMessage(
@@ -528,20 +508,6 @@ function BreakOut:CheckBluForExfilTimer()
 				self.Timers.Exfiltration.TimeStep-0.05
 			)
 		end
-	else
-		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
-		for _, playerInstance in ipairs(self.Players.WithLives) do
-			player.ShowGameMessage(
-				playerInstance,
-				"ExfilCancelled",
-				"Upper",
-				self.Timers.Exfiltration.TimeStep*2
-			)
-		end
-		timer.Clear(self, self.Timers.Exfiltration.Name)
-		return
-	end
-	if self.Timers.Exfiltration.CurrentTime > 0 then
 		timer.Set(
 			self.Timers.Exfiltration.Name,
 			self,
@@ -550,8 +516,14 @@ function BreakOut:CheckBluForExfilTimer()
 			false
 		)
 	else
-		self:Exfiltrate()
-		timer.Clear(self, self.Timers.Exfiltration.Name)
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilCancelled",
+				"Upper",
+				self.Timers.Exfiltration.TimeStep*2
+			)
+		end
 		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
 	end
 end
