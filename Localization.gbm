@@ -1,0 +1,16 @@
+{
+    "name" : "Localization",
+    "version" : "0.2.0",
+    "files" : [
+        "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
+        "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv"
+    ]
+}
+
+
+
+
+
+
+
+
