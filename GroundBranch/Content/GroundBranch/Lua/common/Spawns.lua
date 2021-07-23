@@ -4,6 +4,15 @@ local Spawns = {}
 
 Spawns.__index = Spawns
 
+---Calculates the total AI count for the mission based on the provided data.
+---@param baseAiCount integer
+---@param maxAiCount integer
+---@param playerCount integer
+---@param playerCountFactor number
+---@param aiCountSetting integer
+---@param aiCountSettingFactor number
+---@param deviationPercent number
+---@return integer
 function Spawns.CalculateAiCount(
     baseAiCount,
     maxAiCount,
@@ -45,6 +54,13 @@ function Spawns.CalculateAiCount(
     return calculatedAiCount
 end
 
+---Calculates the AI count per gropup based on the provided data.
+---@param baseAiCount integer
+---@param playerCount integer
+---@param playerCountFactor number
+---@param aiCountSetting integer
+---@param aiCountSettingFactor number
+---@return integer
 function Spawns.CalculateBaseAiCountPerGroup(
     baseAiCount,
     playerCount,
@@ -69,6 +85,9 @@ function Spawns.CalculateBaseAiCountPerGroup(
     return baseAiCountPerGroup
 end
 
+---Calculates and returns the average location of a group of actors.
+---@param group table
+---@return table
 function Spawns.GetGroupAverageLocation(group)
     local averageLocation = {
         x = 0,
@@ -85,6 +104,9 @@ function Spawns.GetGroupAverageLocation(group)
     return averageLocation
 end
 
+---Rounds the given number to integer.
+---@param number number
+---@return integer
 function Spawns.RoundNumber(number)
     local roundNumber = 0
     local floatingPoint = number - math.floor(number)
@@ -97,6 +119,15 @@ function Spawns.RoundNumber(number)
     return roundNumber
 end
 
+---Adds spawn points from a random group found in remainingGroups table within
+---given maxDistance from location to the selectedSpawns table. Spawn points
+---that excceed the aiPerGroupAmount will be added to reserveSpawns table.
+---@param remainingGroups table
+---@param selectedSpawns table
+---@param reserveSpawns table
+---@param aiPerGroupAmount integer
+---@param location table vector {x,y,z}
+---@param maxDistance number
 function Spawns.AddSpawnsFromRandomGroupWithinDistance(
     remainingGroups,
     selectedSpawns,
@@ -110,7 +141,6 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
         " from location " .. tostring(location)
     )
     local groupsToConsider = {}
-
     for groupIndex, group in ipairs(remainingGroups) do
         local groupLocation = Spawns.GetGroupAverageLocation(group)
         local distanceVector = groupLocation - location
@@ -127,12 +157,10 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
             table.insert(groupsToConsider, groupIndex)
         end
     end
-
     if #groupsToConsider <=0 then
         print("No groups within distance found")
         return
     end
-
     local selectedGroupIndex = groupsToConsider[math.random(#groupsToConsider)]
     Spawns.addSpawnsFromGroup(
         remainingGroups,
@@ -143,6 +171,16 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
     )
 end
 
+---Finds group closest to location from remainingGroups. Add spawns from the
+---closest group to selectedSpawns table. Spawns that exceed the aiPerGroupAmount
+---will be added to the reserveSpawns table.
+---If no group within maxDistance is found no spawns will be added.
+---@param remainingGroups table
+---@param selectedSpawns table
+---@param reserveSpawns table
+---@param aiPerGroupAmount integer
+---@param location table vector {x,y,z}
+---@param maxDistance number
 function Spawns.AddSpawnsFromClosestGroup(
     remainingGroups,
     selectedSpawns,
@@ -190,6 +228,17 @@ function Spawns.AddSpawnsFromClosestGroup(
     )
 end
 
+---Finds group closest to location, and within the vertical maxZDistance, from
+---remainingGroups. Adds spawns from the closest group to selectedSpawns table.
+---Spawns that exceed the aiPerGroupAmount will be added to the reserveSpawns table.
+---If no group within maxDistance, or maxZDistance, is found no spawns will be added.
+---@param remainingGroups table
+---@param selectedSpawns table
+---@param reserveSpawns table
+---@param aiPerGroupAmount integer
+---@param location table vector {x,y,z}
+---@param maxDistance number
+---@param maxZDistance number
 function Spawns.AddSpawnsFromClosestGroupWithZLimit(
     remainingGroups,
     selectedSpawns,
@@ -242,6 +291,13 @@ function Spawns.AddSpawnsFromClosestGroupWithZLimit(
     )
 end
 
+---Adds spawn points to selectedSpawns table from a randomly selected group in
+---the remainingGroups table.
+---Spawns that exceed the aiPerGroupAmount will be added to the reserveSpawns table.
+---@param remainingGroups table
+---@param selectedSpawns table
+---@param reserveSpawns table
+---@param aiPerGroupAmount integer
 function Spawns.AddSpawnsFromRandomGroup(
     remainingGroups,
     selectedSpawns,
@@ -258,6 +314,14 @@ function Spawns.AddSpawnsFromRandomGroup(
     )
 end
 
+---Helper function that adds spawns from a group with selectedGroupIndex in the
+---remainingGroups table to selectedSpawns table. Spawns that exceed the 
+---aiPerGroupAmount will be added to the reserveSpawns table.
+---@param remainingGroups table
+---@param selectedSpawns table
+---@param reserveSpawns table
+---@param aiPerGroupAmount integer
+---@param selectedGroupIndex integer
 function Spawns.addSpawnsFromGroup(
     remainingGroups,
     selectedSpawns,

@@ -32,6 +32,9 @@ local Items = {
     }
 }
 
+---WIP! The idea for this method is to check players inventory agains a list of
+---forbidden items.
+---@param playerInventory userdata
 function Items.CheckIfHasForbiddenItems(playerInventory)
     for index, value in ipairs(playerInventory) do
         print(index)
