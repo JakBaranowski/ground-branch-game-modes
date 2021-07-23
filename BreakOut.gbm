@@ -4,6 +4,7 @@
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
         "GroundBranch/Content/GroundBranch/Lua/common/Spawns.lua",
+        "GroundBranch/Content/GroundBranch/Lua/common/StringOperations.lua",
         "GroundBranch/Content/GroundBranch/Lua/common/TableOperations.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
         "GroundBranch/Content/GroundBranch/Mission/Tanker/BreakOut.mis",
