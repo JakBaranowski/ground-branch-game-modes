@@ -480,7 +480,27 @@ function BreakOut:CheckBluForExfilTimer()
 		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
 		return
 	end
-	if self.Extraction.PlayersIn >= #self.Players.WithLives then
+	if self.Extraction.PlayersIn <= 0 then
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilCancelled",
+				"Upper",
+				self.Timers.Exfiltration.TimeStep*2
+			)
+		end
+		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
+		return
+	elseif self.Extraction.PlayersIn < #self.Players.WithLives then
+		for _, playerInstance in ipairs(self.Players.WithLives) do
+			player.ShowGameMessage(
+				playerInstance,
+				"ExfilPaused",
+				"Upper",
+				self.Timers.Exfiltration.TimeStep-0.05
+			)
+		end
+	else
 		for _, playerInstance in ipairs(self.Players.WithLives) do
 			player.ShowGameMessage(
 				playerInstance,
@@ -492,40 +512,14 @@ function BreakOut:CheckBluForExfilTimer()
 		self.Timers.Exfiltration.CurrentTime =
 			self.Timers.Exfiltration.CurrentTime -
 			self.Timers.Exfiltration.TimeStep
-		timer.Set(
-			self.Timers.Exfiltration.Name,
-			self,
-			self.CheckBluForExfilTimer,
-			self.Timers.Exfiltration.TimeStep,
-			false
-		)
-	elseif self.Extraction.PlayersIn > 0 then
-		for _, playerInstance in ipairs(self.Players.WithLives) do
-			player.ShowGameMessage(
-				playerInstance,
-				"ExfilPaused",
-				"Upper",
-				self.Timers.Exfiltration.TimeStep-0.05
-			)
-		end
-		timer.Set(
-			self.Timers.Exfiltration.Name,
-			self,
-			self.CheckBluForExfilTimer,
-			self.Timers.Exfiltration.TimeStep,
-			false
-		)
-	else
-		for _, playerInstance in ipairs(self.Players.WithLives) do
-			player.ShowGameMessage(
-				playerInstance,
-				"ExfilCancelled",
-				"Upper",
-				self.Timers.Exfiltration.TimeStep*2
-			)
-		end
-		self.Timers.Exfiltration.CurrentTime = self.Timers.Exfiltration.DefaultTime
 	end
+	timer.Set(
+		self.Timers.Exfiltration.Name,
+		self,
+		self.CheckBluForExfilTimer,
+		self.Timers.Exfiltration.TimeStep,
+		false
+	)
 end
 
 function BreakOut:Exfiltrate()
