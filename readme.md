@@ -15,7 +15,6 @@ progress, and therefore everything is subject to change.
 3. [How to play](#how-to-play)
 4. [Contributing](#contributing)
 5. [Unofficial Ground Branch modding guide](#unofficial-ground-branch-modding-guide)
-useful.
 6. [Kudos](#kudos)
 7. [License](#license)
 
