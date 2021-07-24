@@ -19,10 +19,6 @@
 ## Manifest files
 !*.gbm
 
-## Ignore experimental files
-*[Tt]est.mis
-*[Tt]est.lua
-
 # Ground Branch default files that would otherwise be included
 ## Default GameMode scripts
 GroundBranch/Content/GroundBranch/Lua/Assassination.lua
@@ -37,7 +33,6 @@ GroundBranch/Content/GroundBranch/Lua/TeamElimination.lua
 GroundBranch/Content/GroundBranch/Lua/TerroristHunt.lua
 GroundBranch/Content/GroundBranch/Lua/Training.lua
 GroundBranch/Content/GroundBranch/Lua/Testing.lua
-GroundBranch/Content/GroundBranch/Lua/Test.lua
 GroundBranch/Content/GroundBranch/Lua/Uplink.lua
 GroundBranch/Content/GroundBranch/Lua/UplinkTarget.lua
 ## Default mission setups
@@ -56,7 +51,6 @@ GroundBranch/Content/GroundBranch/Mission/City/Deathmatch.mis
 GroundBranch/Content/GroundBranch/Mission/City/IntelRetrieval.mis
 GroundBranch/Content/GroundBranch/Mission/City/TeamElimination.mis
 GroundBranch/Content/GroundBranch/Mission/City/TerroristHunt.mis
-GroundBranch/Content/GroundBranch/Mission/City/Test.mis
 GroundBranch/Content/GroundBranch/Mission/City/Uplink.mis
 GroundBranch/Content/GroundBranch/Mission/Creek/Deathmatch.mis
 GroundBranch/Content/GroundBranch/Mission/Creek/IntelRetrieval.mis
@@ -129,3 +123,17 @@ GroundBranch/Content/Localization/GroundBranch/en/MissionNameNouns.csv
 GroundBranch/Content/Localization/GroundBranch/en/TeamElimination.csv
 GroundBranch/Content/Localization/GroundBranch/en/TerroristHunt.csv
 GroundBranch/Content/Localization/GroundBranch/en/Uplink.csv
+
+## Rendezvous
+GroundBranch/Content/GroundBranch/Lua/Rendezvous.lua
+GroundBranch/Content/Localization/GroundBranch/en/Rendezvous.csv
+GroundBranch/Content/GroundBranch/Mission/City/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/Creek/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/Depot_Compound/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/PowerStation/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/RunDown/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/SmallTown/Rendezvous.mis
+GroundBranch/Content/GroundBranch/Mission/747/Rendezvous.mis
+
+## DTAS
+GroundBranch/Content/Localization/GroundBranch/en/DTAS.csv

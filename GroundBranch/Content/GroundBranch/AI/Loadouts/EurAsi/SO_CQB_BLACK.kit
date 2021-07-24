@@ -3,32 +3,37 @@
 	"Data": [
         {
 			"Type": "HeadGear",
-			"Item": "HeadGear:BP_Hat_UtilityCover",
-			"Skin": "Woodland"
+            "Item": "HeadGear:BP_Helmet_Mich",
+            "Skin": "Black",
+            "Children": [
+                {
+                    "Item": "Attachment:BP_ComTac"
+                }
+            ]
 		},
 		{
-            "Item": "PrimaryFirearm:BP_AK74_MI",
+            "Item": "PrimaryFirearm:BP_AK74_MI_CQB",
             "Children": [
                 {
                     "Item": "Magazine:BP_AK545_Magazine",
                     "Well": "MagWell_AK545"
                 },
                 {
-                    "Item": "Sight:BP_Magnifier",
+                    "Item": "Sight:BP_Reflex_Large",
                     "Rail": "RearSightRail",
-                    "Slot": 1
+                    "Slot": 5
                 },
                 {
-                    "Item": "Sight:BP_MicroT2_Tall",
-                    "Rail": "RearSightRail",
-                    "Slot": 8
+                    "Item": "RailAttachment:BP_TacLight_M300c",
+                    "Rail": "LeftRail",
+                    "Slot": 6
                 },
                 {
                     "Item": "RailAttachment:BP_TDStubby_VertGrip",
                     "Rail": "BottomRail",
-                    "Slot": 3
+                    "Slot": 2
                 }
             ]
-		}
+        }
 	]
 }

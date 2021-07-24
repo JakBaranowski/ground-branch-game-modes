@@ -26,4 +26,19 @@ function StringOperations.GetSuffix(stringCheck, prefix)
     return ""
 end
 
+---Will query actor tags, of actorWithTags, for a tag starting with tagPrefix.
+---If tag starting with tagPrefix is found will return tagSuffix (part after tagPrefix)
+---If tag is not found will return empty string
+---@param actorWithTag any
+---@param tagPrefix string
+---@return string
+function StringOperations.GetSuffixFromActorTag(actorWithTag, tagPrefix)
+	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+		if StringOperations.StartsWith(actorTag, tagPrefix) then
+			return StringOperations.GetSuffix(actorTag, tagPrefix)
+		end
+	end
+    return ""
+end
+
 return StringOperations
