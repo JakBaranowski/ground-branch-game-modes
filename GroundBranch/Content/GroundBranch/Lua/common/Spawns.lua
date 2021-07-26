@@ -1,10 +1,11 @@
-local StrOps = require("common.StringOperations")
+local maths = require("common.Maths")
+local actors = require("common.Actors")
 
 local Spawns = {}
 
 Spawns.__index = Spawns
 
----Calculates the total AI count for the mission based on the provided data.
+---Calculates the AI count based on the provided data, and applies the deviationPercent.
 ---@param baseAiCount integer
 ---@param maxAiCount integer
 ---@param playerCount integer
@@ -13,7 +14,7 @@ Spawns.__index = Spawns
 ---@param aiCountSettingFactor number
 ---@param deviationPercent number
 ---@return integer
-function Spawns.CalculateAiCount(
+function Spawns.GetAiCountWithDeviationPercent(
     baseAiCount,
     maxAiCount,
     playerCount,
@@ -22,8 +23,7 @@ function Spawns.CalculateAiCount(
     aiCountSettingFactor,
     deviationPercent
 )
-    local calculatedAiCount
-    print("Calculating max AI count.")
+    print("Calculating AI count with deviation percent")
     print(
         "baseAiCount: " .. baseAiCount ..
         " maxAiCount: " .. maxAiCount ..
@@ -33,42 +33,37 @@ function Spawns.CalculateAiCount(
         " aiCountSettingFactor: " .. aiCountSettingFactor ..
         " deviationPercent: " .. deviationPercent
     )
-    calculatedAiCount = baseAiCount +
+    local aiCount = baseAiCount +
         playerCount * playerCountFactor +
         aiCountSetting * aiCountSettingFactor
-    print("Initial max AI count: " .. calculatedAiCount)
-    local aiCountDeviationMax = deviationPercent * calculatedAiCount
-    aiCountDeviationMax = math.ceil(aiCountDeviationMax)
-    local aiCountDeviation = math.random(
-        -aiCountDeviationMax,
-        aiCountDeviationMax
-    )
-    calculatedAiCount = calculatedAiCount + aiCountDeviation
-    print(
-        "AI count after applying deviation (" .. aiCountDeviation ..
-        "): " .. calculatedAiCount
-    )
-    calculatedAiCount = Spawns.RoundNumber(calculatedAiCount)
-    calculatedAiCount = math.min(calculatedAiCount, maxAiCount)
-    print("Final AI count: " .. calculatedAiCount)
-    return calculatedAiCount
+    print("Initial AI count " .. aiCount)
+    aiCount = maths.ApplyDeviationPercent(aiCount, deviationPercent)
+    print("AI count after applying deviation " .. aiCount)
+    aiCount = maths.RoundNumberToInt(aiCount)
+    aiCount = math.min(aiCount, maxAiCount)
+    print("Final AI count " .. aiCount)
+    return aiCount
 end
 
----Calculates the AI count per gropup based on the provided data.
+---Calculates the AI count based on the provided data and applies the deviationInt.
 ---@param baseAiCount integer
+---@param maxAiCount integer
 ---@param playerCount integer
 ---@param playerCountFactor number
 ---@param aiCountSetting integer
 ---@param aiCountSettingFactor number
+---@param deviationInt integer
 ---@return integer
-function Spawns.CalculateBaseAiCountPerGroup(
+function Spawns.GetAiCountWithDeviationNumber(
     baseAiCount,
+    maxAiCount,
     playerCount,
     playerCountFactor,
     aiCountSetting,
-    aiCountSettingFactor
+    aiCountSettingFactor,
+    deviationInt
 )
-    print("Calculating AI count per group")
+    print("Calculating AI count with deviation integer")
     print(
         "baseAiCount: " .. baseAiCount ..
         " playerCount: " .. playerCount ..
@@ -76,47 +71,16 @@ function Spawns.CalculateBaseAiCountPerGroup(
         " aiCountSetting: " .. aiCountSetting ..
         " aiCountSettingFactor: " .. aiCountSettingFactor
     )
-    local baseAiCountPerGroup = baseAiCount +
+    local aiCount = baseAiCount +
         playerCount * playerCountFactor +
         aiCountSetting * aiCountSettingFactor
-    print("Initial AI per group count: " .. baseAiCountPerGroup)
-    baseAiCountPerGroup = Spawns.RoundNumber(baseAiCountPerGroup)
-    print("Final AI per group count: " .. baseAiCountPerGroup)
-    return baseAiCountPerGroup
-end
-
----Calculates and returns the average location of a group of actors.
----@param group table
----@return table
-function Spawns.GetGroupAverageLocation(group)
-    local averageLocation = {
-        x = 0,
-        y = 0,
-        z = 0
-    }
-    for _, member in ipairs(group) do
-        averageLocation = averageLocation + actor.GetLocation(member)
-    end
-    averageLocation.x = averageLocation.x / #group
-    averageLocation.y = averageLocation.y / #group
-    averageLocation.z = averageLocation.z / #group
-    print("Average group location " .. tostring(averageLocation))
-    return averageLocation
-end
-
----Rounds the given number to integer.
----@param number number
----@return integer
-function Spawns.RoundNumber(number)
-    local roundNumber = 0
-    local floatingPoint = number - math.floor(number)
-    if floatingPoint <= 0.5 then
-        roundNumber = math.floor(number)
-    else
-        roundNumber = math.ceil(number)
-    end
-    print("Rounded number " .. number .. " to " .. roundNumber)
-    return roundNumber
+    print("Initial AI count " .. aiCount)
+    aiCount = maths.ApplyDeviationNumber(aiCount, deviationInt)
+    print("AI count after applying deviation " .. aiCount)
+    aiCount = maths.RoundNumberToInt(aiCount)
+    aiCount = math.min(aiCount, maxAiCount)
+    print("Final AI count " .. aiCount)
+    return aiCount
 end
 
 ---Adds spawn points from a random group found in remainingGroups table within
@@ -142,11 +106,11 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
     )
     local groupsToConsider = {}
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = Spawns.GetGroupAverageLocation(group)
+        local groupLocation = actors.GetGroupAverageLocation(group)
         local distanceVector = groupLocation - location
         local distance = vector.Size(distanceVector)
         if distance < maxDistance then
-            local groupName = StrOps.GetSuffixFromActorTag(
+            local groupName = actors.GetSuffixFromActorTag(
                 remainingGroups[groupIndex][1],
                 "Group"
             )
@@ -196,8 +160,8 @@ function Spawns.AddSpawnsFromClosestGroup(
     local selectedGroupIndex = 0
     local lowestDistance = maxDistance ^ 2
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = Spawns.GetGroupAverageLocation(group)
-        local groupName = StrOps.GetSuffixFromActorTag(
+        local groupLocation = actors.GetGroupAverageLocation(group)
+        local groupName = actors.GetSuffixFromActorTag(
             remainingGroups[groupIndex][1],
             "Group"
         )
@@ -256,8 +220,8 @@ function Spawns.AddSpawnsFromClosestGroupWithZLimit(
     local selectedGroupIndex = 0
     local lowestDistance = maxDistance ^ 2
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = Spawns.GetGroupAverageLocation(group)
-        local groupName = StrOps.GetSuffixFromActorTag(
+        local groupLocation = actors.GetGroupAverageLocation(group)
+        local groupName = actors.GetSuffixFromActorTag(
             remainingGroups[groupIndex][1],
             "Group"
         )
@@ -329,7 +293,7 @@ function Spawns.addSpawnsFromGroup(
     aiPerGroupAmount,
     selectedGroupIndex
 )
-    local groupName = StrOps.GetSuffixFromActorTag(
+    local groupName = actors.GetSuffixFromActorTag(
         remainingGroups[selectedGroupIndex][1],
         "Group"
     )

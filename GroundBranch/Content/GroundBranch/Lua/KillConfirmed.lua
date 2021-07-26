@@ -1,6 +1,6 @@
-local TabOps = require("common.TableOperations")
-local StrOps = require("common.StringOperations")
-local Spawns = require("common.Spawns")
+local tables = require("common.Tables")
+local spawns = require("common.Spawns")
+local actors = require("common.Actors")
 
 --#region Properties
 
@@ -203,7 +203,7 @@ function KillConfirmed:PostInit()
 	-- Add inactive objective markers to all possible HVT spawn points.
 	for _, SpawnPoint in ipairs(self.HVT.Spawns) do
 		local description = "HVT"
-		description = StrOps.GetSuffixFromActorTag(SpawnPoint, "ObjectiveMarker")
+		description = actors.GetSuffixFromActorTag(SpawnPoint, "ObjectiveMarker")
 		self.HVT.SpawnMarkers[description] = gamemode.AddObjectiveMarker(
 			actor.GetLocation(SpawnPoint),
 			self.PlayerTeams.BluFor.TeamId,
@@ -426,7 +426,7 @@ end
 function KillConfirmed:SetUpHvtObjectiveMarkers()
 	print("Setting up HVT objective markers " .. #self.HVT.SpawnsShuffled)
 	for i, v in ipairs(self.HVT.SpawnsShuffled) do
-		local spawnTag = StrOps.GetSuffixFromActorTag(v, "ObjectiveMarker")
+		local spawnTag = actors.GetSuffixFromActorTag(v, "ObjectiveMarker")
 		local bActive = i <= self.Settings.HVTCount.Value
 		print("Setting HVT marker " .. spawnTag .. " to " .. tostring(bActive))
 		actor.SetActive(self.HVT.SpawnMarkers[spawnTag], bActive)
@@ -451,7 +451,7 @@ end
 
 function KillConfirmed:SetUpOpForHvtSpawns()
 	self.HVT.SpawnsShuffled = {}
-	self.HVT.SpawnsShuffled = TabOps.ShuffleTable(
+	self.HVT.SpawnsShuffled = tables.ShuffleTable(
 		self.HVT.Spawns
 	)
 	print("Shuffled HVT spawns")
@@ -459,75 +459,50 @@ end
 
 function KillConfirmed:SetUpOpForStandardSpawns()
 	if self.Settings.SpawnMethod.Value == 1 then
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithPriority,
-			ai.GetMaxCount() - self.Settings.HVTCount.Value
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
 		self:SetUpOpForSpawnsByPriorities()
 	elseif self.Settings.SpawnMethod.Value == 2 then
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithPriority,
-			ai.GetMaxCount() - self.Settings.HVTCount.Value
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
 		self:SetUpOpForSpawnsByPureRandomness()
 	else
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithGroup,
-			ai.GetMaxCount() - self.Settings.HVTCount.Value
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
 		self:SetUpOpForSpawnsByGroups()
 	end
 end
 
 function KillConfirmed:SetUpOpForSpawnsByGroups()
 	print("Setting up AI spawn points by groups")
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithGroup,
+		ai.GetMaxCount() - self.Settings.HVTCount.Value
+	)
+	self.OpFor.CalculatedAiCount = spawns.GetAiCountWithDeviationPercent(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
 	local remainingGroups =	{table.unpack(self.OpFor.AllSpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
 	local missingAiCount = self.OpFor.CalculatedAiCount
 	-- Select groups guarding the HVTs and add their spawn points to spawn list
-	local aiCountPerHvtGroup = Spawns.CalculateBaseAiCountPerGroup(
-		3,
-		gamemode.GetPlayerCount(true),
-		1,
-		self.Settings.OpForPreset.Value,
-		1
-	)
 	local maxAiCountPerHvtGroup = math.floor(
 		missingAiCount / self.Settings.HVTCount.Value
 	)
-	aiCountPerHvtGroup = math.min(aiCountPerHvtGroup, maxAiCountPerHvtGroup)
+	local aiCountPerHvtGroup = spawns.GetAiCountWithDeviationNumber(
+		3,
+		maxAiCountPerHvtGroup,
+		gamemode.GetPlayerCount(true),
+		1,
+		self.Settings.OpForPreset.Value,
+		1,
+		0
+	)
 	print("Adding group spawns closest to HVTs")
 	for i = 1, self.Settings.HVTCount.Value do
 		local hvtLocation = actor.GetLocation(self.HVT.SpawnsShuffled[i])
-		Spawns.AddSpawnsFromClosestGroup(
+		spawns.AddSpawnsFromClosestGroup(
 			remainingGroups,
 			selectedSpawns,
 			reserveSpawns,
@@ -538,24 +513,25 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 	end
 	missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	-- Select random groups and add their spawn points to spawn list
-	local baseAiCountPerStandardGroup = Spawns.CalculateBaseAiCountPerGroup(
-		2,
-		gamemode.GetPlayerCount(true),
-		0.5,
-		self.Settings.OpForPreset.Value,
-		1
-	)
-	local minAiCountPerStandardGroup = math.max(2, baseAiCountPerStandardGroup / 2)
 	print("Adding random group spawns")
 	while missingAiCount > 0 do
-		if #reserveSpawns >= missingAiCount and
-		minAiCountPerStandardGroup > missingAiCount then
+		local aiCountPerStandardGroup = spawns.GetAiCountWithDeviationNumber(
+			2,
+			10,
+			gamemode.GetPlayerCount(true),
+			0.5,
+			self.Settings.OpForPreset.Value,
+			1,
+			1
+		)
+		if
+			#reserveSpawns >= missingAiCount and
+			aiCountPerStandardGroup > missingAiCount
+		then
 			print("Remaining AI count is not enough to fill group")
 			break
 		end
-		local aiCountPerStandardGroup =
-			baseAiCountPerStandardGroup + math.random(-1,1)
-		Spawns.AddSpawnsFromRandomGroup(
+		spawns.AddSpawnsFromRandomGroup(
 			remainingGroups,
 			selectedSpawns,
 			reserveSpawns,
@@ -567,11 +543,11 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 	if missingAiCount > 0 then
 		if #remainingGroups > 0 then
 			print("Adding random spawns")
-			local randomSpawns = TabOps.GetTableFromTables(
+			local randomSpawns = tables.GetTableFromTables(
 				remainingGroups
 			)
-			randomSpawns = TabOps.ShuffleTable(randomSpawns)
-			selectedSpawns = TabOps.ConcatenateTables(selectedSpawns, randomSpawns)
+			randomSpawns = tables.ShuffleTable(randomSpawns)
+			selectedSpawns = tables.ConcatenateTables(selectedSpawns, randomSpawns)
 		elseif #reserveSpawns > 0 then
 			print("Adding random spawns from reserve")
 			while missingAiCount > 0 and #reserveSpawns > 0 do
@@ -588,20 +564,46 @@ end
 
 function KillConfirmed:SetUpOpForSpawnsByPriorities()
 	print("Setting up AI spawns by priority")
-	local tableWithShuffledSpawns = TabOps.ShuffleTables(
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithPriority,
+		ai.GetMaxCount() - self.Settings.HVTCount.Value
+	)
+	self.OpFor.CalculatedAiCount = spawns.GetAiCountWithDeviationPercent(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
+	local tableWithShuffledSpawns = tables.ShuffleTables(
 		self.OpFor.AllSpawnsByPriority
 	)
-	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
+	self.OpFor.RoundSpawnList = tables.GetTableFromTables(
 		tableWithShuffledSpawns
 	)
 end
 
 function KillConfirmed:SetUpOpForSpawnsByPureRandomness()
 	print("Setting up AI spawns by pure randomness")
-	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithPriority,
+		ai.GetMaxCount() - self.Settings.HVTCount.Value
+	)
+	self.OpFor.CalculatedAiCount = spawns.GetAiCountWithDeviationPercent(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
+	self.OpFor.RoundSpawnList = tables.GetTableFromTables(
 		self.OpFor.AllSpawnsByPriority
 	)
-	self.OpFor.RoundSpawnList = TabOps.ShuffleTable(self.OpFor.RoundSpawnList)
+	self.OpFor.RoundSpawnList = tables.ShuffleTable(self.OpFor.RoundSpawnList)
 end
 
 function KillConfirmed:SpawnOpFor()
