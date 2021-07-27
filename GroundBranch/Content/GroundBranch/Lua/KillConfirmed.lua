@@ -66,8 +66,9 @@ local KillConfirmed = {
 		Spawns = {},
 		SpawnsShuffled = {},
 		SpawnMarkers = {},
-		EliminatedNotConfirmed = {},
-		EliminatedAndConfirmed = 0,
+		EliminatedNotConfirmedLocations = {},
+		EliminatedNotConfirmedCount = 0,
+		EliminatedAndConfirmedCount = 0,
 		MaxDistanceForGroupConsideration = 20 * 100.0,
 	},
 	Extraction = {
@@ -288,11 +289,13 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				-- OpFor HVT eliminated.
 				print("OpFor HVT eliminated")
-				self:ShowHvtEliminated()
 				table.insert(
-					self.HVT.EliminatedNotConfirmed,
+					self.HVT.EliminatedNotConfirmedLocations,
 					actor.GetLocation(Character)
 				)
+				self.HVT.EliminatedNotConfirmedCount =
+					self.HVT.EliminatedNotConfirmedCount + 1
+				self:ShowHvtEliminated()
 				self:CheckIfKillConfirmedTimer()
 			elseif actor.HasTag(CharacterController, self.OpFor.Tag) then
 				print("OpFor standard eliminated")
@@ -681,10 +684,10 @@ function KillConfirmed:GuideToExtractionTimer()
 end
 
 function KillConfirmed:GuideToEliminatedLeaderTimer()
-	if #self.HVT.EliminatedNotConfirmed <= 0 then
+	if #self.HVT.EliminatedNotConfirmedLocations <= 0 then
 		return
 	end
-	for _, LeaderLocation in ipairs(self.HVT.EliminatedNotConfirmed) do
+	for _, LeaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
 		for _, Player in ipairs(self.Players.WithLives) do
 			player.ShowWorldPrompt(
 				Player,
@@ -701,8 +704,11 @@ end
 --#region Objective: Kill confirmed
 
 function KillConfirmed:CheckIfKillConfirmedTimer()
+	if #self.HVT.EliminatedNotConfirmedLocations <= 0 then
+		return
+	end
 	local LowestDist = self.Timers.KillConfirm.TimeStep.Max * 1000.0
-	for index, LeaderLocation in ipairs(self.HVT.EliminatedNotConfirmed) do
+	for index, LeaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
 		for _, PlayerController in ipairs(self.Players.WithLives) do
 			local PlayerLocation = actor.GetLocation(
 				player.GetCharacter(PlayerController)
@@ -715,30 +721,29 @@ function KillConfirmed:CheckIfKillConfirmedTimer()
 			end
 		end
 	end
-	if #self.HVT.EliminatedNotConfirmed > 0 then
-		self.Timers.KillConfirm.TimeStep.Value = math.max(
-			math.min(
-				LowestDist/1000,
-				self.Timers.KillConfirm.TimeStep.Max
-			),
-			self.Timers.KillConfirm.TimeStep.Min
-		)
-		timer.Set(
-			self.Timers.KillConfirm.Name,
-			self,
-			self.CheckIfKillConfirmedTimer,
-			self.Timers.KillConfirm.TimeStep.Value,
-			false
-		)
-	end
+	self.Timers.KillConfirm.TimeStep.Value = math.max(
+		math.min(
+			LowestDist/1000,
+			self.Timers.KillConfirm.TimeStep.Max
+		),
+		self.Timers.KillConfirm.TimeStep.Min
+	)
+	timer.Set(
+		self.Timers.KillConfirm.Name,
+		self,
+		self.CheckIfKillConfirmedTimer,
+		self.Timers.KillConfirm.TimeStep.Value,
+		false
+	)
 end
 
 function KillConfirmed:ConfirmKill(index)
-	self.HVT.EliminatedAndConfirmed = self.HVT.EliminatedAndConfirmed + 1
-	table.remove(self.HVT.EliminatedNotConfirmed, index)
-	if self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
+	self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
+	table.remove(self.HVT.EliminatedNotConfirmedLocations, index)
+	if self.HVT.EliminatedAndConfirmedCount >= self.Settings.HVTCount.Value then
 		print("All HVT kills confirmed")
 		self:ShowAllKillConfirmed()
+		actor.SetActive(self.Extraction.ActivePoint, true)
 		timer.Set(
 			self.Timers.GuideToObjective.Name,
 			self,
@@ -746,7 +751,6 @@ function KillConfirmed:ConfirmKill(index)
 			self.UI.WorldPromptDelay,
 			true
 		)
-		actor.SetActive(self.Extraction.ActivePoint, true)
 		if self.Extraction.PlayersIn > 0 then
 			self:CheckBluForExfilTimer()
 		end
@@ -774,7 +778,7 @@ end
 function KillConfirmed:PlayerEnteredExfiltration()
 	local total = math.min(self.Extraction.PlayersIn + 1, #self.Players.WithLives)
 	self.Extraction.PlayersIn = total
-	if self.HVT.EliminatedAndConfirmed >= self.Settings.HVTCount.Value then
+	if self.HVT.EliminatedAndConfirmedCount >= self.Settings.HVTCount.Value then
 		self:CheckBluForExfilTimer()
 	end
 end
@@ -851,8 +855,7 @@ function KillConfirmed:Exfiltrate()
 	gamemode.AddGameStat("Result=Team1")
 	gamemode.AddGameStat("Summary=HVTsConfirmed")
 	gamemode.AddGameStat(
-		"CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs," ..
-		"LastKnownLocation,ExfiltrateBluFor"
+		"CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs,ExfiltrateBluFor"
 	)
 	gamemode.SetRoundStage("PostRoundWait")
 end
@@ -863,20 +866,14 @@ end
 
 function KillConfirmed:CheckBluForCountTimer()
 	if #self.Players.WithLives == 0 then
-		timer.Clear(self, "CheckBluForExfil")
 		gamemode.AddGameStat("Result=None")
-		if #self.HVT.EliminatedNotConfirmed ==
-		self.Settings.HVTCount.Value then
+		if self.HVT.EliminatedNotConfirmedCount >= self.Settings.HVTCount.Value	then
+			gamemode.AddGameStat("Summary=BluForExfilFailed")
+			gamemode.AddGameStat("CompleteObjectives=NeutralizeHVTs")
+		elseif self.HVT.EliminatedAndConfirmedCount >= self.Settings.HVTCount.Value then
 			gamemode.AddGameStat("Summary=BluForExfilFailed")
 			gamemode.AddGameStat(
-				"CompleteObjectives=NeutralizeHVTs,LastKnownLocation"
-			)
-		elseif self.HVT.EliminatedAndConfirmed >=
-		self.Settings.HVTCount.Value then
-			gamemode.AddGameStat("Summary=BluForExfilFailed")
-			gamemode.AddGameStat(
-				"CompleteObjectives=NeutralizeHVTs," ..
-				"ConfirmEliminatedHVTs,LastKnownLocation"
+				"CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs"
 			)
 		else
 			gamemode.AddGameStat("Summary=BluForEliminated")
@@ -893,8 +890,9 @@ function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.OpFor.Tag)
 	self.Players.WithLives = {}
-	self.HVT.EliminatedNotConfirmed = {}
-	self.HVT.EliminatedAndConfirmed = 0
+	self.HVT.EliminatedNotConfirmedLocations = {}
+	self.HVT.EliminatedNotConfirmedCount = 0
+	self.HVT.EliminatedAndConfirmedCount = 0
 	self.Extraction.PlayersIn = 0
 end
 
