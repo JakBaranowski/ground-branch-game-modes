@@ -1,13 +1,11 @@
-local math = require("math")
+local Tables = {}
 
-local TableOperations = {}
-
-TableOperations.__index = TableOperations
+Tables.__index = Tables
 
 ---Returns a table with shuffled entries of the provided ordered table
 ---@param orderedTable table
 ---@return table
-function TableOperations.ShuffleTable(orderedTable)
+function Tables.ShuffleTable(orderedTable)
     local tempTable = {table.unpack(orderedTable)}
     local shuffledTable = {}
     for i = #tempTable, 1, -1 do
@@ -22,11 +20,11 @@ end
 ---shuffled tables.
 ---@param tableWithOrderedTables table
 ---@return table
-function TableOperations.ShuffleTables(tableWithOrderedTables)
+function Tables.ShuffleTables(tableWithOrderedTables)
     local tempTable = {table.unpack(tableWithOrderedTables)}
     local tableWithShuffledTables = {}
     for orderedTableIndex, orderedTable in ipairs(tempTable) do
-        tableWithShuffledTables[orderedTableIndex] = TableOperations.ShuffleTable(
+        tableWithShuffledTables[orderedTableIndex] = Tables.ShuffleTable(
             orderedTable
         )
     end
@@ -37,7 +35,7 @@ end
 ---all 2nd level tables
 ---@param twoLevelsTable table
 ---@return table
-function TableOperations.GetTableFromTables(twoLevelsTable)
+function Tables.GetTableFromTables(twoLevelsTable)
     local tempTable = {table.unpack(twoLevelsTable)}
     local singleLevelTable = {}
     for _, secondLevelTable in ipairs(tempTable) do
@@ -55,7 +53,7 @@ end
 ---@param table1 table
 ---@param table2 table
 ---@return table
-function TableOperations.ConcatenateTables(table1, table2)
+function Tables.ConcatenateTables(table1, table2)
     local concatenatedTable = {table.unpack(table1)}
     for _, value in ipairs(table2) do
        table.insert(concatenatedTable, value)
@@ -63,4 +61,4 @@ function TableOperations.ConcatenateTables(table1, table2)
     return concatenatedTable
 end
 
-return TableOperations
+return Tables

@@ -1,5 +1,5 @@
-local TabOps = require("common.TableOperations")
-local Spawns = require("common.Spawns")
+local tables = require("common.Tables")
+local spawns = require("common.Spawns")
 
 --#region Properties
 
@@ -324,71 +324,47 @@ end
 
 function BreakOut:SetUpOpForSpawns()
 	if self.Settings.SpawnMethod.Value == 1 then
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithPriority,
-			ai.GetMaxCount()
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
 		self:SetUpOpForSpawnsByPriorities()
 	elseif self.Settings.SpawnMethod.Value == 2 then
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithPriority,
-			ai.GetMaxCount()
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
 		self:SetUpOpForSpawnsByPureRandomness()
 	else
-		local maxAiCount = math.min(
-			self.OpFor.TotalSpawnsWithGroup,
-			ai.GetMaxCount()
-		)
-		self.OpFor.CalculatedAiCount = Spawns.CalculateAiCount(
-			5,
-			maxAiCount,
-			gamemode.GetPlayerCount(true),
-			5,
-			self.Settings.OpForPreset.Value,
-			5,
-			0.1
-		)
 		self:SetUpOpForSpawnsByGroups()
 	end
 end
 
 function BreakOut:SetUpOpForSpawnsByGroups()
 	print("Setting up AI spawns by groups")
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithGroup,
+		ai.GetMaxCount()
+	)
+	self.OpFor.CalculatedAiCount = spawns.GetAiCountWithDeviationPercent(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
 	local remainingGroups =	{table.unpack(self.OpFor.AllSpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
 	local missingAiCount = self.OpFor.CalculatedAiCount
 	-- Select groups guarding extraction and add their spawn points to spawn list
 	print("Adding group closest to exfil")
-	local aiCountPerExfilGroup = Spawns.CalculateBaseAiCountPerGroup(
+	local aiCountPerExfilGroup = spawns.GetAiCountWithDeviationNumber(
 		3,
+		10,
 		gamemode.GetPlayerCount(true),
 		1,
 		self.Settings.OpForPreset.Value,
-		1
+		1,
+		0
 	)
 	aiCountPerExfilGroup = math.min(aiCountPerExfilGroup, missingAiCount)
 	local exfilLocation = actor.GetLocation(self.Extraction.ActivePoint)
-	Spawns.AddSpawnsFromClosestGroupWithZLimit(
+	spawns.AddSpawnsFromClosestGroupWithZLimit(
 		remainingGroups,
 		selectedSpawns,
 		reserveSpawns,
@@ -399,31 +375,57 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 	)
 	-- Select random spawns from remaining groups
 	print("Adding remaining spawns in random order")
-	local randomSpawns = TabOps.GetTableFromTables(
+	local randomSpawns = tables.GetTableFromTables(
 		remainingGroups
 	)
-	randomSpawns = TabOps.ShuffleTable(randomSpawns)
-	selectedSpawns = TabOps.ConcatenateTables(selectedSpawns, randomSpawns)
+	randomSpawns = tables.ShuffleTable(randomSpawns)
+	selectedSpawns = tables.ConcatenateTables(selectedSpawns, randomSpawns)
 	print("Selected spawns " .. #selectedSpawns)
-	self.OpFor.RoundSpawnList = TabOps.ConcatenateTables(selectedSpawns, randomSpawns)
+	self.OpFor.RoundSpawnList = tables.ConcatenateTables(selectedSpawns, randomSpawns)
 end
 
 function BreakOut:SetUpOpForSpawnsByPriorities()
 	print("Setting up AI spawns by priority")
-	local tableWithShuffledSpawns = TabOps.ShuffleTables(
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithPriority,
+		ai.GetMaxCount()
+	)
+	self.OpFor.CalculatedAiCount = spawns.GetAiCountWithDeviationPercent(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
+	local tableWithShuffledSpawns = tables.ShuffleTables(
 		self.OpFor.AllSpawnsByPriority
 	)
-	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
+	self.OpFor.RoundSpawnList = tables.GetTableFromTables(
 		tableWithShuffledSpawns
 	)
 end
 
 function BreakOut:SetUpOpForSpawnsByPureRandomness()
 	print("Setting up AI spawns by pure randomness")
-	self.OpFor.RoundSpawnList = TabOps.GetTableFromTables(
+	local maxAiCount = math.min(
+		self.OpFor.TotalSpawnsWithPriority,
+		ai.GetMaxCount()
+	)
+	self.OpFor.CalculatedAiCount = spawns.GetAiCountWithDeviationPercent(
+		5,
+		maxAiCount,
+		gamemode.GetPlayerCount(true),
+		5,
+		self.Settings.OpForPreset.Value,
+		5,
+		0.1
+	)
+	self.OpFor.RoundSpawnList = tables.GetTableFromTables(
 		self.OpFor.AllSpawnsByPriority
 	)
-	self.OpFor.RoundSpawnList = TabOps.ShuffleTable(self.OpFor.RoundSpawnList)
+	self.OpFor.RoundSpawnList = tables.ShuffleTable(self.OpFor.RoundSpawnList)
 end
 
 function BreakOut:SpawnOpFor()
