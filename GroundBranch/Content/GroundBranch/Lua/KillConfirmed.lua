@@ -518,7 +518,7 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 	-- Select random groups and add their spawn points to spawn list
 	print("Adding random group spawns")
 	while missingAiCount > 0 do
-		local aiCountPerStandardGroup = spawns.GetAiCountWithDeviationNumber(
+		local aiCountPerGroup = spawns.GetAiCountWithDeviationNumber(
 			2,
 			10,
 			gamemode.GetPlayerCount(true),
@@ -527,10 +527,7 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 			1,
 			1
 		)
-		if
-			#reserveSpawns >= missingAiCount and
-			aiCountPerStandardGroup > missingAiCount
-		then
+		if aiCountPerGroup > missingAiCount	then
 			print("Remaining AI count is not enough to fill group")
 			break
 		end
@@ -538,11 +535,11 @@ function KillConfirmed:SetUpOpForSpawnsByGroups()
 			remainingGroups,
 			selectedSpawns,
 			reserveSpawns,
-			aiCountPerStandardGroup
+			aiCountPerGroup
 		)
 		missingAiCount = self.OpFor.CalculatedAiCount - #selectedSpawns
 	end
-	-- Select random spawns from reserve
+	-- Select random spawns
 	if missingAiCount > 0 then
 		if #remainingGroups > 0 then
 			print("Adding random spawns")

@@ -1,5 +1,7 @@
 local tables = require("common.Tables")
 local spawns = require("common.Spawns")
+local navigation = require("common.Navigation")
+local actors = require("common.Actors")
 
 --#region Properties
 
@@ -178,6 +180,38 @@ function BreakOut:OnRoundStageSet(RoundStage)
 			1,
 			false
 		)
+		--DEBUG START
+		local playerStarts = gameplaystatics.GetAllActorsOfClass(
+			'GroundBranch.GBPlayerStart'
+		)
+		local exfilLocation = actor.GetLocation(self.Extraction.ActivePoint)
+		local playerStartLocation = actors.GetGroupAverageLocation(playerStarts)
+		local straightRoute = navigation.GetStraightRoutePoints(
+			playerStartLocation,
+			exfilLocation,
+			10
+		)
+		for i, point in ipairs(straightRoute) do
+			player.ShowWorldPrompt(
+				self.Players.WithLives[1],
+				point,
+				"Straight_" .. i,
+				600.0
+			)
+		end
+		local navPoints = navigation.ProjectRouteToNavigation(
+			straightRoute,
+			{x=500.0,y=500.0,z=1000.0}
+		)
+		for i, point in ipairs(navPoints) do
+			player.ShowWorldPrompt(
+				self.Players.WithLives[1],
+				point,
+				"Nav_" .. i,
+				600.0
+			)
+		end
+		--DEBUG END
 	end
 end
 
@@ -350,7 +384,6 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 	local remainingGroups =	{table.unpack(self.OpFor.AllSpawnsByGroup)}
 	local selectedSpawns = {}
 	local reserveSpawns = {}
-	local missingAiCount = self.OpFor.CalculatedAiCount
 	-- Select groups guarding extraction and add their spawn points to spawn list
 	print("Adding group closest to exfil")
 	local aiCountPerExfilGroup = spawns.GetAiCountWithDeviationNumber(
@@ -362,27 +395,74 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 		1,
 		0
 	)
-	aiCountPerExfilGroup = math.min(aiCountPerExfilGroup, missingAiCount)
 	local exfilLocation = actor.GetLocation(self.Extraction.ActivePoint)
-	spawns.AddSpawnsFromClosestGroupWithZLimit(
+	spawns.AddSpawnsFromClosestGroup(
 		remainingGroups,
 		selectedSpawns,
 		reserveSpawns,
 		aiCountPerExfilGroup,
 		exfilLocation,
-		self.Extraction.MaxDistanceForGroupConsideration,
-		250.0
+		self.Extraction.MaxDistanceForGroupConsideration
 	)
+	-- Select random group spawns along route
+	local playerStarts = gameplaystatics.GetAllActorsOfClass(
+		'GroundBranch.GBPlayerStart'
+	)
+	local playerStartLocation = actors.GetGroupAverageLocation(playerStarts)
+	local straightRoute = navigation.GetStraightRoutePoints(
+		playerStartLocation,
+		exfilLocation,
+		10
+	)
+	local randomPoints = navigation.GetRandomPointsAlongRoute(
+		straightRoute,
+		10000,
+		2
+	)
+	randomPoints = tables.ShuffleTable(randomPoints)
+	for _, randomPoint in ipairs(randomPoints) do
+		print("Adding AI closest to " .. tostring(randomPoint))
+		local aiCountPerGroup = spawns.GetAiCountWithDeviationNumber(
+			2,
+			10,
+			gamemode.GetPlayerCount(true),
+			0.5,
+			self.Settings.OpForPreset.Value,
+			1,
+			1
+		)
+		if #selectedSpawns + aiCountPerGroup > self.OpFor.CalculatedAiCount	then
+			print("Remaining AI count is not enough to fill group")
+			break
+		end
+		spawns.AddSpawnsFromClosestGroup(
+			remainingGroups,
+			selectedSpawns,
+			reserveSpawns,
+			aiCountPerGroup,
+			randomPoint,
+			5000.0
+		)
+	end
 	-- Select random spawns from remaining groups
-	print("Adding remaining spawns in random order")
-	local randomSpawns = tables.GetTableFromTables(
-		remainingGroups
-	)
-	randomSpawns = tables.ShuffleTable(randomSpawns)
-	selectedSpawns = tables.ConcatenateTables(selectedSpawns, randomSpawns)
-	print("Selected spawns " .. #selectedSpawns)
-	self.OpFor.RoundSpawnList = tables.ConcatenateTables(selectedSpawns, randomSpawns)
+	if #remainingGroups > 0 then
+		print("Adding random spawns")
+		local randomSpawns = tables.GetTableFromTables(
+			remainingGroups
+		)
+		randomSpawns = tables.ShuffleTable(randomSpawns)
+		selectedSpawns = tables.ConcatenateTables(selectedSpawns, randomSpawns)
+	elseif #reserveSpawns > 0 then
+		print("Adding random spawns from reserve")
+		while #reserveSpawns > 0 do
+			local randIndex = math.random(#reserveSpawns)
+			table.insert(selectedSpawns, reserveSpawns[randIndex])
+			table.remove(reserveSpawns, randIndex)
+		end
+	end
+	self.OpFor.RoundSpawnList = selectedSpawns
 end
+
 
 function BreakOut:SetUpOpForSpawnsByPriorities()
 	print("Setting up AI spawns by priority")

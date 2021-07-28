@@ -104,27 +104,32 @@ function Spawns.AddSpawnsFromRandomGroupWithinDistance(
         "Searching for a group within " .. maxDistance ..
         " from location " .. tostring(location)
     )
+    local maxDistanceSq = maxDistance ^ 2
     local groupsToConsider = {}
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = actors.GetGroupAverageLocation(group)
-        local distanceVector = groupLocation - location
-        local distance = vector.Size(distanceVector)
-        if distance < maxDistance then
+        local shortestDistanceSq = actors.GetShortestDistanceSqWithinGroup(
+            location,
+            group,
+            maxDistanceSq
+        )
+        if shortestDistanceSq < maxDistanceSq then
             local groupName = actors.GetSuffixFromActorTag(
                 remainingGroups[groupIndex][1],
                 "Group"
             )
             print(
-                "Found " .. groupName ..
-                " group at distance " .. distance
+                "Found group " .. groupName ..
+                " with member at distance squared " .. shortestDistanceSq
             )
             table.insert(groupsToConsider, groupIndex)
         end
     end
+
     if #groupsToConsider <=0 then
         print("No groups within distance found")
         return
     end
+
     local selectedGroupIndex = groupsToConsider[math.random(#groupsToConsider)]
     Spawns.addSpawnsFromGroup(
         remainingGroups,
@@ -158,22 +163,23 @@ function Spawns.AddSpawnsFromClosestGroup(
         " from location " .. tostring(location)
     )
     local selectedGroupIndex = 0
-    local lowestDistance = maxDistance ^ 2
+    local lowestDistanceSq = maxDistance ^ 2
     for groupIndex, group in ipairs(remainingGroups) do
-        local groupLocation = actors.GetGroupAverageLocation(group)
-        local groupName = actors.GetSuffixFromActorTag(
-            remainingGroups[groupIndex][1],
-            "Group"
+        local distanceSq = actors.GetShortestDistanceSqWithinGroup(
+            location,
+            group,
+            lowestDistanceSq
         )
-        local distanceVector = groupLocation - location
-        local distance = vector.SizeSq(distanceVector)
-        print(
-            "Group " .. groupName ..
-            " at distance " .. distance
-        )
-        if distance < lowestDistance then
-            print("Found new closest group " .. groupName)
-            lowestDistance = distance
+        if distanceSq < lowestDistanceSq then
+            local groupName = actors.GetSuffixFromActorTag(
+                remainingGroups[groupIndex][1],
+                "Group"
+            )
+            print(
+                "Found new closest group " .. groupName ..
+                " at distance " .. distanceSq
+            )
+            lowestDistanceSq = distanceSq
             selectedGroupIndex = groupIndex
         end
     end
