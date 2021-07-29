@@ -180,38 +180,6 @@ function BreakOut:OnRoundStageSet(RoundStage)
 			1,
 			false
 		)
-		--DEBUG START
-		local playerStarts = gameplaystatics.GetAllActorsOfClass(
-			'GroundBranch.GBPlayerStart'
-		)
-		local exfilLocation = actor.GetLocation(self.Extraction.ActivePoint)
-		local playerStartLocation = actors.GetGroupAverageLocation(playerStarts)
-		local straightRoute = navigation.GetStraightRoutePoints(
-			playerStartLocation,
-			exfilLocation,
-			10
-		)
-		for i, point in ipairs(straightRoute) do
-			player.ShowWorldPrompt(
-				self.Players.WithLives[1],
-				point,
-				"Straight_" .. i,
-				600.0
-			)
-		end
-		local navPoints = navigation.ProjectRouteToNavigation(
-			straightRoute,
-			{x=500.0,y=500.0,z=1000.0}
-		)
-		for i, point in ipairs(navPoints) do
-			player.ShowWorldPrompt(
-				self.Players.WithLives[1],
-				point,
-				"Nav_" .. i,
-				600.0
-			)
-		end
-		--DEBUG END
 	end
 end
 
@@ -405,10 +373,75 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 		self.Extraction.MaxDistanceForGroupConsideration
 	)
 	-- Select random group spawns along route
+	print("Grabbing player starts")
 	local playerStarts = gameplaystatics.GetAllActorsOfClass(
 		'GroundBranch.GBPlayerStart'
 	)
+	print("Getting player starts average location")
 	local playerStartLocation = actors.GetGroupAverageLocation(playerStarts)
+	--DEBUG START
+	local testRouteS = navigation.PlotNav(
+		playerStartLocation,
+		exfilLocation,
+		0.0,
+		30.0,
+		250.0,
+		128
+	)
+	-- testRouteS = navigation.CleanPlottedNavSimple(testRouteS, 20)
+	-- testRouteS = navigation.CleanPlottedNavAdvanced(testRouteS, 500.0)
+	local testRouteL = navigation.PlotNav(
+		playerStartLocation,
+		exfilLocation,
+		-80.0,
+		30.0,
+		250.0,
+		128
+	)
+	-- testRouteL = navigation.CleanPlottedNavSimple(testRouteL, 20)
+	-- testRouteL = navigation.CleanPlottedNavAdvanced(testRouteL, 500.0)
+	local testRouteR = navigation.PlotNav(
+		playerStartLocation,
+		exfilLocation,
+		80.0,
+		30.0,
+		250.0,
+		128
+	)
+	-- testRouteR = navigation.CleanPlottedNavSimple(testRouteR, 20)
+	-- testRouteR = navigation.CleanPlottedNavAdvanced(testRouteR, 500.0)
+	local allPlayersList = gamemode.GetPlayerList(
+		1,
+		self.PlayerTeams.BluFor.TeamId,
+		false,
+		0,
+		true
+	)
+	for i, point in ipairs(testRouteS) do
+		player.ShowWorldPrompt(
+			allPlayersList[1],
+			point,
+			"S_" .. i,
+			600.0
+		)
+	end
+	for i, point in ipairs(testRouteL) do
+		player.ShowWorldPrompt(
+			allPlayersList[1],
+			point,
+			"L_" .. i,
+			600.0
+		)
+	end
+	for i, point in ipairs(testRouteR) do
+		player.ShowWorldPrompt(
+			allPlayersList[1],
+			point,
+			"R_" .. i,
+			600.0
+		)
+	end
+	--DEBUG END
 	local straightRoute = navigation.GetStraightRoutePoints(
 		playerStartLocation,
 		exfilLocation,
@@ -444,7 +477,7 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 			5000.0
 		)
 	end
-	-- Select random spawns from remaining groups
+	--Select random spawns from remaining groups
 	if #remainingGroups > 0 then
 		print("Adding random spawns")
 		local randomSpawns = tables.GetTableFromTables(
