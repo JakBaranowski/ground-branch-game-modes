@@ -198,6 +198,22 @@ function Spawns.AddSpawnsFromClosestGroup(
     )
 end
 
+
+function Spawns.AddSpawnsOnRoute(
+    remainingGroups,
+    selectedSpawns,
+    reserveSpawns,
+    aiPerGroupAmount,
+    route,
+    maxDistance
+)
+    for i, point in ipairs(route) do
+        for j, group in ipairs(remainingGroups) do
+            local distance = vector.SizeSq()
+        end
+    end
+end
+
 ---Finds group closest to location, and within the vertical maxZDistance, from
 ---remainingGroups. Adds spawns from the closest group to selectedSpawns table.
 ---Spawns that exceed the aiPerGroupAmount will be added to the reserveSpawns table.
