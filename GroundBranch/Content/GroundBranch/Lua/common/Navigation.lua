@@ -88,7 +88,7 @@ function Navigation.PlotNav(
 )
     local route = {fromPosition}
     local stepSq = stepLength ^ 2
-    local sizeSqThreshold = stepSq * 0.33
+    local sizeSqThreshold = stepSq * 0.66
     local loopSteps = maxPoints - 1
     local currentAngleMiss = angleMiss
     local angleCorrectionPerStep = currentAngleMiss / loopSteps
@@ -97,12 +97,14 @@ function Navigation.PlotNav(
     for i = 1, loopSteps do
         local distanceVector = toPosition - route[i]
         local distanceSq = vector.SizeSq(distanceVector)
+        -- local oneOverSqareRootOfThree = 0.57735026918962576450914878050196
         if distanceSq < stepSq then
             table.insert(route, toPosition)
             break
         end
 
         local directionVector = vectors.GetUnitVector(distanceVector)
+        print("Direction unit vector " .. tostring(directionVector))
         local horizontalDirectionVector = vectors.GetUnitVector2D(distanceVector)
         local stepVector = vectors.MultiplyByNumber(
             horizontalDirectionVector,
@@ -110,6 +112,7 @@ function Navigation.PlotNav(
         )
 
         local possibleSteps = Navigation.GetPossibleStep(
+            route[i-1],
             route[i],
             stepVector,
             currentAngleMiss,
@@ -120,23 +123,18 @@ function Navigation.PlotNav(
 
         local nextStep = nil
 
-        local rand = math.random()
-        print("Perpendicular step possibility " .. 0.1 .. " vertical step possibility " .. directionVector.z)
         if
-            rand < directionVector.z and
+            math.abs(directionVector.z) > 0.75 and
             possibleSteps.vertical ~= nil
         then
+            print("Going vertical")
             nextStep = possibleSteps.vertical
         elseif possibleSteps.horizontal ~= nil then
+            print("Going horizontal")
             nextStep = possibleSteps.horizontal
         end
 
-        if
-            nextStep == nil and
-            possibleSteps.perpendicular ~= nil
-        then
-            nextStep = possibleSteps.perpendicular
-        else
+        if nextStep == nil then
             local chosenDirectionVector = vectors.RotateVectorHorizontal(
                 stepVector,
                 angleMiss
@@ -151,7 +149,8 @@ function Navigation.PlotNav(
 end
 
 function Navigation.GetPossibleStep(
-    start,
+    previousStep,
+    currentStep,
     stepVector,
     angleMiss,
     angleMax,
@@ -165,7 +164,8 @@ function Navigation.GetPossibleStep(
     }
 
     possibleSteps.vertical = Navigation.GetPossibleHorizontalStep(
-        start,
+        previousStep,
+        currentStep,
         stepVector,
         angleMiss,
         angleMax,
@@ -175,17 +175,10 @@ function Navigation.GetPossibleStep(
     )
 
     possibleSteps.horizontal = Navigation.GetPossibleVerticalStep(
-        start,
+        previousStep,
+        currentStep,
         250.0,
         10,
-        sizeSqThreshold
-    )
-
-    possibleSteps.perpendicular = Navigation.GetPossiblePerpendicularStep(
-        start,
-        stepVector,
-        angleMiss < 0,
-        extent,
         sizeSqThreshold
     )
 
@@ -193,7 +186,8 @@ function Navigation.GetPossibleStep(
 end
 
 function Navigation.GetPossibleHorizontalStep(
-    start,
+    previousStep,
+    currentStep,
     stepVector,
     angleMiss,
     angleMax,
@@ -201,97 +195,115 @@ function Navigation.GetPossibleHorizontalStep(
     tries,
     extent
 )
-    print("Trying to get horizontal step")
+    -- print("Trying to get horizontal step")
     for _ = 1, tries do
         local randomAngle = angleMax * (math.random() - 0.5) + angleMiss
         local chosenDirectionVector = vectors.RotateVectorHorizontal(
             stepVector,
             randomAngle
         )
-        local newPosition = Navigation.AttemptStep(
-            start,
+        local nextStep = Navigation.AttemptStep(
+            currentStep,
             chosenDirectionVector,
             extent
         )
-        local sizeSq = vector.SizeSq(newPosition - start)
-        if
-            newPosition ~= nil and
-            sizeSq > sizeSqThreshold
-        then
-            print(
-                "New horizontal step found at " .. tostring(newPosition) ..
-                " distance squared from last step " .. sizeSq ..
-                " threshold " .. sizeSqThreshold
-            )
-            return newPosition
+        if nextStep ~= nil then
+            local sizeSqToCurrent = vector.SizeSq(nextStep - currentStep)
+            local sizeSqToPrevious = vector.SizeSq(nextStep - previousStep)
+            if
+                sizeSqToCurrent > sizeSqThreshold and
+                sizeSqToPrevious > sizeSqThreshold
+            then
+                -- print(
+                --     "New horizontal step found at " .. tostring(nextStep) ..
+                --     " distance squared from last step " .. sizeSqToCurrent ..
+                --     " threshold " .. sizeSqThreshold
+                -- )
+                return nextStep
+            end
         end
     end
     return nil
 end
 
 function Navigation.GetPossibleVerticalStep(
-    start,
+    previousStep,
+    currentStep,
     stepLength,
     tries,
     sizeSqThreshold
 )
-    print("Trying to get vertical step")
+    -- print("Trying to get vertical step")
     local vectorUp = vector:new(0, 0, 1)
     local extent = vector:new(stepLength * 2, stepLength * 2, stepLength / 2)
     for i = 1, tries do
+
         local stepDown = vectors.MultiplyByNumber(vectorUp, -stepLength * i)
-        local down = Navigation.AttemptStep(start, stepDown, extent)
-        local sizeSq = vector.SizeSq(down - start)
-        if
-            down ~= nil and
-            sizeSq > sizeSqThreshold
-        then
-            print(
-                "New vertical step down found at " .. tostring(down) ..
-                " distance squared from last step " .. sizeSq ..
-                " threshold " .. sizeSqThreshold
-            )
-            return down
+        local down = Navigation.AttemptStep(currentStep, stepDown, extent)
+        if down ~= nil then
+            local sizeSqToCurrent = vector.SizeSq(down - currentStep)
+            local sizeSqToPrevious = vector.SizeSq(down - previousStep)
+            if
+                sizeSqToCurrent > sizeSqThreshold and
+                sizeSqToPrevious > sizeSqThreshold
+            then
+                -- print(
+                --     "New vertical step down found at " .. tostring(down) ..
+                --     " distance squared from last step " .. sizeSqToCurrent ..
+                --     " threshold " .. sizeSqThreshold
+                -- )
+                return down
+            end
         end
+
         local stepUp = vectors.MultiplyByNumber(vectorUp, stepLength * i)
-        local up = Navigation.AttemptStep(start, stepUp, extent)
-        sizeSq = vector.SizeSq(up - start)
-        if
-            up ~= nil and
-            sizeSq > sizeSqThreshold
-        then
-            print(
-                "New vertical step up found at " .. tostring(up) ..
-                " distance squared from last step " .. sizeSq ..
-                " threshold " .. sizeSqThreshold
-            )
-            return up
+        local up = Navigation.AttemptStep(currentStep, stepUp, extent)
+        if up ~= nil then
+            local sizeSqToCurrent = vector.SizeSq(up - currentStep)
+            local sizeSqToPrevious = vector.SizeSq(up - previousStep)
+            if
+                sizeSqToCurrent > sizeSqThreshold and
+                sizeSqToPrevious > sizeSqThreshold
+            then
+                -- print(
+                --     "New vertical step up found at " .. tostring(up) ..
+                --     " distance squared from last step " .. sizeSqToCurrent ..
+                --     " distance squared from previous step " .. sizeSqToPrevious ..
+                --     " threshold " .. sizeSqThreshold
+                -- )
+                return up
+            end
         end
     end
+
     return nil
 end
 
 function Navigation.GetPossiblePerpendicularStep(
-    start,
+    previousStep,
+    currentStep,
     stepVector,
     clockwise,
     extent,
     sizeSqThreshold
 )
-    print("Trying to get perpendicular step")
+    -- print("Trying to get perpendicular step")
     local perpendicularVector =
         vectors.GetPerpendicularVectorHorizontal(stepVector, clockwise)
-    local nextStep = Navigation.AttemptStep(start, perpendicularVector, extent)
-    local sizeSq = vector.SizeSq(nextStep - start)
+    local nextStep = Navigation.AttemptStep(currentStep, perpendicularVector, extent)
+    local sizeSqToCurrent = vector.SizeSq(nextStep - currentStep)
+    local sizeSqToPrevious = vector.SizeSq(nextStep - previousStep)
     if
         nextStep ~= nil and
-        sizeSq > sizeSqThreshold
+        sizeSqToCurrent > sizeSqThreshold and
+        sizeSqToPrevious > sizeSqThreshold
     then
-        print(
-            "New perpendicular step found at " .. tostring(nextStep) ..
-            " distance squared from last step " .. sizeSq ..
-            " threshold " .. sizeSqThreshold
-        )
+        -- print(
+        --     "New perpendicular step found at " .. tostring(nextStep) ..
+        --     " distance squared from last step " .. sizeSqToCurrent ..
+        --     " distance squared from previous step " .. sizeSqToPrevious ..
+        --     " threshold " .. sizeSqThreshold
+        -- )
         return nextStep
     end
     return nil
