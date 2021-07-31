@@ -1,4 +1,7 @@
-local Maths = {}
+local Maths = {
+    OneOverSquareRootOfThree = 0.57735026918962576450914878050196,
+    OneOverSquareRootOfTwo = 0.70710678118654752440084436210485
+}
 
 Maths.__index = Maths
 

@@ -1,5 +1,5 @@
-local maths = require("common.Maths")
-local actors = require("common.Actors")
+local maths = require("Common.Maths")
+local actors = require("Common.Actors")
 
 local Spawns = {}
 
@@ -197,7 +197,6 @@ function Spawns.AddSpawnsFromClosestGroup(
         selectedGroupIndex
     )
 end
-
 
 function Spawns.AddSpawnsOnRoute(
     remainingGroups,

@@ -1,4 +1,4 @@
-local strings = require("common.Strings")
+local strings = require("Common.Strings")
 
 local Actors = {}
 

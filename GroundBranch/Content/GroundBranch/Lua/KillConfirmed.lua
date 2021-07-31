@@ -1,6 +1,6 @@
-local tables = require("common.Tables")
-local spawns = require("common.Spawns")
-local actors = require("common.Actors")
+local tables = require("Common.Tables")
+local spawns = require("Common.Spawns")
+local actors = require("Common.Actors")
 
 --#region Properties
 
