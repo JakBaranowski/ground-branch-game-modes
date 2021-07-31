@@ -1,7 +1,8 @@
-local tables = require("common.Tables")
-local spawns = require("common.Spawns")
-local navigation = require("common.Navigation")
-local actors = require("common.Actors")
+local tables = require("Common.Tables")
+local spawns = require("Common.Spawns")
+local navStr = require("Navigation.Straight")
+local navCom = require("Navigation.Common")
+local navAdv = require("Navigation.Advanced")
 
 --#region Properties
 
@@ -373,43 +374,37 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 		self.Extraction.MaxDistanceForGroupConsideration
 	)
 	-- Select random group spawns along route
+	
 	print("Grabbing player starts")
-	local playerStarts = gameplaystatics.GetAllActorsOfClass(
-		'GroundBranch.GBPlayerStart'
-	)
-	print("Getting player starts average location")
-	local playerStartLocation = actors.GetGroupAverageLocation(playerStarts)
+	local insertionPoint = gameplaystatics.GetAllActorsOfClass(
+		"GroundBranch.GBInsertionPoint"
+	)[1]
+	local insertionPointLocation = actor.GetLocation(insertionPoint)
 	--DEBUG START
-	local testRouteS = navigation.PlotNav(
-		playerStartLocation,
-		exfilLocation,
+	local routeStraightNav = navAdv:Create(insertionPointLocation, exfilLocation)
+	local routeStraight = routeStraightNav:PlotRoute(
 		0.0,
-		30.0,
+		45.0,
 		250.0,
-		128
+		512
 	)
-	-- testRouteS = navigation.CleanPlottedNavSimple(testRouteS, 20)
-	-- testRouteS = navigation.CleanPlottedNavAdvanced(testRouteS, 500.0)
-	local testRouteL = navigation.PlotNav(
-		playerStartLocation,
-		exfilLocation,
+	routeStraight = navCom.CleanRouteAdvanced(routeStraight, 1000.0)
+	local routeLeftNav = navAdv:Create(insertionPointLocation, exfilLocation)
+	local routeLeft = routeLeftNav:PlotRoute(
 		-80.0,
-		30.0,
+		45.0,
 		250.0,
-		128
+		256
 	)
-	-- testRouteL = navigation.CleanPlottedNavSimple(testRouteL, 20)
-	-- testRouteL = navigation.CleanPlottedNavAdvanced(testRouteL, 500.0)
-	local testRouteR = navigation.PlotNav(
-		playerStartLocation,
-		exfilLocation,
+	routeLeft = navCom.CleanRouteAdvanced(routeLeft, 1000.0)
+	local routeRightNav = navAdv:Create(insertionPointLocation, exfilLocation)
+	local routeRight = routeRightNav:PlotRoute(
 		80.0,
-		30.0,
+		45.0,
 		250.0,
-		128
+		256
 	)
-	-- testRouteR = navigation.CleanPlottedNavSimple(testRouteR, 20)
-	-- testRouteR = navigation.CleanPlottedNavAdvanced(testRouteR, 500.0)
+	routeRight = navCom.CleanRouteAdvanced(routeRight, 1000.0)
 	local allPlayersList = gamemode.GetPlayerList(
 		1,
 		self.PlayerTeams.BluFor.TeamId,
@@ -417,7 +412,7 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 		0,
 		true
 	)
-	for i, point in ipairs(testRouteS) do
+	for i, point in ipairs(routeStraight) do
 		player.ShowWorldPrompt(
 			allPlayersList[1],
 			point,
@@ -425,7 +420,7 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 			600.0
 		)
 	end
-	for i, point in ipairs(testRouteL) do
+	for i, point in ipairs(routeLeft) do
 		player.ShowWorldPrompt(
 			allPlayersList[1],
 			point,
@@ -433,7 +428,7 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 			600.0
 		)
 	end
-	for i, point in ipairs(testRouteR) do
+	for i, point in ipairs(routeRight) do
 		player.ShowWorldPrompt(
 			allPlayersList[1],
 			point,
@@ -442,12 +437,12 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 		)
 	end
 	--DEBUG END
-	local straightRoute = navigation.GetStraightRoutePoints(
-		playerStartLocation,
+	local straightRoute = navStr.GetStraightRoutePoints(
+		insertionPointLocation,
 		exfilLocation,
 		10
 	)
-	local randomPoints = navigation.GetRandomPointsAlongRoute(
+	local randomPoints = navCom.GetRandomPointsAlongRoute(
 		straightRoute,
 		10000,
 		2
