@@ -381,30 +381,39 @@ function BreakOut:SetUpOpForSpawnsByGroups()
 	)[1]
 	local insertionPointLocation = actor.GetLocation(insertionPoint)
 	--DEBUG START
-	local routeStraightNav = navAdv:Create(insertionPointLocation, exfilLocation)
-	local routeStraight = routeStraightNav:PlotRoute(
-		0.0,
-		45.0,
+	local navStraight = navAdv:Create(
+		insertionPointLocation,
+		exfilLocation,
 		250.0,
+		0.75
+	)
+	local routeStraight = navStraight:PlotRoute(
+		0.0,
 		512
 	)
-	routeStraight = navCom.CleanRouteAdvanced(routeStraight, 1000.0)
-	local routeLeftNav = navAdv:Create(insertionPointLocation, exfilLocation)
-	local routeLeft = routeLeftNav:PlotRoute(
+	routeStraight = navCom.CleanRouteSimple(routeStraight, 64)
+	local navLeft = navAdv:Create(
+		insertionPointLocation,
+		exfilLocation,
+		250.0,
+		0.75
+	)
+	local routeLeft = navLeft:PlotRoute(
 		-80.0,
-		45.0,
-		250.0,
-		256
+		512
 	)
-	routeLeft = navCom.CleanRouteAdvanced(routeLeft, 1000.0)
-	local routeRightNav = navAdv:Create(insertionPointLocation, exfilLocation)
-	local routeRight = routeRightNav:PlotRoute(
+	routeLeft = navCom.CleanRouteSimple(routeLeft, 64)
+	local navRight = navAdv:Create(
+		insertionPointLocation,
+		exfilLocation,
+		250.0,
+		0.75
+	)
+	local routeRight = navRight:PlotRoute(
 		80.0,
-		45.0,
-		250.0,
-		256
+		512
 	)
-	routeRight = navCom.CleanRouteAdvanced(routeRight, 1000.0)
+	routeRight = navCom.CleanRouteSimple(routeRight, 64)
 	local allPlayersList = gamemode.GetPlayerList(
 		1,
 		self.PlayerTeams.BluFor.TeamId,
