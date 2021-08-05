@@ -1,5 +1,5 @@
-local vectors = require("Common.Vectors")
-local common = require("Navigation.Common")
+local Vectors = require('Common.Vectors')
+local Common = require('Navigation.Common')
 
 local Simple = {}
 
@@ -37,8 +37,8 @@ function Simple.PlotRoute(
         if distance < stepLength then
             break
         end
-        local directionVector = vectors.GetUnitVector(distanceVector)
-        local stepVector = vectors.MultiplyByNumber(directionVector, stepLength)
+        local directionVector = Vectors.GetUnitVector(distanceVector)
+        local stepVector = Vectors.MultiplyByNumber(directionVector, stepLength)
         local possibleNextPosition = Simple.GetAllPossibleSteps(
             route[i],
             stepVector,
@@ -79,11 +79,11 @@ function Simple.GetAllPossibleSteps(
 )
     local positionsToConsider = {}
     for angle = -angleMax, angleMax, angleStep do
-        local chosenDirectionVector = vectors.GetHorizontalyRotatedVector(
+        local chosenDirectionVector = Vectors.GetHorizontalyRotatedVector(
             stepVector,
             angle + angleMiss
         )
-        local newPosition = common.AttemptStep(
+        local newPosition = Common.AttemptStep(
             start,
             chosenDirectionVector,
             extent

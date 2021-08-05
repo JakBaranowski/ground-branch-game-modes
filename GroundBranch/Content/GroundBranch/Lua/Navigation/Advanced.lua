@@ -1,5 +1,5 @@
-local vectors = require("Common.Vectors")
-local common = require("Navigation.Common")
+local Vectors = require('Common.Vectors')
+local Common = require('Navigation.Common')
 
 ---Direction table maps human-readeable directions to numbers in a way that allows
 ---to easily find opposite direction and compare direction faster.
@@ -21,8 +21,9 @@ local Advanced = {
         Length = 250.0,
         LengthSq = 250.0 ^ 2,
         Threshold = 0.75,
+        ThresholdCheck = 5,
         AngleMax = 45.0,
-        LastStepDirection = "None",
+        LastStepDirection = 'None',
     },
     Extents = {
         Horizontal = {},
@@ -40,8 +41,9 @@ local Advanced = {
 ---@param destination table vector {x,y,z}
 ---@param stepLength number
 ---@param minStepThreshold number
+---@param thresholdCheck integer
 ---@return table Advanced
-function Advanced:Create(start, destination, stepLength, minStepThreshold)
+function Advanced:Create(start, destination, stepLength, minStepThreshold, thresholdCheck)
     local adv = {}
     setmetatable(adv, self)
     self.__index = self
@@ -52,6 +54,7 @@ function Advanced:Create(start, destination, stepLength, minStepThreshold)
     adv.Step.Length = stepLength
     adv.Step.LengthSq = stepLength ^ 2
     adv.Step.Threshold = (stepLength * minStepThreshold) ^ 2
+    adv.Step.ThresholdCheck = thresholdCheck
     adv.Extents.Horizontal = vector:new(stepLength * 0.75, stepLength * 0.75, stepLength * 1.5)
     adv.Extents.Vertical =  vector:new(stepLength * 1.5, stepLength * 1.5, stepLength * 0.75)
     return adv
@@ -66,11 +69,9 @@ function Advanced:PlotRoute(
     angleMiss,
     maxPoints
 )
-    print(" --- Started plotting route --- ")
+    -- print(' --- Started plotting route --- ')
 
     local loopSteps = maxPoints - 1
-    local angleMissCurrent = angleMiss
-    local angleCorrectionPerStep = angleMiss / loopSteps * 1.5
 
     for loopStep = 1, loopSteps do
         self.Step.Index = loopStep
@@ -78,66 +79,64 @@ function Advanced:PlotRoute(
         local distanceVector = self.Destination - self:GetRoutePointSafe(self.Step.Index)
         local distanceSq = vector.SizeSq(distanceVector)
         if distanceSq <= self.Step.LengthSq then
-            print("@[ " .. self.Step.Index .. " ] -> !!! Arrived at destination !!!")
+            -- print('@[ ' .. self.Step.Index .. ' ] -> !!! Arrived at destination !!!')
             table.insert(self.Route, self.Destination)
             break
         end
 
-        local directionVector3D = vectors.GetUnitVector(distanceVector)
-        local directionVectorHorizontal = vectors.GetUnitVector2D(distanceVector)
+        local directionVector3D = Vectors.GetUnitVector(distanceVector)
+        local directionVectorHorizontal = Vectors.GetUnitVector2D(distanceVector)
 
         local directionList = {}
         if directionVector3D.z > 0.5 then
-            self:AddToDirectionList(directionList, "Up")
-            self:AddToDirectionList(directionList, "Forward")
-            self:AddToDirectionList(directionList, "Down")
+            self:AddToDirectionList(directionList, 'Up')
+            self:AddToDirectionList(directionList, 'Forward')
+            self:AddToDirectionList(directionList, 'Down')
         elseif directionVector3D.z < -0.5 then
-            self:AddToDirectionList(directionList, "Down")
-            self:AddToDirectionList(directionList, "Forward")
-            self:AddToDirectionList(directionList, "Up")
+            self:AddToDirectionList(directionList, 'Down')
+            self:AddToDirectionList(directionList, 'Forward')
+            self:AddToDirectionList(directionList, 'Up')
         else
-            self:AddToDirectionList(directionList, "Forward")
-            self:AddToDirectionList(directionList, "Down")
-            self:AddToDirectionList(directionList, "Up")
+            self:AddToDirectionList(directionList, 'Forward')
+            self:AddToDirectionList(directionList, 'Down')
+            self:AddToDirectionList(directionList, 'Up')
         end
-        self:AddToDirectionList(directionList, "Forward")
+        self:AddToDirectionList(directionList, 'Forward')
         if math.random() > 0.5 then
-            self:AddToDirectionList(directionList, "Left")
-            self:AddToDirectionList(directionList, "Right")
+            self:AddToDirectionList(directionList, 'Left')
+            self:AddToDirectionList(directionList, 'Right')
         else
-            self:AddToDirectionList(directionList, "Right")
-            self:AddToDirectionList(directionList, "Left")
+            self:AddToDirectionList(directionList, 'Right')
+            self:AddToDirectionList(directionList, 'Left')
         end
-        self:AddToDirectionList(directionList, "Backward")
+        self:AddToDirectionList(directionList, 'Backward')
 
         local nextStep = nil
         for _, direction in ipairs(directionList) do
-            nextStep = self[direction](self, directionVectorHorizontal, angleMissCurrent)
+            nextStep = self[direction](
+                self,
+                directionVectorHorizontal,
+                ((loopSteps - loopStep) / loopSteps) * angleMiss
+            )
             if nextStep ~= nil then
-                print(
-                    "@[ " .. self.Step.Index .. " ]" ..
-                    " -> " .. direction
-                )
+                -- print(
+                --     '@[ ' .. self.Step.Index .. ' ]' ..
+                --     ' -> ' .. direction
+                -- )
                 self.LastStepDirection = direction
                 break
             end
         end
 
         if nextStep == nil then
-            print("@[ " .. self.Step.Index .. " ] -> !!! Stuck !!!")
+            -- print('@[ ' .. self.Step.Index .. ' ] -> !!! Stuck !!!')
             break
         end
 
         table.insert(self.Route, nextStep)
-
-        if math.abs(angleMissCurrent) > angleCorrectionPerStep then
-            angleMissCurrent = angleMissCurrent - angleCorrectionPerStep
-        else
-            angleMissCurrent = 0
-        end
     end
 
-    print(" --- Finished plotting route --- ")
+    -- print(' --- Finished plotting route --- ')
 
     return self.Route
 end
@@ -148,7 +147,7 @@ end
 ---@param angleMiss number
 ---@return table vector {x,y,z}
 function Advanced:Forward(directionVector, angleMiss)
-    local stepVector = vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
     return self:GetPossibleStepHorizontal(stepVector, angleMiss)
 end
 
@@ -158,8 +157,8 @@ end
 ---@param angleMiss number
 ---@return table vector {x,y,z}
 function Advanced:Backward(directionVector, angleMiss)
-    local stepVector = vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    stepVector = vectors.GetOppositeVector(stepVector)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    stepVector = Vectors.GetOppositeVector(stepVector)
     return self:GetPossibleStepHorizontal(stepVector, angleMiss)
 end
 
@@ -169,8 +168,8 @@ end
 ---@param angleMiss number
 ---@return table vector {x,y,z}
 function Advanced:Left(directionVector, angleMiss)
-    local stepVector = vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    stepVector = vectors.GetHorizontalyPerpendicularVector(stepVector, false)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    stepVector = Vectors.GetHorizontalyPerpendicularVector(stepVector, false)
     return self:GetPossibleStepHorizontal(stepVector, angleMiss)
 end
 
@@ -180,8 +179,8 @@ end
 ---@param angleMiss number
 ---@return table vector {x,y,z}
 function Advanced:Right(directionVector, angleMiss)
-    local stepVector = vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    stepVector = vectors.GetHorizontalyPerpendicularVector(stepVector, true)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    stepVector = Vectors.GetHorizontalyPerpendicularVector(stepVector, true)
     return self:GetPossibleStepHorizontal(stepVector, angleMiss)
 end
 
@@ -213,11 +212,11 @@ function Advanced:GetPossibleStepHorizontal(stepVector, angleMiss)
     for _ = 1, self.Tries.Horizontal do
         local randomAngle = self.Step.AngleMax * (math.random() - 0.5)
         local angleSum = randomAngle + angleMiss
-        local chosenDirectionVector = vectors.GetHorizontalyRotatedVector(
+        local chosenDirectionVector = Vectors.GetHorizontalyRotatedVector(
             stepVector,
             angleSum
         )
-        local nextStep = common.AttemptStep(
+        local nextStep = Common.AttemptStep(
             self:GetRoutePointSafe(self.Step.Index),
             chosenDirectionVector,
             self.Extents.Horizontal
@@ -238,7 +237,7 @@ end
 function Advanced:GetPossibleStepVertical(stepVector)
     local currentStepVector = stepVector
     for _ = 1, self.Tries.Vertical do
-        local nextStep = common.AttemptStep(
+        local nextStep = Common.AttemptStep(
             self:GetRoutePointSafe(self.Step.Index),
             stepVector,
             self.Extents.Vertical
@@ -281,10 +280,9 @@ end
 ---Checks if the provided newPoint is outside of the minimum distance threshold.
 ---Returns true if newPoint is outside threshold, false otherwise.
 ---@param newPoint number
----@param pointsToCheck number
 ---@return boolean
-function Advanced:IsOutsideThreshold(newPoint, pointsToCheck)
-    for i = self.Step.Index, self.Step.Index - pointsToCheck + 1, -1 do
+function Advanced:IsOutsideThreshold(newPoint)
+    for i = self.Step.Index, self.Step.Index - self.Step.ThresholdCheck + 1, -1 do
         local sizeSqToNew = vector.SizeSq(
             newPoint - self:GetRoutePointSafe(i)
         )

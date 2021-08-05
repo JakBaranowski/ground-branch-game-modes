@@ -23,7 +23,7 @@ function Strings.GetSuffix(stringCheck, prefix)
     if string.sub(stringCheck, 1, #prefix) == prefix then
         return string.sub(stringCheck, #prefix + 1)
     end
-    return ""
+    return ''
 end
 
 return Strings

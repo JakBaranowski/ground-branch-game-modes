@@ -1,4 +1,4 @@
-local strings = require("Common.Strings")
+local Strings = require('Common.Strings')
 
 local Actors = {}
 
@@ -12,11 +12,11 @@ Actors.__index = Actors
 ---@return string
 function Actors.GetSuffixFromActorTag(actorWithTag, tagPrefix)
 	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
-		if strings.StartsWith(actorTag, tagPrefix) then
-			return strings.GetSuffix(actorTag, tagPrefix)
+		if Strings.StartsWith(actorTag, tagPrefix) then
+			return Strings.GetSuffix(actorTag, tagPrefix)
 		end
 	end
-    return ""
+    return ''
 end
 
 ---Calculates and returns the average location of a group of actors.
@@ -34,7 +34,7 @@ function Actors.GetGroupAverageLocation(group)
     averageLocation.x = averageLocation.x / #group
     averageLocation.y = averageLocation.y / #group
     averageLocation.z = averageLocation.z / #group
-    print("Average group location " .. tostring(averageLocation))
+    print('Average group location ' .. tostring(averageLocation))
     return averageLocation
 end
 
@@ -43,10 +43,10 @@ end
 ---If no member of the group is within maxDistanceSq will return maxDistanceSq.
 ---@param location table vector {x,y,z}
 ---@param group table
----@param maxDistanceSq number
 ---@return number
-function Actors.GetShortestDistanceSqWithinGroup(location, group, maxDistanceSq)
-    local shortestDistanceSq = maxDistanceSq
+function Actors.GetShortestDistanceSqWithinGroup(location, group)
+    local firstMemberLocation = actor.GetLocation(group[1])
+    local shortestDistanceSq = vector.SizeSq(firstMemberLocation - location)
     for _, member in ipairs(group) do
         local memberLocation = actor.GetLocation(member)
         local distanceSq = vector.SizeSq(memberLocation - location)

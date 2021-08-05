@@ -5,7 +5,7 @@ local Test = {
 	PlayerTeams = { 		-- * Player team settings.
 		Blue = {			--     * Afaik this name can be anything.
 			TeamId = 1,		--         * ID assigned to the team.
-			Loadout = "",	--         * Name of the `.kit` loadout to be used by
+			Loadout = '',	--         * Name of the `.kit` loadout to be used by
 		},					--           the team (w/o extension)
 	},
 	Settings = {			-- * Game mode settings changeable by players on opsboard.
@@ -16,7 +16,7 @@ local Test = {
 		},
 	},
 	OpFor = {
-		Tag = "OpFor",
+		Tag = 'OpFor',
 		Spawns = {},
 		Controllers = {},
 	},
@@ -37,7 +37,7 @@ end
 
 ---Method called right after the mission is loaded.
 function Test:PreInit()
-	print("PreInit")
+	print('PreInit')
 	self.OpFor.Spawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
 	for _, value in pairs(self.OpFor.Spawns) do
 		print(value)
@@ -46,12 +46,12 @@ end
 
 ---Method called just before player gets control.
 function Test:PostInit()
-	print("PostInit")
+	print('PostInit')
 end
 
 ---Method called just after player gets control.
 function Test:PostRun()
-	print("PostRun")
+	print('PostRun')
 end
 
 --#endregion
@@ -62,30 +62,30 @@ end
 ---using the gamemode.SetRoundStage(stage) function. Howver there are some predefined
 ---round stages.
 ---@param RoundStage string named of the set round stage
----| "WaitingForReady"
----| "ReadyCountdown"
----| "PreRoundWait"
----| "InProgress"
----| "PostRoundWait"
+---| 'WaitingForReady'
+---| 'ReadyCountdown'
+---| 'PreRoundWait'
+---| 'InProgress'
+---| 'PostRoundWait'
 function Test:OnRoundStageSet(RoundStage)
-	print("OnRoundStageSet " .. RoundStage)
-	if RoundStage == "ReadyCountdown" then
+	print('OnRoundStageSet ' .. RoundStage)
+	if RoundStage == 'ReadyCountdown' then
 		local readyPlayers = gamemode.GetReadyPlayerTeamCounts(true)
 		if readyPlayers[self.PlayerTeams.Blue.TeamId] >= gamemode.GetPlayerCount(true) then
-			gamemode.SetRoundStage("PreRoundWait")
+			gamemode.SetRoundStage('PreRoundWait')
 		end
 	end
-	if RoundStage == "PreRoundWait" then
-		print("Spawning AI")
+	if RoundStage == 'PreRoundWait' then
+		print('Spawning AI')
 		ai.CreateOverDuration(
 			4.0,
 			1,
 			self.OpFor.Spawns,
 			self.OpFor.Tag
 		)
-	elseif RoundStage == "InProgress" then
+	elseif RoundStage == 'InProgress' then
 		timer.Set(
-			"Test1",
+			'Test1',
 			self,
 			self.Test1Timer,
 			4.5,
@@ -107,7 +107,7 @@ function Test:Test1Timer()
 		false
 	)
 	timer.Set(
-		"Test2",
+		'Test2',
 		self,
 		self.Test2Timer,
 		1,
@@ -123,13 +123,13 @@ function Test:Test2Timer()
 			-- player.ShowWorldPrompt(
 			-- 	p,
 			-- 	charLocation,
-			-- 	"Character",
+			-- 	'Character',
 			-- 	1
 			-- )
 			player.ShowWorldPrompt(
 				p,
 				ctrlLocation,
-				"Controller",
+				'Controller',
 				1
 			)
 		end
@@ -140,13 +140,13 @@ end
 ---the user using the gamemode.SetRoundStage(stage) function. However there are some
 ---predefined round stages.
 ---@param RoundStage string Name of the elapsed round stage
----| "WaitingForReady"
----| "ReadyCountdown"
----| "PreRoundWait"
----| "InProgress"
----| "PostRoundWait"
+---| 'WaitingForReady'
+---| 'ReadyCountdown'
+---| 'PreRoundWait'
+---| 'InProgress'
+---| 'PostRoundWait'
 function Test:OnRoundStageTimeElapsed(RoundStage)
-	print("OnRoundStageTimeElapsed " .. RoundStage)
+	print('OnRoundStageTimeElapsed ' .. RoundStage)
 end
 
 ---Triggered whenever any character dies (player or bot).
@@ -154,7 +154,7 @@ end
 ---@param CharacterController any Controller of the character that died.
 ---@param KillerController any Controller of the character that killed the character.
 function Test:OnCharacterDied(Character, CharacterController, KillerController)
-	print("OnCharacterDied")
+	print('OnCharacterDied')
 end
 
 ---Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
@@ -162,7 +162,7 @@ end
 ---@param GameTrigger any
 ---@param Player any
 function Test:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	print("OnGameTriggerBeginOverlap")
+	print('OnGameTriggerBeginOverlap')
 end
 
 --#endregion
@@ -173,19 +173,19 @@ end
 ---@param PlayerState any
 ---@param InsertionPoint any
 function Test:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
-	print("PlayerInsertionPointChanged")
+	print('PlayerInsertionPointChanged')
 end
 
 ---Method called when a player changes their ready status. If mission provides insertion
 ---points this is called at more or less the same time as PlayerInsertionPointChanged.
 ---@param PlayerState any
 ---@param ReadyStatus string
----| "WaitingToReadyUp"
----| "DeclaredReady"
+---| 'WaitingToReadyUp'
+---| 'DeclaredReady'
 function Test:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
-	print("PlayerReadyStatusChanged " .. ReadyStatus)
-	if ReadyStatus == "DeclaredReady" then
-		gamemode.SetRoundStage("ReadyCountdown")
+	print('PlayerReadyStatusChanged ' .. ReadyStatus)
+	if ReadyStatus == 'DeclaredReady' then
+		gamemode.SetRoundStage('ReadyCountdown')
 	end
 end
 
@@ -194,22 +194,22 @@ end
 ---@return boolean PlayerCanEnterPlayArea whether or not should we allow users to enter
 ---play area.
 function Test:PlayerCanEnterPlayArea(PlayerState)
-	print("PlayerCanEnterPlayArea")
+	print('PlayerCanEnterPlayArea')
 	return true
 end
 
 ---Called when any player enters the play area.
 ---@param PlayerState any
 function Test:PlayerEnteredPlayArea(PlayerState)
-	print("PlayerEnteredPlayArea")
+	print('PlayerEnteredPlayArea')
 end
 
 ---
 ---@param PlayerState any
 ---@param Request string
----| "join"
+---| 'join'
 function Test:PlayerGameModeRequest(PlayerState, Request)
-	print("PlayerGameModeRequest " .. Request)
+	print('PlayerGameModeRequest ' .. Request)
 end
 
 ---Called when a player tries to enter play area in order to get a spawn point for
@@ -217,14 +217,14 @@ end
 ---@param PlayerState any
 ---@return any SpawnPoint the spawn point we want the user to spawn in.
 -- function Test:GetSpawnInfo(PlayerState)
--- 	print("GetSpawnInfo")
+-- 	print('GetSpawnInfo')
 -- 	return SpawnPoint
 -- end
 
 ---Triggered whenever a player leaves the game.
 ---@param Exiting any
 function Test:LogOut(Exiting)
-	print("LogOut")
+	print('LogOut')
 end
 
 --#endregion
@@ -234,7 +234,7 @@ end
 ---Whether or not we should check for team kills at this point.
 ---@return boolean ShouldCheckForTeamKills should we check for team kills.
 function Test:ShouldCheckForTeamKills()
-	print("ShouldCheckForTeamKills")
+	print('ShouldCheckForTeamKills')
 	return true
 end
 

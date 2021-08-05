@@ -8,7 +8,7 @@ Vectors.__index = Vectors
 ---@return table vector {x,y,z}
 function Vectors.DivideByNumber(vectorX, divisor)
     if divisor == 0 then
-        print("Attempting to divide vector by 0")
+        print('Attempting to divide vector by 0')
         return vector:new(0, 0, 0)
     end
     return vector:new(

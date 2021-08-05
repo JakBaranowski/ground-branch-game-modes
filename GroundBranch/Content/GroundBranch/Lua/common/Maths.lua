@@ -16,7 +16,7 @@ function Maths.RoundNumberToInt(number)
     else
         roundNumber = math.ceil(number)
     end
-    print("Rounded number " .. number .. " to " .. roundNumber)
+    print('Rounded number ' .. number .. ' to ' .. roundNumber)
     return roundNumber
 end
 

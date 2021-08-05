@@ -1,4 +1,4 @@
-local vectors = require("Common.Vectors")
+local Vectors = require('Common.Vectors')
 
 local Straight = {}
 
@@ -28,7 +28,7 @@ end
 ---@return table
 function Straight.GetStraightRoutePoints(fromLocation, toLocation, points)
     local distanceVector = toLocation - fromLocation
-    local stepVector = vectors.DivideByNumber(distanceVector, points)
+    local stepVector = Vectors.DivideByNumber(distanceVector, points)
     local route = {fromLocation}
     for i = 1, points - 2 do
         local nextStepLocation = route[i] + stepVector
