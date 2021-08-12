@@ -38,6 +38,11 @@ local KillConfirmed = {
 			Max = 60,
 			Value = 60,
 		},
+		AllowRespawns = {
+			Min = 0,
+			Max = 1,
+			Value = 0
+		}
 	},
 	SettingTrackers = {
 		LastHVTCount = 0,
@@ -191,10 +196,12 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				print('OpFor standard eliminated')
 			else
 				print('BluFor eliminated')
-				player.SetLives(
-					CharacterController,
-					player.GetLives(CharacterController) - 1
-				)
+				if self.Settings.AllowRespawns.Value == 0 then
+					player.SetLives(
+						CharacterController,
+						player.GetLives(CharacterController) - 1
+					)
+				end
 				self.Players.WithLives = gamemode.GetPlayerListByLives(
 					self.PlayerTeams.BluFor.TeamId,
 					1,
@@ -295,6 +302,10 @@ function KillConfirmed:PlayerCanEnterPlayArea(PlayerState)
 		return true
 	end
 	return false
+end
+
+function KillConfirmed:PlayerEnteredPlayArea(PlayerState)
+	player.SetAllowedToRestart(PlayerState, self.Settings.AllowRespawns.Value == 1)
 end
 
 function KillConfirmed:LogOut(Exiting)

@@ -31,6 +31,11 @@ local BreakOut = {
 			Max = 60,
 			Value = 60,
 		},
+		AllowRespawns = {
+			Min = 0,
+			Max = 1,
+			Value = 0
+		}
 	},
 	Players = {
 		WithLives = {}
@@ -131,10 +136,12 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 				print('OpFor eliminated')
 			else
 				print('BluFor eliminated')
-				player.SetLives(
-					CharacterController,
-					player.GetLives(CharacterController) - 1
-				)
+				if self.Settings.AllowRespawns.Value == 0 then
+					player.SetLives(
+						CharacterController,
+						player.GetLives(CharacterController) - 1
+					)
+				end
 				self.Players.WithLives = gamemode.GetPlayerListByLives(
 					self.PlayerTeams.BluFor.TeamId,
 					1,
@@ -231,6 +238,10 @@ function BreakOut:PlayerCanEnterPlayArea(PlayerState)
 		return true
 	end
 	return false
+end
+
+function BreakOut:PlayerEnteredPlayArea(PlayerState)
+	player.SetAllowedToRestart(PlayerState, self.Settings.AllowRespawns.Value == 1)
 end
 
 function BreakOut:LogOut(Exiting)
