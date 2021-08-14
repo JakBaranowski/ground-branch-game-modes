@@ -2,23 +2,24 @@ local Common = {}
 
 Common.__index = Common
 
----Will attempt to make a step. If no point within extent is found will return nil.
----@param start table vector {x,y,z}
----@param stepVector table vector {x,y,z}
----@param extent table vector {x,y,z}
----@return any
-function Common.AttemptStep(start, stepVector, extent)
-    local newPostionStraight = start + stepVector
+---Will attempt to make a step, get a point on navigation mesh within extent in
+---the given direction. If no point within extent is found will return nil.
+---@param stepStart table vector {x,y,z} point to start the step.
+---@param stepVector table vector {x,y,z} vector describing step direction and length.
+---@param extent table vector {x,y,z} extent within which to search for the point on nav mesh.
+---@return table stepEnd vector {x,y,z} point on nav mesh.
+function Common.AttemptStep(stepStart, stepVector, extent)
+    local newPostionStraight = stepStart + stepVector
     local newPositionNav = ai.ProjectPointToNavigation(newPostionStraight, extent)
     return newPositionNav
 end
 
 ---Retruns a table of random reachable points found along the route and within
 ---radius.
----@param route table
----@param radius number
----@param pointsPerStep integer
----@return table
+---@param route table a list of steps on the route.
+---@param radius number radius within which the random points can be created.
+---@param pointsPerStep integer how many random points will be added per route step.
+---@return table randomPoints a list of random points along the route.
 function Common.GetRandomPointsAlongRoute(route, radius, pointsPerStep)
     local randomPoints = {}
     for _, step in ipairs(route) do
@@ -38,9 +39,9 @@ end
 ---by ommiting points in between n-th points, where n is the number of points on
 ---original route divided by desiredPointCount and rounded down. The resulting point
 ---count may differ slightly from the desiredPointCount.
----@param route table
----@param desiredPointCount integer
----@return table
+---@param route table a list of steps on the route.
+---@param desiredPointCount integer how many points should cleaned route have.
+---@return table cleanRoute a list of desiredPointCount steps on route.
 function Common.CleanRouteSimple(route, desiredPointCount)
     local step = math.floor(#route / desiredPointCount)
     local cleanedRoute = {route[1]}
@@ -52,9 +53,9 @@ end
 
 ---Takes the given route and creates a new cleaned route. The cleaning is done by
 ---only adding points at distance bigger then minDistance from previous step.
----@param route table
----@param minDistance number
----@return table
+---@param route table a list of steps on the route.
+---@param minDistance number a minimum distance between last and new step.
+---@return table cleanRoute a list of route steps at distance bigger than minDistance.
 function Common.CleanRouteAdvanced(route, minDistance)
     local cleanedRoute = {route[1]}
     local currentIndex = 1

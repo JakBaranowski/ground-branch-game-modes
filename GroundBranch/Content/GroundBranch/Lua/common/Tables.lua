@@ -2,9 +2,9 @@ local Tables = {}
 
 Tables.__index = Tables
 
----Returns a table with shuffled entries of the provided ordered table
----@param orderedTable table
----@return table
+---Returns a copy of the provided table with shuffled entries.
+---@param orderedTable table an ordered table that we want to shuffle.
+---@return table shuffledTable a copy of the provdide table with shuffled entries.
 function Tables.ShuffleTable(orderedTable)
     local tempTable = {table.unpack(orderedTable)}
     local shuffledTable = {}
@@ -16,10 +16,10 @@ function Tables.ShuffleTable(orderedTable)
     return shuffledTable
 end
 
----Takes an ordered table containing ordered tables and returns an ordered table of
----shuffled tables.
----@param tableWithOrderedTables table
----@return table
+---Takes an ordered table containing ordered tables and returns an ordered table
+---of shuffled tables.
+---@param tableWithOrderedTables table ordered table with ordered tables.
+---@return table tableWithShuffledTables ordered table with shuffled tables.
 function Tables.ShuffleTables(tableWithOrderedTables)
     local tempTable = {table.unpack(tableWithOrderedTables)}
     local tableWithShuffledTables = {}
@@ -31,12 +31,12 @@ function Tables.ShuffleTables(tableWithOrderedTables)
     return tableWithShuffledTables
 end
 
----Takes an 2 level table and returns a single level table containing entries from
----all 2nd level tables
----@param twoLevelsTable table
----@return table
-function Tables.GetTableFromTables(twoLevelsTable)
-    local tempTable = {table.unpack(twoLevelsTable)}
+---Returns a single level indexed table containing all entries from 2nd level
+---tables of the provided twoLevelTable.
+---@param twoLevelTable table a table of tables.
+---@return table singleLevelTable a single level table with all 2nd level table entries.
+function Tables.GetTableFromTables(twoLevelTable)
+    local tempTable = {table.unpack(twoLevelTable)}
     local singleLevelTable = {}
     for _, secondLevelTable in ipairs(tempTable) do
         for _, entry in ipairs(secondLevelTable) do
@@ -49,10 +49,10 @@ end
 ---Concatenates two indexed tables. It keeps the order provided in argument,
 ---i.e. elements of table1 will start at first index, and elements of table2
 ---will start at #table1+1.
----Only supports concatenation of two indexed tables (not key-value tables).
----@param table1 table
----@param table2 table
----@return table
+---Only supports concatenation of two indexed tables, not key-value tables.
+---@param table1 table first of the two tables to join.
+---@param table2 table second of the two tables to join.
+---@return table concatenatedTable concatenated table.
 function Tables.ConcatenateTables(table1, table2)
     local concatenatedTable = {table.unpack(table1)}
     for _, value in ipairs(table2) do

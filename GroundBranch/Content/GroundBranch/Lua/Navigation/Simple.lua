@@ -5,18 +5,20 @@ local Simple = {}
 
 Simple.__index = Simple
 
----Attempts to plot a route by making steps in the direction from start to
----destination, with the possibility to create a side route using the angleMiss
----parameter. Usually requires bigger extent to work properly.
----@param start table vector {x,y,z}
----@param destination table vector {x,y,z}
----@param angleMiss number
----@param angleMax number
----@param angleStep number
----@param stepLength number
----@param maxPoints integer
----@param extent table vector {x,y,z}
----@return table
+---Attempts to plot a route from start to destination by blindly making steps in
+---the directin more or less toward destination. angleMiss can be used to create
+---a route with tendency to go in the specified direction.
+---This method of plotting route usually requires bigger extent to work properly.
+---May not reach the destination.
+---@param start table vector {x,y,z} starting location.
+---@param destination table vector {x,y,z} ending location
+---@param angleMiss number starting angle deviation from the destination vector.
+---@param angleMax number absolute maximum value of angles to try.
+---@param angleStep number angle to move between every try.
+---@param stepLength number length of step.
+---@param maxPoints integer the maximum amount of steps to be taken.
+---@param extent table vector {x,y,z} extent within which to search for the point on nav mesh.
+---@return table routeSteps a indexed table of route steps. Each step is a vector {x,y,z}.
 function Simple.PlotRoute(
     start,
     destination,
@@ -30,7 +32,7 @@ function Simple.PlotRoute(
     local route = {start}
     local loopSteps = maxPoints - 2
     local correctionPerStep = angleMiss / loopSteps
-    local angleMiss = angleMiss
+    local currentAngleMiss = angleMiss
     for i = 1, loopSteps do
         local distanceVector = destination - route[i]
         local distance = vector.Size(distanceVector)
@@ -39,10 +41,10 @@ function Simple.PlotRoute(
         end
         local directionVector = Vectors.GetUnitVector(distanceVector)
         local stepVector = Vectors.MultiplyByNumber(directionVector, stepLength)
-        local possibleNextPosition = Simple.GetAllPossibleSteps(
+        local possibleNextPosition = Simple.getAllPossibleSteps(
             route[i],
             stepVector,
-            angleMiss,
+            currentAngleMiss,
             angleMax,
             angleStep,
             extent
@@ -54,7 +56,7 @@ function Simple.PlotRoute(
             nextPosition = possibleNextPosition[math.random(#possibleNextPosition)]
         end
         table.insert(route, nextPosition)
-        angleMiss = angleMiss - correctionPerStep
+        currentAngleMiss = currentAngleMiss - correctionPerStep
     end
     table.insert(route, destination)
     return route
@@ -62,6 +64,7 @@ end
 
 ---Gets all possible horizontal steps, within extent, from the start position and
 ---within the -angleMax to angleMax angle. Returns a table of possible steps.
+---Should only be used within Navigation Simple PlotRoute method.
 ---@param start table vector {x,y,z}
 ---@param stepVector table vector {x,y,z}
 ---@param angleMiss number
@@ -69,7 +72,7 @@ end
 ---@param angleStep number
 ---@param extent table vector {x,y,z}
 ---@return table
-function Simple.GetAllPossibleSteps(
+function Simple.getAllPossibleSteps(
     start,
     stepVector,
     angleMiss,

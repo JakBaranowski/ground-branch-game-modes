@@ -114,9 +114,9 @@ function KillConfirmed:PreInit()
 		PromptsObjective,
 		self,
 		self.OnAllKillsConfirmed,
+		self.PlayerTeams.BluFor.TeamId,
 		self.Players.WithLives,
 		self.HVT.Tag,
-		self.PlayerTeams.BluFor.TeamId,
 		self.Settings.HVTCount.Value
 	)
 	-- Gathers all extraction points placed in the mission
@@ -360,7 +360,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	print('Adding group spawns closest to HVTs')
 	for i = 1, ObjectiveKillConfirmed:GetHvtCount() do
 		local hvtLocation = actor.GetLocation(
-			ObjectiveKillConfirmed:GetSelectedSpawnPoint(i)
+			ObjectiveKillConfirmed:GetShuffledSpawnPoint(i)
 		)
 		SpawnsOpForGroups:AddSpawnsFromClosestGroup(aiCountPerHvtGroup, hvtLocation)
 	end
@@ -449,7 +449,7 @@ end
 function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	if ObjectiveExfil:CheckTriggerAndPlayer(GameTrigger, Player) then
 		ObjectiveExfil:PlayerEnteredExfiltration(
-			ObjectiveKillConfirmed:GetAllConfirmed()
+			ObjectiveKillConfirmed:AreAllConfirmed()
 		)
 	end
 end
@@ -479,10 +479,10 @@ end
 function KillConfirmed:CheckBluForCountTimer()
 	if #self.Players.WithLives == 0 then
 		gamemode.AddGameStat('Result=None')
-		if ObjectiveKillConfirmed:GetAllNeutralized() then
+		if ObjectiveKillConfirmed:AreAllNeutralized() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
 			gamemode.AddGameStat('CompleteObjectives=NeutralizeHVTs')
-		elseif ObjectiveKillConfirmed:GetAllConfirmed() then
+		elseif ObjectiveKillConfirmed:AreAllConfirmed() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
 			gamemode.AddGameStat(
 				'CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs'

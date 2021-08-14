@@ -5,11 +5,12 @@ local Actors = {}
 Actors.__index = Actors
 
 ---Will query actor tags, of actorWithTags, for a tag starting with tagPrefix.
----If tag starting with tagPrefix is found will return tagSuffix (part after tagPrefix)
----If tag is not found will return empty string
----@param actorWithTag any
----@param tagPrefix string
----@return string
+---If tag starting with tagPrefix is found will return tagSuffix, i.e.: part of
+---the tag after tagPrefix.
+---If tag is not found will return empty string.
+---@param actorWithTag userdata actor reference.
+---@param tagPrefix string prefix of the tag to find.
+---@return string suffix suffix of the found tag.
 function Actors.GetSuffixFromActorTag(actorWithTag, tagPrefix)
 	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
 		if Strings.StartsWith(actorTag, tagPrefix) then
@@ -20,8 +21,8 @@ function Actors.GetSuffixFromActorTag(actorWithTag, tagPrefix)
 end
 
 ---Calculates and returns the average location of a group of actors.
----@param group table
----@return table
+---@param group table a table containing a group of actors.
+---@return table vector {x,y,z} the average location of the group.
 function Actors.GetGroupAverageLocation(group)
     local averageLocation = {
         x = 0,
@@ -38,12 +39,13 @@ function Actors.GetGroupAverageLocation(group)
     return averageLocation
 end
 
----Returns the shortests distance squared from any member of the group and the given
----location.
----If no member of the group is within maxDistanceSq will return maxDistanceSq.
----@param location table vector {x,y,z}
----@param group table
----@return number
+---Returns the shortest distance squared from any actor from provided group and
+---the given location.
+---Good enough for comparing distances, but cheaper in terms of performance than
+---calculating proper distance.
+---@param location table vector {x,y,z} a location to which distance is measured.
+---@param group table a table containing a group of actors.
+---@return number distanceSquared the shortest squared distance.
 function Actors.GetShortestDistanceSqWithinGroup(location, group)
     local firstMemberLocation = actor.GetLocation(group[1])
     local shortestDistanceSq = vector.SizeSq(firstMemberLocation - location)
@@ -57,16 +59,15 @@ function Actors.GetShortestDistanceSqWithinGroup(location, group)
     return shortestDistanceSq
 end
 
----Returns the shortests distance from any member of the group and the given
+---Returns the shortest distance from any actor from provided group and the given
 ---location.
----If no member of the group is within maxDistance will return maxDistance.
----@param location table vector {x,y,z}
----@param group table
----@param maxDistance number
----@return number
-function Actors.GetShortestDistanceWithinGroup(location, group, maxDistance)
-    local maxDistanceSq = maxDistance ^ 2
-    return Actors.GetShortestDistanceSqWithinGroup(location, group, maxDistanceSq) ^ 0.5
+---@param location table vector {x,y,z} a location to which distance is measured.
+---@param group table a table containing a group of actors.
+---@return number distance the shortests distance.
+function Actors.GetShortestDistanceWithinGroup(location, group)
+    return math.sqrt(
+        Actors.GetShortestDistanceSqWithinGroup(location, group)
+    )
 end
 
 return Actors

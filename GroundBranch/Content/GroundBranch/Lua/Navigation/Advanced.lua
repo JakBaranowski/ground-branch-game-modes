@@ -2,7 +2,7 @@ local Vectors = require('Common.Vectors')
 local Common = require('Navigation.Common')
 
 ---Direction table maps human-readeable directions to numbers in a way that allows
----to easily find opposite direction and compare direction faster.
+---to easily find opposite direction and compare directions faster.
 local Direction = {
     None = 0,
     Forward = 1,
@@ -36,13 +36,13 @@ local Advanced = {
     Route = {},
 }
 
----Creates new object from prototype Navigation.Advanced.
----@param start table vector {x,y,z}
----@param destination table vector {x,y,z}
----@param stepLength number
----@param minStepThreshold number
----@param thresholdCheck integer
----@return table Advanced
+---Creates new object of type Navigation.Advanced.
+---@param start table vector {x,y,z} starting location.
+---@param destination table vector {x,y,z} ending location.
+---@param stepLength number length of a single step in centimeters.
+---@param minStepThreshold number length below which a step will not be considered valid.
+---@param thresholdCheck integer how many previous steps should be checked.
+---@return table Advanced a new instance of the Navigation.Advanced prototype.
 function Advanced:Create(start, destination, stepLength, minStepThreshold, thresholdCheck)
     local adv = {}
     setmetatable(adv, self)
@@ -60,18 +60,34 @@ function Advanced:Create(start, destination, stepLength, minStepThreshold, thres
     return adv
 end
 
----Attempts to plot a route from self.Start to self.Destination. angleMiss
----can be used to plot a side route.
----@param angleMiss number
----@param maxPoints integer
----@return table
+---Returns the entry from route table under the provided index. If index is below
+---1, will return the first entry, if index is bigger than #route, will return the
+---last entry.
+---@param index integer
+---@return table routePoint vector {x,y,z}
+function Advanced:GetRoutePointSafe(index)
+    if index < 1 then
+        return self.Route[1]
+    elseif index > #self.Route then
+        return self.Route[#self.Route]
+    else
+        return self.Route[index]
+    end
+end
+
+---Attempts to plot a route from Start to Destination. angleMiss can be used to
+---plot a route with a tendency to go in specified direction.
+---It is possible that the destination will not be reached.
+---@param angleMiss number starting angle deviation from the destination vector.
+---@param maxSteps integer the maximum amount of steps to take.
+---@return table routeSteps a indexed table of route steps. Each step is a vector {x,y,z}.
 function Advanced:PlotRoute(
     angleMiss,
-    maxPoints
+    maxSteps
 )
     -- print(' --- Started plotting route --- ')
 
-    local loopSteps = maxPoints - 1
+    local loopSteps = maxSteps - 1
 
     for loopStep = 1, loopSteps do
         self.Step.Index = loopStep
@@ -89,27 +105,27 @@ function Advanced:PlotRoute(
 
         local directionList = {}
         if directionVector3D.z > 0.5 then
-            self:AddToDirectionList(directionList, 'Up')
-            self:AddToDirectionList(directionList, 'Forward')
-            self:AddToDirectionList(directionList, 'Down')
+            self:addToDirectionList(directionList, 'Up')
+            self:addToDirectionList(directionList, 'Forward')
+            self:addToDirectionList(directionList, 'Down')
         elseif directionVector3D.z < -0.5 then
-            self:AddToDirectionList(directionList, 'Down')
-            self:AddToDirectionList(directionList, 'Forward')
-            self:AddToDirectionList(directionList, 'Up')
+            self:addToDirectionList(directionList, 'Down')
+            self:addToDirectionList(directionList, 'Forward')
+            self:addToDirectionList(directionList, 'Up')
         else
-            self:AddToDirectionList(directionList, 'Forward')
-            self:AddToDirectionList(directionList, 'Down')
-            self:AddToDirectionList(directionList, 'Up')
+            self:addToDirectionList(directionList, 'Forward')
+            self:addToDirectionList(directionList, 'Down')
+            self:addToDirectionList(directionList, 'Up')
         end
-        self:AddToDirectionList(directionList, 'Forward')
+        self:addToDirectionList(directionList, 'Forward')
         if math.random() > 0.5 then
-            self:AddToDirectionList(directionList, 'Left')
-            self:AddToDirectionList(directionList, 'Right')
+            self:addToDirectionList(directionList, 'Left')
+            self:addToDirectionList(directionList, 'Right')
         else
-            self:AddToDirectionList(directionList, 'Right')
-            self:AddToDirectionList(directionList, 'Left')
+            self:addToDirectionList(directionList, 'Right')
+            self:addToDirectionList(directionList, 'Left')
         end
-        self:AddToDirectionList(directionList, 'Backward')
+        self:addToDirectionList(directionList, 'Backward')
 
         local nextStep = nil
         for _, direction in ipairs(directionList) do
@@ -141,74 +157,12 @@ function Advanced:PlotRoute(
     return self.Route
 end
 
----Helper function for getting a possible step forward.
----Should not be called outside of Navigation.Advanced class.
----@param directionVector table vector {x,y,z}
----@param angleMiss number
----@return table vector {x,y,z}
-function Advanced:Forward(directionVector, angleMiss)
-    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    return self:GetPossibleStepHorizontal(stepVector, angleMiss)
-end
-
----Helper function for getting a possible step backward.
----Should not be called outside of Navigation.Advanced class.
----@param directionVector table vector {x,y,z}
----@param angleMiss number
----@return table vector {x,y,z}
-function Advanced:Backward(directionVector, angleMiss)
-    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    stepVector = Vectors.GetOppositeVector(stepVector)
-    return self:GetPossibleStepHorizontal(stepVector, angleMiss)
-end
-
----Helper function for getting a possible step left.
----Should not be called outside of Navigation.Advanced class.
----@param directionVector table vector {x,y,z}
----@param angleMiss number
----@return table vector {x,y,z}
-function Advanced:Left(directionVector, angleMiss)
-    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    stepVector = Vectors.GetHorizontalyPerpendicularVector(stepVector, false)
-    return self:GetPossibleStepHorizontal(stepVector, angleMiss)
-end
-
----Helper function for getting a possible step right.
----Should not be called outside of Navigation.Advanced class.
----@param directionVector table vector {x,y,z}
----@param angleMiss number
----@return table vector {x,y,z}
-function Advanced:Right(directionVector, angleMiss)
-    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
-    stepVector = Vectors.GetHorizontalyPerpendicularVector(stepVector, true)
-    return self:GetPossibleStepHorizontal(stepVector, angleMiss)
-end
-
----Helper function for getting a possible step up.
----Should not be called outside of Navigation.Advanced class.
----@param directionVector table vector {x,y,z}
----@param angleMiss number
----@return table vector {x,y,z}
-function Advanced:Up(directionVector, angleMiss)
-    local stepVector = vector:new(0.0, 0.0, self.Step.Length)
-    return self:GetPossibleStepVertical(stepVector)
-end
-
----Helper function for getting a possible step down.
----Should not be called outside of Navigation.Advanced class.
----@param directionVector table vector {x,y,z}
----@param angleMiss number
----@return table vector {x,y,z}
-function Advanced:Down(directionVector, angleMiss)
-    local stepVector = vector:new(0.0, 0.0, -self.Step.Length)
-    return self:GetPossibleStepVertical(stepVector)
-end
-
----Attemtpts to get a possible step, i.e. step on nav point within extent, in the
+---Attempts to get a possible step, point on navigation mesh within extent, in the
 ---given direction on horizontal plane. If no points are found will return nil.
+---Should not be called outside of Navigation Advanced PlotRoute method.
 ---@param stepVector table vector {x,y,z}
 ---@return table vector {x,y,z}
-function Advanced:GetPossibleStepHorizontal(stepVector, angleMiss)
+function Advanced:getPossibleStepHorizontal(stepVector, angleMiss)
     for _ = 1, self.Tries.Horizontal do
         local randomAngle = self.Step.AngleMax * (math.random() - 0.5)
         local angleSum = randomAngle + angleMiss
@@ -222,7 +176,7 @@ function Advanced:GetPossibleStepHorizontal(stepVector, angleMiss)
             self.Extents.Horizontal
         )
         if nextStep ~= nil then
-            if self:IsOutsideThreshold(nextStep, 3) then
+            if self:isOutsideThreshold(nextStep) then
                 return nextStep
             end
         end
@@ -230,11 +184,55 @@ function Advanced:GetPossibleStepHorizontal(stepVector, angleMiss)
     return nil
 end
 
----Attempts to get a possible step, i.e. step on nav point within extent, up or down.
+---Attempts to get a possible step forward.
+---Should not be called outside of Navigation Advanced PlotRoute method.
+---@param directionVector table vector {x,y,z}
+---@param angleMiss number
+---@return table vector {x,y,z}
+function Advanced:forward(directionVector, angleMiss)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    return self:getPossibleStepHorizontal(stepVector, angleMiss)
+end
+
+---Attempts to get a possible step backward.
+---Should not be called outside of Navigation Advanced PlotRoute method.
+---@param directionVector table vector {x,y,z}
+---@param angleMiss number
+---@return table vector {x,y,z}
+function Advanced:backward(directionVector, angleMiss)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    stepVector = Vectors.GetOppositeVector(stepVector)
+    return self:getPossibleStepHorizontal(stepVector, angleMiss)
+end
+
+---Attempts to get a possible step left.
+---Should not be called outside of Navigation Advanced PlotRoute method.
+---@param directionVector table vector {x,y,z}
+---@param angleMiss number
+---@return table vector {x,y,z}
+function Advanced:left(directionVector, angleMiss)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    stepVector = Vectors.GetHorizontalyPerpendicularVector(stepVector, false)
+    return self:getPossibleStepHorizontal(stepVector, angleMiss)
+end
+
+---Attempts to get a possible step right.
+---Should not be called outside of Navigation Advanced PlotRoute method.
+---@param directionVector table vector {x,y,z}
+---@param angleMiss number
+---@return table vector {x,y,z}
+function Advanced:right(directionVector, angleMiss)
+    local stepVector = Vectors.MultiplyByNumber(directionVector, self.Step.Length)
+    stepVector = Vectors.GetHorizontalyPerpendicularVector(stepVector, true)
+    return self:getPossibleStepHorizontal(stepVector, angleMiss)
+end
+
+---Attempts to get a possible step, point on navigation mesh within extent, up or down.
 ---Each try will attempt a longer step. If no points are found will return nil.
+---Should not be called outside of Navigation Advanced PlotRoute method.
 ---@param stepVector table vector {x,y,z}
 ---@return table vector {x,y,z}
-function Advanced:GetPossibleStepVertical(stepVector)
+function Advanced:getPossibleStepVertical(stepVector)
     local currentStepVector = stepVector
     for _ = 1, self.Tries.Vertical do
         local nextStep = Common.AttemptStep(
@@ -243,7 +241,7 @@ function Advanced:GetPossibleStepVertical(stepVector)
             self.Extents.Vertical
         )
         if nextStep ~= nil then
-            if self:IsOutsideThreshold(nextStep, 3) then
+            if self:isOutsideThreshold(nextStep) then
                 return nextStep
             end
         end
@@ -252,26 +250,32 @@ function Advanced:GetPossibleStepVertical(stepVector)
     return nil
 end
 
----Returns the entry from route table under the provided index. If index is below
----1, will return the first entry, if index is bigger than #route, will return the
----last entry.
----@param index integer
----@return table routePoint vector {x,y,z}
-function Advanced:GetRoutePointSafe(index)
-    if index < 1 then
-        return self.Route[1]
-    elseif index > #self.Route then
-        return self.Route[#self.Route]
-    else
-        return self.Route[index]
-    end
+---Attempts to get a possible step up.
+---Should not be called outside of Navigation Advanced PlotRoute method.
+---@param directionVector table vector {x,y,z}
+---@param angleMiss number
+---@return table vector {x,y,z}
+function Advanced:up(directionVector, angleMiss)
+    local stepVector = vector:new(0.0, 0.0, self.Step.Length)
+    return self:getPossibleStepVertical(stepVector)
+end
+
+---Attempts to get a possible step down.
+---Should not be called outside of Navigation Advanced PlotRoute method.
+---@param directionVector table vector {x,y,z}
+---@param angleMiss number
+---@return table vector {x,y,z}
+function Advanced:down(directionVector, angleMiss)
+    local stepVector = vector:new(0.0, 0.0, -self.Step.Length)
+    return self:getPossibleStepVertical(stepVector)
 end
 
 ---If given direction is not opposite to the self.LastStepDirection will add the
 ---given direction to the directionList. Helps avoid going back and forth.
+---Should not be called outside of Navigation Advanced PlotRoute method.
 ---@param directionList table
 ---@param direction string
-function Advanced:AddToDirectionList(directionList, direction)
+function Advanced:addToDirectionList(directionList, direction)
     if Direction[self.LastStepDirection] ~= -Direction[direction] then
         table.insert(directionList, direction)
     end
@@ -279,9 +283,10 @@ end
 
 ---Checks if the provided newPoint is outside of the minimum distance threshold.
 ---Returns true if newPoint is outside threshold, false otherwise.
+---Should not be called outside of Navigation Advanced PlotRoute method.
 ---@param newPoint number
 ---@return boolean
-function Advanced:IsOutsideThreshold(newPoint)
+function Advanced:isOutsideThreshold(newPoint)
     for i = self.Step.Index, self.Step.Index - self.Step.ThresholdCheck + 1, -1 do
         local sizeSqToNew = vector.SizeSq(
             newPoint - self:GetRoutePointSafe(i)

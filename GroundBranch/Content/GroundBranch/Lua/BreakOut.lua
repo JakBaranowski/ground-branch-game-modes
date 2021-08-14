@@ -289,7 +289,7 @@ function BreakOut:SetUpOpForSpawns()
 		1,
 		0
 	)
-	local exfilLocation = actor.GetLocation(ObjectiveExfil:GetActivePoint())
+	local exfilLocation = actor.GetLocation(ObjectiveExfil:GetSelectedPoint())
 	GroupSpawns:AddSpawnsFromClosestGroup(aiCountPerExfilGroup, exfilLocation)
 	print('Adding random spawns from remaining')
 	GroupSpawns:AddRandomSpawns()
@@ -372,7 +372,7 @@ end
 function BreakOut:PreRoundCleanUp()
 	ai.CleanUp(self.OpFor.Tag)
 	self.Players.WithLives = {}
-	MessagesObjective:SetRecipients(self.Players.WithLive)
+	MessagesObjective:SetRecipients(self.Players.WithLives)
 	ObjectiveExfil:Reset()
 end
 

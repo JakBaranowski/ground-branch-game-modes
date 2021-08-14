@@ -4,15 +4,16 @@ local Common = {}
 
 Common.__index = Common
 
----Calculates the AI count based on the provided data, and applies the deviationPercent.
----@param baseAiCount integer
----@param maxAiCount integer
----@param playerCount integer
----@param playerCountFactor number
----@param aiCountSetting integer
----@param aiCountSettingFactor number
----@param deviationPercent number
----@return integer
+---Calculates the AI count based on the provided data, and applies the random deviation
+---based on the provided deviation percent.
+---@param baseAiCount integer Base for the calculation, also can be seen as minimum ai count.
+---@param maxAiCount integer Maximum ai count.
+---@param playerCount integer Amount of players in game.
+---@param playerCountFactor number Multiplier for the amount of players in game.
+---@param aiCountSetting integer AI count game mode setting.
+---@param aiCountSettingFactor number Multiplier for the AI count game mode setting.
+---@param deviationPercent number Percent of the AI count to be used for calculating deviation.
+---@return integer aiCount Calculated ai count.
 function Common.GetAiCountWithDeviationPercent(
     baseAiCount,
     maxAiCount,
@@ -44,15 +45,16 @@ function Common.GetAiCountWithDeviationPercent(
     return aiCount
 end
 
----Calculates the AI count based on the provided data and applies the deviationInt.
----@param baseAiCount integer
----@param maxAiCount integer
----@param playerCount integer
----@param playerCountFactor number
----@param aiCountSetting integer
----@param aiCountSettingFactor number
----@param deviationInt integer
----@return integer
+---Calculates the AI count based on the provided data, and applies random deviation
+---based on the provided deviation integer.
+---@param baseAiCount integer Base for the calculation, also can be seen as minimum ai count.
+---@param maxAiCount integer Maximum ai count.
+---@param playerCount integer Amount of players in game.
+---@param playerCountFactor number Multiplier for the amount of players in game.
+---@param aiCountSetting integer AI count game mode setting.
+---@param aiCountSettingFactor number Multiplier for the AI count game mode setting.
+---@param deviationInt integer Maximum absolute value of the random deviation.
+---@return integer aiCount Calculated ai count.
 function Common.GetAiCountWithDeviationNumber(
     baseAiCount,
     maxAiCount,

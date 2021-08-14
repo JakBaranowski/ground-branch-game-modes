@@ -14,17 +14,12 @@ local Priority = {
 Priority.__index = Priority
 
 ---Creates new Priority spawns object.
----@return table
+---@return table Priority Newly created Priority spawns object.
 function Priority:Create()
     local priority = {}
     setmetatable(priority, self)
     self.__index = self
 	print('Initialized PrioritySpawns ' .. tostring(self))
-    return priority
-end
-
----Gathers all AI spawn points with a priority tag, and groups them by priority.
-function Priority:GatherSpawnPoints()
 	self.Spawns = {}
 	local priorityIndex = 1
 	for _, priorityTag in ipairs(self.Tags) do
@@ -38,10 +33,8 @@ function Priority:GatherSpawnPoints()
 			priorityIndex = priorityIndex + 1
 		end
 	end
-	print(
-		'Found ' .. self.Total ..
-		' spawns by priority'
-	)
+	print('Found ' .. self.Total .. ' spawns by priority')
+    return priority
 end
 
 ---Shuffles priority grouped spawns. Ensures spawns of higher priority will be
@@ -52,6 +45,22 @@ function Priority:SelectSpawnPoints()
 	)
 	self.Selected = Tables.GetTableFromTables(
 		tableWithShuffledSpawns
+	)
+end
+
+---Spawns AI in the selected spawn points.
+---@param duration number The time over which the AI will be spawned.
+---@param count integer The amount of the AI to spawn.
+---@param spawnTag string The tag that will be assigned to spawned AI.
+function Priority:Spawn(duration, count, spawnTag)
+    if count > #self.Selected then
+        count = #self.Selected
+    end
+	ai.CreateOverDuration(
+		duration,
+		count,
+		self:PopSelectedSpawnPoints(),
+		spawnTag
 	)
 end
 

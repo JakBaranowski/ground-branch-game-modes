@@ -15,7 +15,7 @@ Groups.__index = Groups
 ---Creates a new group spawns object. At creation all relevant spawn points are
 ---gathered, default values are set.
 ---@param groupTagPrefix string The tag prefix assigned to group spawn points.
----@return table Groups
+---@return table Groups Newly create Groups object.
 function Groups:Create(groupTagPrefix)
     local groups = {}
     setmetatable(groups, self)
@@ -67,8 +67,7 @@ function Groups:AddSpawnsFromRandomGroupWithinDistance(
     for groupIndex, group in ipairs(self.RemainingGroups) do
         local shortestDistanceSq = Actors.GetShortestDistanceSqWithinGroup(
             location,
-            group,
-            maxDistanceSq
+            group
         )
         if shortestDistanceSq < maxDistanceSq then
             local groupName = Actors.GetSuffixFromActorTag(
@@ -206,33 +205,33 @@ function Groups:AddSpawnsFromGroup(aiPerGroupAmount, selectedGroupIndex)
 end
 
 ---Returns the total count of remaining groups.
----@return integer
+---@return integer remainingGroupsCount
 function Groups:GetRemainingGroupsCount()
     return #self.RemainingGroups
 end
 
 ---Returns total count of groups spawn points.
----@return integer
+---@return integer totalSpawnPointsCount
 function Groups:GetTotalSpawnPointsCount()
     return self.Total
 end
 
 ---Returns the total count of selected spawn points.
----@return integer
+---@return integer selectedSpawnPointsCount
 function Groups:GetSelectedSpawnPointsCount()
     return #self.SelectedSpawnPoints
 end
 
----Returns a list of selected spawns.
----@return table
+---Returns a list of selected spawn points.
+---@return table selectedSpawnPoints
 function Groups:GetSelectedSpawnPoints()
     return {table.unpack(self.SelectedSpawnPoints)}
 end
 
 ---Returns a list of selected spawns and resets RemainingGroups, ReserveSpawnPoints
 ---and SelectedSpawnPoints tables to default values. It is equal to calling
----GetSelectedSpawnPoints and ResetSpawnTables in that order.
----@return table SelectedSpawns
+---GetSelectedSpawnPoints and ResetSpawnTables.
+---@return table SelectedSpawns a list of selected spawn points.
 function Groups:PopSelectedSpawnPoints()
     local selectedSpawns = self:GetSelectedSpawnPoints()
     self:ResetSpawnTables()
