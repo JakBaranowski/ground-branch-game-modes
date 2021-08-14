@@ -1,6 +1,6 @@
 {
     "name" : "BreakOut",
-    "version" : "0.2.0",
+    "version" : "0.3.15",
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Actors.lua",

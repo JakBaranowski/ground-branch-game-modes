@@ -1,6 +1,6 @@
 {
     "name" : "KillConfirmed",
-    "version" : "0.2.0",
+    "version" : "0.3.15",
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Actors.lua",

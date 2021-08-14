@@ -127,6 +127,21 @@ function KillConfirmation:Spawn(duration)
 		self:PopShuffledSpawnPoints(),
 		self.HVT.Tag
 	)
+    timer.Set('CheckSpawnsTimer', self, self.checkSpawnsTimer, duration + 0.1, false)
+end
+
+---Makes sure that the HVT count is equal to the HVT ai controllers count.
+function KillConfirmation:checkSpawnsTimer()
+    local hvtControllers = ai.GetControllers(
+        'GroundBranch.GBAIController',
+        self.HVT.Tag,
+        255,
+        255
+    )
+    if self.HVT.Count ~= #hvtControllers then
+        print('HVT count is not equal to HVT ai controllers count, adjusting HVT count')
+        self.HVT.Count = #hvtControllers
+    end
 end
 
 ---Updates objective tracking variables. If the GameMessageBroker was provided
@@ -139,7 +154,6 @@ function KillConfirmation:Neutralized(character)
     if self.MessageBroker then
         self.MessageBroker:Display('HVTEliminated', 5.0)
     end
-    print(self.PromptBroker)
     if self.PromptBroker ~= nil then
         timer.Set(
 			self.PromptTimer.Name,
@@ -232,7 +246,11 @@ end
 ---Sets the HVT count.
 ---@param count integer Desired HVT count.
 function KillConfirmation:SetHvtCount(count)
-    self.HVT.Count = count
+    if count > #self.HVT.Spawns then
+        self.HVT.Count = #self.HVT.Spawns
+    else
+        self.HVT.Count = count
+    end
 end
 
 ---Gets the current HVT count.

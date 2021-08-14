@@ -1,7 +1,7 @@
 Key,SourceString,Comment
 "KillConfirmed","Kill Confirmed",""
-"missionsetting_hvtcount","Expected HVTs:","Opsboard"
-"missionsetting_opforpreset","Expected resistance:","Opsboard"
+"missionsetting_hvtcount","Expected HVTs","Opsboard"
+"missionsetting_opforpreset","Expected resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"
 "missionsetting_opforpreset_1","Low","Opsboard"
 "missionsetting_opforpreset_2","Medium","Opsboard"

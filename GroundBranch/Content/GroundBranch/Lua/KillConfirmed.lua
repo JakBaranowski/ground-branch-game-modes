@@ -131,7 +131,10 @@ function KillConfirmed:PreInit()
 		1.0
 	)
 	-- Set maximum HVT count and ensure that HVT value is within limit
-	self.Settings.HVTCount.Max = math.min(ai.GetMaxCount(), ObjectiveKillConfirmed:GetSpawnsCount())
+	self.Settings.HVTCount.Max = math.min(
+		ai.GetMaxCount(),
+		ObjectiveKillConfirmed:GetAllSpawnPointsCount()
+	)
 	self.Settings.HVTCount.Value = math.min(
 		self.Settings.HVTCount.Value,
 		self.Settings.HVTCount.Max
