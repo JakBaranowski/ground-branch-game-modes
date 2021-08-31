@@ -1,4 +1,4 @@
-local Exfiltration = {
+local Exfiltrate = {
 	MessageBroker = nil,
 	PromptBroker = nil,
     PlayersRequiredForExfil = 1,
@@ -24,9 +24,9 @@ local Exfiltration = {
     },
 }
 
-Exfiltration.__index = Exfiltration
+Exfiltrate.__index = Exfiltrate
 
----Creates a new object of type Objectives Exfiltration. This prototype can be
+---Creates a new object of type Objectives Exfiltrate. This prototype can be
 ---used for setting up and tracking an exifltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
@@ -38,8 +38,8 @@ Exfiltration.__index = Exfiltration
 ---@param playerCountRequiredForExtraction integer How many players have to be in extraction zone for exfiltration to start.
 ---@param timeToExfil number How long the exfiltration should take.
 ---@param timeStep number How much time should pass between each exfiltration check.
----@return table Exfiltration The newly created Exfiltration object.
-function Exfiltration:Create(
+---@return table Exfiltrate The newly created Exfiltrate object.
+function Exfiltrate:Create(
 	messageBroker,
 	promptBroker,
     onObjectiveCompleteFuncOwner,
@@ -52,17 +52,17 @@ function Exfiltration:Create(
     local exfiltration = {}
     setmetatable(exfiltration, self)
     self.__index = self
-	print('Initializing Objective Exfiltration ' .. tostring(exfiltration))
+	print('Initializing Objective Exfiltrate ' .. tostring(exfiltration))
 	self.MessageBroker = messageBroker
 	self.PromptBroker = promptBroker
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
-    self.TeamId = teamId or Exfiltration.TeamId
+    self.TeamId = teamId or Exfiltrate.TeamId
 	self.PlayersRequiredForExfil = playerCountRequiredForExtraction or 1
 	self.PlayersIn = 0
-    self.ExfilTimer.CurrentTime = timeToExfil or Exfiltration.ExfilTimer.CurrentTime
-    self.ExfilTimer.DefaultTime = timeToExfil or Exfiltration.ExfilTimer.DefaultTime
-    self.ExfilTimer.TimeStep = timeStep or Exfiltration.ExfilTimer.TimeStep
+    self.ExfilTimer.CurrentTime = timeToExfil or Exfiltrate.ExfilTimer.CurrentTime
+    self.ExfilTimer.DefaultTime = timeToExfil or Exfiltrate.ExfilTimer.DefaultTime
+    self.ExfilTimer.TimeStep = timeStep or Exfiltrate.ExfilTimer.TimeStep
     self.Points.All = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
@@ -81,7 +81,7 @@ function Exfiltration:Create(
 end
 
 ---Resets the object attributes to default values. Should be called before every round.
-function Exfiltration:Reset()
+function Exfiltrate:Reset()
 	self.PlayersRequiredForExfil = 1
 	self.PlayersIn = 0
 end
@@ -89,16 +89,16 @@ end
 ---Sets the amount of players that need to be in extraction zone for the the
 ---exfiltration to start.
 ---@param playersRequiredForExfil integer How many players have to be in extraction zone for exfiltration to start.
-function Exfiltration:SetPlayersRequiredForExfil(playersRequiredForExfil)
+function Exfiltrate:SetPlayersRequiredForExfil(playersRequiredForExfil)
 	self.PlayersRequiredForExfil = playersRequiredForExfil
 end
 
 ---Randomly selects the extraction point that should be active in the given round.
 ---If activeFromStart parameter is set to false, the extration point will not be
----active, and Exfiltration:SelectedPointSetActive should be called to activate it
+---active, and Exfiltrate:SelectedPointSetActive should be called to activate it
 ---when needed.
 ---@param activeFromStart boolean Should the selected extraction point be active from round start.
-function Exfiltration:SelectPoint(activeFromStart)
+function Exfiltrate:SelectPoint(activeFromStart)
     local activeIndex = math.random(#self.Points.All)
     self.Points.Active = self.Points.All[activeIndex]
     for i = 1, #self.Points.All do
@@ -114,7 +114,7 @@ end
 
 ---Sets the selected point active state.
 ---@param active boolean should the point be active.
-function Exfiltration:SelectedPointSetActive(active)
+function Exfiltrate:SelectedPointSetActive(active)
 	actor.SetActive(self.Points.Active, active)
 	if self.PromptBroker ~= nil then
 		timer.Set(
@@ -129,12 +129,12 @@ end
 
 ---Returns the selected extraction point.
 ---@return userdata ExtractionPoint the selected extraction point.
-function Exfiltration:GetSelectedPoint()
+function Exfiltrate:GetSelectedPoint()
 	return self.Points.Active
 end
 
 ---Displays a world prompt at the extraction zone.
-function Exfiltration:GuideToExtractionTimer()
+function Exfiltrate:GuideToExtractionTimer()
 	self.PromptBroker:Display(
 		'Extraction',
 		self.PromptTimer.ShowTime,
@@ -147,7 +147,7 @@ end
 ---@param trigger userdata the game trigger that the player entered.
 ---@param playerIn userdata the player that entered the game trigger.
 ---@return boolean enteredOwnZone true if player entered theirs extraction zone, false otherwise.
-function Exfiltration:CheckTriggerAndPlayer(trigger, playerIn)
+function Exfiltrate:CheckTriggerAndPlayer(trigger, playerIn)
     if trigger == self.Points.Active then
         local playerCharacter = player.GetCharacter(playerIn)
         if playerCharacter ~= nil then
@@ -163,7 +163,7 @@ end
 ---Updates the player in extraction zone count when player enters extraction zone
 ---and, if the exfilCondition is true, starts the exfiltration check timer.
 ---@param exfilCondition boolean whether or not exfiltration should be possible at the moment.
-function Exfiltration:PlayerEnteredExfiltration(exfilCondition)
+function Exfiltrate:PlayerEnteredExfiltration(exfilCondition)
 	self.PlayersIn = self.PlayersIn + 1
 	if exfilCondition then
 		self:CheckExfilTimer()
@@ -171,7 +171,7 @@ function Exfiltration:PlayerEnteredExfiltration(exfilCondition)
 end
 
 ---Updates the player in extraction zone count when player leaves extraction zone.
-function Exfiltration:PlayerLeftExfiltration()
+function Exfiltrate:PlayerLeftExfiltration()
 	local total = math.max(self.PlayersIn - 1, 0)
 	self.PlayersIn = total
 end
@@ -186,7 +186,7 @@ end
 ------
 ---If GameMessageBroker was provided for the object this method will display 
 ---messages informng the players on exfiltration status.
-function Exfiltration:CheckExfilTimer()
+function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
 		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
 		timer.Clear(self, self.ExfilTimer.Name)
@@ -221,4 +221,4 @@ function Exfiltration:CheckExfilTimer()
 	)
 end
 
-return Exfiltration
+return Exfiltrate

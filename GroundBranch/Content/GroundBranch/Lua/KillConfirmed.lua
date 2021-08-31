@@ -1,9 +1,15 @@
-local Groups = require('Spawns.Groups')
-local Spawns = require('Spawns.Common')
-local Exfiltration = require('Objectives.Exfiltration')
-local KillConfirmation = require('Objectives.KillConfirmation')
-local GameMessageBroker = require('UI.GameMessageBroker')
-local WorldPromptBroker = require('UI.WorldPromptBroker')
+--[[
+	Kill Confirmed
+	PvE Ground Branch game mode by Jakub 'eelSkillz' Baranowski
+	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-kill-confirmed
+]]--
+
+local ModSpawnsGroups = require('Spawns.Groups')
+local ModSpawnsCommon = require('Spawns.Common')
+local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')
+local ModObjectiveConfirmKill = require('Objectives.ConfirmKill')
+local ModUiGameMessageBroker = require('UI.GameMessageBroker')
+local ModUiWorldPromptBroker = require('UI.WorldPromptBroker')
 
 --#region Properties
 
@@ -80,10 +86,6 @@ local KillConfirmed = {
 			Name = 'SpawnOpFor',
 			TimeStep = 0.5,
 		},
-		CheckSpawnedAi = {
-			Name = 'CheckeSpawnedAi',
-			TimeStep = 4.1
-		}
 	}
 }
 
@@ -91,9 +93,9 @@ local KillConfirmed = {
 
 --#region Spawns
 
-local SpawnsOpForGroups
-local ObjectiveExfil
-local ObjectiveKillConfirmed
+local Spawns
+local Exfiltrate
+local ConfirmKill
 local MessagesObjective
 local PromptsObjective
 
@@ -104,12 +106,12 @@ local PromptsObjective
 function KillConfirmed:PreInit()
 	print('Initializing Kill Confirmed')
 	-- Setting up message broker
-	MessagesObjective = GameMessageBroker:Create(self.Players.WithLives, 'Upper')
-	PromptsObjective = WorldPromptBroker:Create(self.Players.WithLives)
+	MessagesObjective = ModUiGameMessageBroker:Create(self.Players.WithLives, 'Upper')
+	PromptsObjective = ModUiWorldPromptBroker:Create(self.Players.WithLives)
 	-- Gathers all OpFor spawn points by groups
-	SpawnsOpForGroups = Groups:Create()
+	Spawns = ModSpawnsGroups:Create()
 	-- Gathers all HVT spawn points
-	ObjectiveKillConfirmed = KillConfirmation:Create(
+	ConfirmKill = ModObjectiveConfirmKill:Create(
 		MessagesObjective,
 		PromptsObjective,
 		self,
@@ -120,7 +122,7 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Value
 	)
 	-- Gathers all extraction points placed in the mission
-	ObjectiveExfil = Exfiltration:Create(
+	Exfiltrate = ModObjectiveExfiltrate:Create(
 		MessagesObjective,
 		PromptsObjective,
 		self,
@@ -133,7 +135,7 @@ function KillConfirmed:PreInit()
 	-- Set maximum HVT count and ensure that HVT value is within limit
 	self.Settings.HVTCount.Max = math.min(
 		ai.GetMaxCount(),
-		ObjectiveKillConfirmed:GetAllSpawnPointsCount()
+		ConfirmKill:GetAllSpawnPointsCount()
 	)
 	self.Settings.HVTCount.Value = math.min(
 		self.Settings.HVTCount.Value,
@@ -162,8 +164,8 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	timer.ClearAll()
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
-		ObjectiveExfil:SelectPoint(false)
-		ObjectiveKillConfirmed:ShuffleSpawns()
+		Exfiltrate:SelectPoint(false)
+		ConfirmKill:ShuffleSpawns()
 		timer.Set(
 			self.Timers.SettingsChanged.Name,
 			self,
@@ -182,8 +184,8 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		)
 		MessagesObjective:SetRecipients(self.Players.WithLives)
 		PromptsObjective:SetRecipients(self.Players.WithLives)
-		ObjectiveKillConfirmed:SetPlayersWithLives(self.Players.WithLives)
-		ObjectiveExfil:SetPlayersRequiredForExfil(#self.Players.WithLives)
+		ConfirmKill:SetPlayersWithLives(self.Players.WithLives)
+		Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
 	end
 end
 
@@ -194,7 +196,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 	then
 		if CharacterController ~= nil then
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
-				ObjectiveKillConfirmed:Neutralized(Character)
+				ConfirmKill:Neutralized(Character)
 			elseif actor.HasTag(CharacterController, self.OpFor.Tag) then
 				print('OpFor standard eliminated')
 			else
@@ -212,7 +214,7 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 				)
 				MessagesObjective:SetRecipients(self.Players.WithLives)
 				PromptsObjective:SetRecipients(self.Players.WithLives)
-				ObjectiveExfil:SetPlayersRequiredForExfil(#self.Players.WithLives)
+				Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
 				timer.Set(
 					self.Timers.CheckBluForCount.Name,
 					self,
@@ -334,10 +336,10 @@ end
 function KillConfirmed:SetUpOpForStandardSpawns()
 	print('Setting up AI spawn points by groups')
 	local maxAiCount = math.min(
-		SpawnsOpForGroups.Total,
+		Spawns.Total,
 		ai.GetMaxCount() - self.Settings.HVTCount.Value
 	)
-	self.OpFor.CalculatedAiCount = Spawns.GetAiCountWithDeviationPercent(
+	self.OpFor.CalculatedAiCount = ModSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
 		maxAiCount,
 		gamemode.GetPlayerCount(true),
@@ -351,7 +353,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	local maxAiCountPerHvtGroup = math.floor(
 		missingAiCount / self.Settings.HVTCount.Value
 	)
-	local aiCountPerHvtGroup = Spawns.GetAiCountWithDeviationNumber(
+	local aiCountPerHvtGroup = ModSpawnsCommon.GetAiCountWithDeviationNumber(
 		3,
 		maxAiCountPerHvtGroup,
 		gamemode.GetPlayerCount(true),
@@ -361,18 +363,18 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 		0
 	)
 	print('Adding group spawns closest to HVTs')
-	for i = 1, ObjectiveKillConfirmed:GetHvtCount() do
+	for i = 1, ConfirmKill:GetHvtCount() do
 		local hvtLocation = actor.GetLocation(
-			ObjectiveKillConfirmed:GetShuffledSpawnPoint(i)
+			ConfirmKill:GetShuffledSpawnPoint(i)
 		)
-		SpawnsOpForGroups:AddSpawnsFromClosestGroup(aiCountPerHvtGroup, hvtLocation)
+		Spawns:AddSpawnsFromClosestGroup(aiCountPerHvtGroup, hvtLocation)
 	end
 	missingAiCount = self.OpFor.CalculatedAiCount -
-		SpawnsOpForGroups:GetSelectedSpawnPointsCount()
+		Spawns:GetSelectedSpawnPointsCount()
 	-- Select random groups and add their spawn points to spawn list
 	print('Adding random group spawns')
 	while missingAiCount > 0 do
-		local aiCountPerGroup = Spawns.GetAiCountWithDeviationNumber(
+		local aiCountPerGroup = ModSpawnsCommon.GetAiCountWithDeviationNumber(
 			2,
 			10,
 			gamemode.GetPlayerCount(true),
@@ -385,56 +387,28 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 			print('Remaining AI count is not enough to fill group')
 			break
 		end
-		SpawnsOpForGroups:AddSpawnsFromRandomGroup(aiCountPerGroup)
+		Spawns:AddSpawnsFromRandomGroup(aiCountPerGroup)
 		missingAiCount = self.OpFor.CalculatedAiCount -
-			SpawnsOpForGroups:GetSelectedSpawnPointsCount()
+			Spawns:GetSelectedSpawnPointsCount()
 	end
 	-- Select random spawns
-	SpawnsOpForGroups:AddRandomSpawns()
-	SpawnsOpForGroups:AddRandomSpawnsFromReserve()
+	Spawns:AddRandomSpawns()
+	Spawns:AddRandomSpawnsFromReserve()
 end
 
 function KillConfirmed:SpawnOpFor()
-	ObjectiveKillConfirmed:Spawn(0.4)
+	ConfirmKill:Spawn(0.4)
 	timer.Set(
 		self.Timers.SpawnOpFor.Name,
 		self,
 		self.SpawnStandardOpForTimer,
-		0.5,
+		self.Timers.SpawnOpFor.TimeStep,
 		false
 	)
 end
 
 function KillConfirmed:SpawnStandardOpForTimer()
-	SpawnsOpForGroups:Spawn(3.5, self.OpFor.CalculatedAiCount, self.OpFor.Tag)
-	timer.Set(
-		self.Timers.CheckSpawnedAi.Name,
-		self,
-		self.CheckSpawnedAiTimer,
-		self.Timers.CheckSpawnedAi.TimeStep,
-		false
-	)
-end
-
-function KillConfirmed:CheckSpawnedAiTimer()
-	local hvtControllers = ai.GetControllers(
-		'GroundBranch.GBAIController',
-		self.HVT.Tag,
-		255,
-		255
-	)
-	print('Spawned ' .. #hvtControllers .. ' HVT AI')
-	if self.Settings.HVTCount.Value ~= #hvtControllers then
-		print('Failed to spawn all HVTs, correcting values.')
-		self.Settings.HVTCount.Value = #hvtControllers
-	end
-	local standardControllers = ai.GetControllers(
-		'GroundBranch.GBAIController',
-		self.OpFor.Tag,
-		255,
-		255
-	)
-	print('Spawned ' .. #standardControllers .. ' standard AI')
+	Spawns:Spawn(3.5, self.OpFor.CalculatedAiCount, self.OpFor.Tag)
 end
 
 --#endregion
@@ -442,7 +416,7 @@ end
 --#region Objective: Kill confirmed
 
 function KillConfirmed:OnAllKillsConfirmed()
-	ObjectiveExfil:SelectedPointSetActive(true)
+	Exfiltrate:SelectedPointSetActive(true)
 end
 
 --#endregion
@@ -450,16 +424,16 @@ end
 --#region Objective: Extraction
 
 function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	if ObjectiveExfil:CheckTriggerAndPlayer(GameTrigger, Player) then
-		ObjectiveExfil:PlayerEnteredExfiltration(
-			ObjectiveKillConfirmed:AreAllConfirmed()
+	if Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
+		Exfiltrate:PlayerEnteredExfiltration(
+			ConfirmKill:AreAllConfirmed()
 		)
 	end
 end
 
 function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
-	if ObjectiveExfil:CheckTriggerAndPlayer(GameTrigger, Player) then
-		ObjectiveExfil:PlayerLeftExfiltration()
+	if Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
+		Exfiltrate:PlayerLeftExfiltration()
 	end
 end
 
@@ -482,10 +456,10 @@ end
 function KillConfirmed:CheckBluForCountTimer()
 	if #self.Players.WithLives == 0 then
 		gamemode.AddGameStat('Result=None')
-		if ObjectiveKillConfirmed:AreAllNeutralized() then
+		if ConfirmKill:AreAllNeutralized() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
 			gamemode.AddGameStat('CompleteObjectives=NeutralizeHVTs')
-		elseif ObjectiveKillConfirmed:AreAllConfirmed() then
+		elseif ConfirmKill:AreAllConfirmed() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
 			gamemode.AddGameStat(
 				'CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs'
@@ -507,16 +481,16 @@ function KillConfirmed:PreRoundCleanUp()
 	self.Players.WithLives = {}
 	MessagesObjective:SetRecipients(self.Players.WithLives)
 	PromptsObjective:SetRecipients(self.Players.WithLives)
-	ObjectiveKillConfirmed:SetPlayersWithLives(self.Players.WithLives)
-	ObjectiveKillConfirmed:Reset()
-	ObjectiveExfil:Reset()
+	ConfirmKill:SetPlayersWithLives(self.Players.WithLives)
+	ConfirmKill:Reset()
+	Exfiltrate:Reset()
 end
 
 function KillConfirmed:CheckIfSettingsChanged()
 	if self.SettingTrackers.LastHVTCount ~= self.Settings.HVTCount.Value then
 		print('Leader count changed, reshuffling spawns & updating objective markers.')
-		ObjectiveKillConfirmed:SetHvtCount(self.Settings.HVTCount.Value)
-		ObjectiveKillConfirmed:ShuffleSpawns()
+		ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
+		ConfirmKill:ShuffleSpawns()
 		self.SettingTrackers.LastHVTCount = self.Settings.HVTCount.Value
 	end
 end

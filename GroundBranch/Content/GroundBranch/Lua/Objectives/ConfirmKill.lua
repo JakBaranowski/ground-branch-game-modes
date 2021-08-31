@@ -1,7 +1,7 @@
 local Actors = require('Common.Actors')
 local Tables = require('Common.Tables')
 
-local KillConfirmation = {
+local ConfirmKill = {
     MessageBroker = nil,
     PromptBroker = nil,
     OnObjectiveCompleteFuncOwner = nil,
@@ -33,7 +33,7 @@ local KillConfirmation = {
     }
 }
 
-KillConfirmation.__index = KillConfirmation
+ConfirmKill.__index = ConfirmKill
 
 ---Creates a new object of type Objectives Kill Confirmation. This prototype can be
 ---used for setting up and tracking an Kill Confirmation objective for a specific team.
@@ -49,8 +49,8 @@ KillConfirmation.__index = KillConfirmation
 ---@param playersWithLives table Table containing all players eligible for this objective.
 ---@param hvtTag string Tag assigned to HVT spawn points in mission editor. Used to find HVT spawn points.
 ---@param hvtCount integer How many HVTs are in play.
----@return table KillConfirmation The newly created KillConfirmation object.
-function KillConfirmation:Create(
+---@return table ConfirmKill The newly created ConfirmKill object.
+function ConfirmKill:Create(
     messageBroker,
     promptBroker,
     onObjectiveCompleteFuncOwner,
@@ -96,14 +96,14 @@ function KillConfirmation:Create(
 end
 
 ---Resets the object attributes to default values. Should be called before every round.
-function KillConfirmation:Reset()
+function ConfirmKill:Reset()
     self.HVT.EliminatedNotConfirmedLocations = {}
 	self.HVT.EliminatedNotConfirmedCount = 0
 	self.HVT.EliminatedAndConfirmedCount = 0
 end
 
 ---Shuffle HVT spawn order. Should be called before every round.
-function KillConfirmation:ShuffleSpawns()
+function ConfirmKill:ShuffleSpawns()
     print('Shuffling ' .. self.HVT.Tag ..  ' spawns')
 	self.HVT.SpawnsShuffled = Tables.ShuffleTable(
 		self.HVT.Spawns
@@ -119,7 +119,7 @@ end
 
 ---Spawns the specified amount of HVTs at the shuffled spawn points.
 ---@param duration number time over whch the ai should be spawned.
-function KillConfirmation:Spawn(duration)
+function ConfirmKill:Spawn(duration)
     print('Spawning ' .. self.HVT.Tag)
     ai.CreateOverDuration(
 		duration,
@@ -131,7 +131,7 @@ function KillConfirmation:Spawn(duration)
 end
 
 ---Makes sure that the HVT count is equal to the HVT ai controllers count.
-function KillConfirmation:checkSpawnsTimer()
+function ConfirmKill:checkSpawnsTimer()
     local hvtControllers = ai.GetControllers(
         'GroundBranch.GBAIController',
         self.HVT.Tag,
@@ -149,7 +149,7 @@ end
 ---was provided at object creation, displays a message to the players. Should be
 ---called whenever an HVT is eliminated.
 ---@param character userdata Character of the neutralized HVT.
-function KillConfirmation:Neutralized(character)
+function ConfirmKill:Neutralized(character)
     print('OpFor HVT eliminated')
     if self.MessageBroker then
         self.MessageBroker:Display('HVTEliminated', 5.0)
@@ -174,7 +174,7 @@ end
 
 ---Used to display world prompt guiding players to the neutralized HVT for confirming
 ---the kill.
-function KillConfirmation:GuideToObjectiveTimer()
+function ConfirmKill:GuideToObjectiveTimer()
     for _, leaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
         self.PromptBroker:Display(
             'ConfirmKill',
@@ -188,7 +188,7 @@ end
 ---kill. If player is in range, will confirm the kill. If no player is in range,
 ---will find distance from neutralized HVT to closest players, and based on that
 ---distance determine how much time until next check.
-function KillConfirmation:ShouldConfirmKillTimer()
+function ConfirmKill:ShouldConfirmKillTimer()
 	if self.HVT.EliminatedNotConfirmedCount <= 0 then
         timer.Clear(self, self.PromptTimer.Name)
 		return
@@ -225,7 +225,7 @@ end
 
 ---Confirms the kill and updates objective tracking variables.
 ---@param leaderIndex integer index of the leader location in table EliminatedNotConfirmedLocations that was confirmed.
-function KillConfirmation:ConfirmKill(leaderIndex)
+function ConfirmKill:ConfirmKill(leaderIndex)
     table.remove(self.HVT.EliminatedNotConfirmedLocations, leaderIndex)
     self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmedLocations
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
@@ -245,7 +245,7 @@ end
 
 ---Sets the HVT count.
 ---@param count integer Desired HVT count.
-function KillConfirmation:SetHvtCount(count)
+function ConfirmKill:SetHvtCount(count)
     if count > #self.HVT.Spawns then
         self.HVT.Count = #self.HVT.Spawns
     else
@@ -255,55 +255,55 @@ end
 
 ---Gets the current HVT count.
 ---@return integer hvtCount Current HVT count.
-function KillConfirmation:GetHvtCount()
+function ConfirmKill:GetHvtCount()
     return self.HVT.Count
 end
 
 ---Sets the desired players with lives table.
 ---@param playersWithLives table Containing list of players currently eligible for this objective.
-function KillConfirmation:SetPlayersWithLives(playersWithLives)
+function ConfirmKill:SetPlayersWithLives(playersWithLives)
     self.PlayersWithLives = playersWithLives
 end
 
 ---Returns true if all HVTs are neutralized, false otherwise.
 ---@return boolean areAllNeutralized
-function KillConfirmation:AreAllNeutralized()
+function ConfirmKill:AreAllNeutralized()
     return self.HVT.EliminatedNotConfirmedCount >= self.HVT.Count
 end
 
 ---Returns true if all HVT kill are confirmed, false otherwise.
 ---@return boolean areAllConfirmed
-function KillConfirmation:AreAllConfirmed()
+function ConfirmKill:AreAllConfirmed()
     return self.HVT.EliminatedAndConfirmedCount >= self.HVT.Count
 end
 
 ---Returns all spawn points count.
 ---@return integer allSpawnPointsCount
-function KillConfirmation:GetAllSpawnPointsCount()
+function ConfirmKill:GetAllSpawnPointsCount()
     return #self.HVT.Spawns
 end
 
 ---Returns a table of shuffled spawn points.
 ---@return table shuffledSpawnPoints list of shuffled spawn points.
-function KillConfirmation:GetShuffledSpawnPoints()
+function ConfirmKill:GetShuffledSpawnPoints()
     return {table.unpack(self.HVT.SpawnsShuffled)}
 end
 
 ---Returns the spawn point specified by the index in the shuffled spawn points table.
 ---@param index integer index of the spawn point in the shuffled spawn points table.
 ---@return userdata spawnPoint
-function KillConfirmation:GetShuffledSpawnPoint(index)
+function ConfirmKill:GetShuffledSpawnPoint(index)
     return self.HVT.SpawnsShuffled[index]
 end
 
 ---Returns a copy of shuffled spawn points table, and empties the original shuffled
 ---spawn points table.
 ---@return table
-function KillConfirmation:PopShuffledSpawnPoints()
+function ConfirmKill:PopShuffledSpawnPoints()
     print('Poping ' .. self.HVT.Tag .. ' spawns')
     local hvtSpawns = self:GetShuffledSpawnPoints()
     self.HVT.SpawnsShuffled = {}
     return hvtSpawns
 end
 
-return KillConfirmation
+return ConfirmKill

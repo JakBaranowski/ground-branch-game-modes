@@ -1,7 +1,13 @@
-local Groups = require('Spawns.Groups')
-local Spawns = require('Spawns.Common')
-local Exfiltration = require('Objectives.Exfiltration')
-local GameMessageBroker = require('UI.GameMessageBroker')
+--[[
+	Break Out
+	PvE Ground Branch game mode by Jakub 'eelSkillz' Baranowski
+	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-break-out
+]]--
+
+local ModSpawnsGroups = require('Spawns.Groups')
+local ModSpawnsCommon = require('Spawns.Common')
+local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')
+local ModUiGameMessageBroker = require('UI.GameMessageBroker')
 
 --#region Properties
 
@@ -69,8 +75,8 @@ local BreakOut = {
 
 --#region Spawns
 
-local GroupSpawns
-local ObjectiveExfil
+local Spawns
+local Exfiltrate
 local MessagesObjective
 
 --#endregion
@@ -80,11 +86,11 @@ local MessagesObjective
 function BreakOut:PreInit()
 	print('Initializing Break Out')
 	-- Initalize game message broker
-	MessagesObjective = GameMessageBroker:Create(self.Players.WithLives, 'upper')
+	MessagesObjective = ModUiGameMessageBroker:Create(self.Players.WithLives, 'upper')
 	-- Gathers all OpFor spawn points by groups
-	GroupSpawns = Groups:Create()
+	Spawns = ModSpawnsGroups:Create()
 	-- Initialize Exfiltration objective
-	ObjectiveExfil = Exfiltration:Create(
+	Exfiltrate = ModObjectiveExfiltrate:Create(
 		MessagesObjective,
 		nil,
 		self,
@@ -111,7 +117,7 @@ function BreakOut:OnRoundStageSet(RoundStage)
 	timer.ClearAll()
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
-		ObjectiveExfil:SelectPoint(true)
+		Exfiltrate:SelectPoint(true)
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForSpawns()
 		self:SpawnOpFor()
@@ -122,7 +128,7 @@ function BreakOut:OnRoundStageSet(RoundStage)
 			false
 		)
 		MessagesObjective:SetRecipients(self.Players.WithLives)
-		ObjectiveExfil:SetPlayersRequiredForExfil(#self.Players.WithLives)
+		Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
 	end
 end
 
@@ -148,7 +154,7 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 					false
 				)
 				MessagesObjective:SetRecipients(self.Players.WithLives)
-				ObjectiveExfil:SetPlayersRequiredForExfil(#self.Players.WithLives)
+				Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
 				timer.Set(
 					self.Timers.CheckBluForCount.Name,
 					self,
@@ -186,6 +192,20 @@ function BreakOut:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 end
 
 function BreakOut:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+	if ReadyStatus == 'WaitingToReadyUp' then
+		player.ShowGameMessage(
+			PlayerState,
+			'Sidearm_+_1_Sidearm_Ammo_Pouch',
+			'Engine',
+			5.0
+		)
+		player.ShowGameMessage(
+			PlayerState,
+			'Recommended_Loadout:',
+			'Engine',
+			5.0
+		)
+	end
 	if ReadyStatus ~= 'DeclaredReady' then
 		timer.Set(
 			self.Timers.CheckReadyDown.Name,
@@ -266,10 +286,10 @@ end
 function BreakOut:SetUpOpForSpawns()
 	print('Setting up AI spawns by groups')
 	local maxAiCount = math.min(
-		GroupSpawns:GetTotalSpawnPointsCount(),
+		Spawns:GetTotalSpawnPointsCount(),
 		ai.GetMaxCount()
 	)
-	self.OpFor.CalculatedAiCount = Spawns.GetAiCountWithDeviationPercent(
+	self.OpFor.CalculatedAiCount = ModSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
 		maxAiCount,
 		gamemode.GetPlayerCount(true),
@@ -280,7 +300,7 @@ function BreakOut:SetUpOpForSpawns()
 	)
 	-- Select groups guarding extraction and add their spawn points to spawn list
 	print('Adding group closest to exfil')
-	local aiCountPerExfilGroup = Spawns.GetAiCountWithDeviationNumber(
+	local aiCountPerExfilGroup = ModSpawnsCommon.GetAiCountWithDeviationNumber(
 		3,
 		10,
 		gamemode.GetPlayerCount(true),
@@ -289,16 +309,16 @@ function BreakOut:SetUpOpForSpawns()
 		1,
 		0
 	)
-	local exfilLocation = actor.GetLocation(ObjectiveExfil:GetSelectedPoint())
-	GroupSpawns:AddSpawnsFromClosestGroup(aiCountPerExfilGroup, exfilLocation)
+	local exfilLocation = actor.GetLocation(Exfiltrate:GetSelectedPoint())
+	Spawns:AddSpawnsFromClosestGroup(aiCountPerExfilGroup, exfilLocation)
 	print('Adding random spawns from remaining')
-	GroupSpawns:AddRandomSpawns()
+	Spawns:AddRandomSpawns()
 	print('Adding random spawns from reserve')
-	GroupSpawns:AddRandomSpawnsFromReserve()
+	Spawns:AddRandomSpawnsFromReserve()
 end
 
 function BreakOut:SpawnOpFor()
-	GroupSpawns:Spawn(4.0, self.OpFor.CalculatedAiCount, self.OpFor.Tag)
+	Spawns:Spawn(4.0, self.OpFor.CalculatedAiCount, self.OpFor.Tag)
 	timer.Set(
 		self.Timers.CheckSpawnedAi.Name,
 		self,
@@ -323,14 +343,14 @@ end
 --#region Objective: Extraction
 
 function BreakOut:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	if ObjectiveExfil:CheckTriggerAndPlayer(GameTrigger, Player) then
-		ObjectiveExfil:PlayerEnteredExfiltration(true)
+	if Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
+		Exfiltrate:PlayerEnteredExfiltration(true)
 	end
 end
 
 function BreakOut:OnGameTriggerEndOverlap(GameTrigger, Player)
-	if ObjectiveExfil:CheckTriggerAndPlayer(GameTrigger, Player) then
-		ObjectiveExfil:PlayerLeftExfiltration()
+	if Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
+		Exfiltrate:PlayerLeftExfiltration()
 	end
 end
 
@@ -373,7 +393,7 @@ function BreakOut:PreRoundCleanUp()
 	ai.CleanUp(self.OpFor.Tag)
 	self.Players.WithLives = {}
 	MessagesObjective:SetRecipients(self.Players.WithLives)
-	ObjectiveExfil:Reset()
+	Exfiltrate:Reset()
 end
 
 --#endregion
