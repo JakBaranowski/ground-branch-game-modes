@@ -10,8 +10,6 @@ local Groups = {
     GroupTagPrefix = 'Group'
 }
 
-Groups.__index = Groups
-
 ---Creates a new group spawns object. At creation all relevant spawn points are
 ---gathered, default values are set.
 ---@param groupTagPrefix string The tag prefix assigned to group spawn points.
@@ -22,7 +20,6 @@ function Groups:Create(groupTagPrefix)
     self.__index = self
     -- Setting attributes
     self.GroupTagPrefix = groupTagPrefix or 'Group'
-    print('Initializing Spawns Groups ' .. tostring(self))
     -- Gathering all relevant spawn points
     print('Gathering group spawn points')
     self.Spawns = {}
@@ -44,6 +41,7 @@ function Groups:Create(groupTagPrefix)
     self.RemainingGroups = {table.unpack(self.Spawns)}
     self.ReserveSpawnPoints = {}
     self.SelectedSpawnPoints = {}
+    print('Initialized Spawns Groups ' .. tostring(groups))
     return groups
 end
 

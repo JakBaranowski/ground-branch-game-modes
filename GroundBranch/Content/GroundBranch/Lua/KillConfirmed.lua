@@ -4,12 +4,11 @@
 	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-kill-confirmed
 ]]--
 
+local ModTeams = require('Common.Teams')
 local ModSpawnsGroups = require('Spawns.Groups')
 local ModSpawnsCommon = require('Spawns.Common')
 local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')
 local ModObjectiveConfirmKill = require('Objectives.ConfirmKill')
-local ModUiGameMessageBroker = require('UI.GameMessageBroker')
-local ModUiWorldPromptBroker = require('UI.WorldPromptBroker')
 
 --#region Properties
 
@@ -46,15 +45,25 @@ local KillConfirmed = {
 		},
 		AllowRespawns = {
 			Min = 0,
+			Max = 2,
+			Value = 0
+		},
+		RespawnCost = {
+			Min = 1,
+			Max = 2000,
+			Value = 1000
+		},
+		DisplayScore = {
+			Min = 0,
 			Max = 1,
 			Value = 0
 		}
 	},
 	SettingTrackers = {
-		LastHVTCount = 0,
-	},
-	Players = {
-		WithLives = {},
+		HVTCount = 0,
+		DisplayScore = 0,
+		AllowRespawns = 0,
+		RespawnCost = 1000
 	},
 	OpFor = {
 		Tag = 'OpFor',
@@ -93,11 +102,10 @@ local KillConfirmed = {
 
 --#region Spawns
 
+local TeamBlue
 local Spawns
 local Exfiltrate
 local ConfirmKill
-local MessagesObjective
-local PromptsObjective
 
 --#endregion
 
@@ -105,30 +113,29 @@ local PromptsObjective
 
 function KillConfirmed:PreInit()
 	print('Initializing Kill Confirmed')
-	-- Setting up message broker
-	MessagesObjective = ModUiGameMessageBroker:Create(self.Players.WithLives, 'Upper')
-	PromptsObjective = ModUiWorldPromptBroker:Create(self.Players.WithLives)
+	TeamBlue = ModTeams:Create(
+		self.PlayerTeams.BluFor.TeamId,
+		false,
+		self.Settings.DisplayScore.Value == 1,
+		self.Settings.AllowRespawns.Value,
+		self.Settings.RespawnCost.Value
+	)
 	-- Gathers all OpFor spawn points by groups
 	Spawns = ModSpawnsGroups:Create()
 	-- Gathers all HVT spawn points
 	ConfirmKill = ModObjectiveConfirmKill:Create(
-		MessagesObjective,
-		PromptsObjective,
 		self,
 		self.OnAllKillsConfirmed,
-		self.PlayerTeams.BluFor.TeamId,
-		self.Players.WithLives,
+		TeamBlue,
 		self.HVT.Tag,
 		self.Settings.HVTCount.Value
 	)
 	-- Gathers all extraction points placed in the mission
 	Exfiltrate = ModObjectiveExfiltrate:Create(
-		MessagesObjective,
-		PromptsObjective,
 		self,
 		self.OnExfiltrated,
-		self.PlayerTeams.BluFor.TeamId,
-		#self.Players.WithLives,
+		TeamBlue,
+		1,
 		5.0,
 		1.0
 	)
@@ -143,7 +150,10 @@ function KillConfirmed:PreInit()
 	)
 	-- Set last HVT count for tracking if the setting has changed.
 	-- This is neccessary for adding objective markers on map.
-	self.SettingTrackers.LastHVTCount = self.Settings.HVTCount.Value
+	self.SettingTrackers.HVTCount = self.Settings.HVTCount.Value
+	self.SettingTrackers.DisplayScore = self.Settings.DisplayScore.Value
+	self.SettingTrackers.AllowRespawns = self.Settings.AllowRespawns.Value
+	self.SettingTrackers.RespawnCost = self.Settings.RespawnCost.Value
 end
 
 function KillConfirmed:PostInit()
@@ -177,15 +187,10 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
-		self.Players.WithLives = gamemode.GetPlayerListByLives(
-			self.PlayerTeams.BluFor.TeamId,
-			1,
-			false
-		)
-		MessagesObjective:SetRecipients(self.Players.WithLives)
-		PromptsObjective:SetRecipients(self.Players.WithLives)
-		ConfirmKill:SetPlayersWithLives(self.Players.WithLives)
-		Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
+		TeamBlue:SetAllowedToRespawn(self.Settings.AllowRespawns.Value == 2)
+		TeamBlue:UpdatePlayers()
+		TeamBlue:UpdateAlivePlayers(1)
+		Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 	end
 end
 
@@ -194,27 +199,25 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
-		if CharacterController ~= nil then
+		if CharacterController ~= nil and KillerController ~= nil then
+			local killerTeam = actor.GetTeamId(KillerController)
+			local killedTeam = actor.GetTeamId(CharacterController)
 			if actor.HasTag(CharacterController, self.HVT.Tag) then
 				ConfirmKill:Neutralized(Character)
 			elseif actor.HasTag(CharacterController, self.OpFor.Tag) then
 				print('OpFor standard eliminated')
+				if killerTeam ~= killedTeam then
+					TeamBlue:IncreaseScore(100, 'Enemy_Kill')
+				end
 			else
 				print('BluFor eliminated')
-				if self.Settings.AllowRespawns.Value == 0 then
-					player.SetLives(
-						CharacterController,
-						player.GetLives(CharacterController) - 1
-					)
+				if killerTeam == nil then
+					TeamBlue:IncreaseScore(-50, 'Accident')
+				elseif killerTeam == killedTeam then
+					TeamBlue:IncreaseScore(-100, 'Team_Kill')
 				end
-				self.Players.WithLives = gamemode.GetPlayerListByLives(
-					self.PlayerTeams.BluFor.TeamId,
-					1,
-					false
-				)
-				MessagesObjective:SetRecipients(self.Players.WithLives)
-				PromptsObjective:SetRecipients(self.Players.WithLives)
-				Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
+				TeamBlue:PlayerDied(CharacterController)
+				Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 				timer.Set(
 					self.Timers.CheckBluForCount.Name,
 					self,
@@ -225,6 +228,10 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			end
 		end
 	end
+end
+
+function KillConfirmed:GetSpawnInfo(PlayerState)
+	TeamBlue:RespawnPlayer(PlayerState)
 end
 
 --#endregion
@@ -307,10 +314,6 @@ function KillConfirmed:PlayerCanEnterPlayArea(PlayerState)
 		return true
 	end
 	return false
-end
-
-function KillConfirmed:PlayerEnteredPlayArea(PlayerState)
-	player.SetAllowedToRestart(PlayerState, self.Settings.AllowRespawns.Value == 1)
 end
 
 function KillConfirmed:LogOut(Exiting)
@@ -454,7 +457,7 @@ end
 --#region Fail Condition
 
 function KillConfirmed:CheckBluForCountTimer()
-	if #self.Players.WithLives == 0 then
+	if TeamBlue:IsWipedOut() then
 		gamemode.AddGameStat('Result=None')
 		if ConfirmKill:AreAllNeutralized() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
@@ -478,20 +481,32 @@ end
 function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.OpFor.Tag)
-	self.Players.WithLives = {}
-	MessagesObjective:SetRecipients(self.Players.WithLives)
-	PromptsObjective:SetRecipients(self.Players.WithLives)
-	ConfirmKill:SetPlayersWithLives(self.Players.WithLives)
+	TeamBlue:Reset()
 	ConfirmKill:Reset()
 	Exfiltrate:Reset()
 end
 
 function KillConfirmed:CheckIfSettingsChanged()
-	if self.SettingTrackers.LastHVTCount ~= self.Settings.HVTCount.Value then
+	if self.SettingTrackers.HVTCount ~= self.Settings.HVTCount.Value then
 		print('Leader count changed, reshuffling spawns & updating objective markers.')
 		ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		ConfirmKill:ShuffleSpawns()
-		self.SettingTrackers.LastHVTCount = self.Settings.HVTCount.Value
+		self.SettingTrackers.HVTCount = self.Settings.HVTCount.Value
+	end
+	if self.SettingTrackers.DisplayScore ~= self.Settings.DisplayScore.Value then
+		print('Display score setting changed from ' .. self.SettingTrackers.DisplayScore .. ' to ' .. self.Settings.DisplayScore.Value)
+		TeamBlue:SetDisplayScore(self.Settings.DisplayScore.Value == 1)
+		self.SettingTrackers.DisplayScore = self.Settings.DisplayScore.Value
+	end
+	if self.SettingTrackers.AllowRespawns ~= self.Settings.AllowRespawns.Value then
+		print('Allow respawns setting changed from ' .. self.SettingTrackers.AllowRespawns .. ' to ' .. self.Settings.AllowRespawns.Value)
+		TeamBlue:SetRespawnType(self.Settings.AllowRespawns.Value)
+		self.SettingTrackers.AllowRespawns = self.Settings.AllowRespawns.Value
+	end
+	if self.SettingTrackers.RespawnCost ~= self.Settings.RespawnCost.Value then
+		print('Respawn cost setting changed from ' .. self.SettingTrackers.RespawnCost .. ' to ' .. self.Settings.RespawnCost.Value)
+		TeamBlue:SetRespawnCost(self.Settings.RespawnCost.Value)
+		self.SettingTrackers.RespawnCost = self.Settings.RespawnCost.Value
 	end
 end
 

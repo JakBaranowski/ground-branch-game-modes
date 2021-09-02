@@ -2,12 +2,9 @@ local Actors = require('Common.Actors')
 local Tables = require('Common.Tables')
 
 local ConfirmKill = {
-    MessageBroker = nil,
-    PromptBroker = nil,
     OnObjectiveCompleteFuncOwner = nil,
     OnObjectiveCompleteFunc = nil,
-    TeamId = 1,
-    PlayersWithLives = {},
+    Team = {},
     HVT = {
         Count = 1,
         Tag = 'HVT',
@@ -33,43 +30,31 @@ local ConfirmKill = {
     }
 }
 
-ConfirmKill.__index = ConfirmKill
-
 ---Creates a new object of type Objectives Kill Confirmation. This prototype can be
 ---used for setting up and tracking an Kill Confirmation objective for a specific team.
 ---Kill Confirmation requires players to kill selected targets (HVTs), and confirm
 ---the HVT kills by walking over HVTs bodies.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
----@param messageBroker table Reference to GameMessageBroker instance to be used by this objective.
----@param promptBroker table Reference to WorldPromptBroker instance to be used by this objective.
 ---@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
 ---@param onObjectiveCompleteFunc function Function to be run when the objective is completed.
----@param teamId integer ID of the team that this objective is for.
----@param playersWithLives table Table containing all players eligible for this objective.
+---@param team table the team object of the eligible team.
 ---@param hvtTag string Tag assigned to HVT spawn points in mission editor. Used to find HVT spawn points.
 ---@param hvtCount integer How many HVTs are in play.
 ---@return table ConfirmKill The newly created ConfirmKill object.
 function ConfirmKill:Create(
-    messageBroker,
-    promptBroker,
     onObjectiveCompleteFuncOwner,
     onObjectiveCompleteFunc,
-    teamId,
-    playersWithLives,
+    team,
     hvtTag,
     hvtCount
 )
     local killConfirmation = {}
     setmetatable(killConfirmation, self)
     self.__index = self
-    print('Intializing Objective Kill Confirmation ' .. tostring(killConfirmation))
-    self.MessageBroker = messageBroker
-    self.PromptBroker = promptBroker
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
-    self.TeamId = teamId or 1
-    self.PlayersWithLives = playersWithLives or {}
+    self.Team = team
     self.HVT.Count = hvtCount or 1
     self.HVT.Tag = hvtTag or 'HVT'
     self.HVT.Spawns = gameplaystatics.GetAllActorsOfClassWithTag(
@@ -83,7 +68,7 @@ function ConfirmKill:Create(
 		description = Actors.GetSuffixFromActorTag(Spawn, 'ObjectiveMarker')
 		self.HVT.Markers[description] = gamemode.AddObjectiveMarker(
 			actor.GetLocation(Spawn),
-			self.TeamId,
+			self.Team:GetId(),
 			description,
 			false
 		)
@@ -92,6 +77,7 @@ function ConfirmKill:Create(
     self.HVT.EliminatedNotConfirmedLocations = {}
     self.HVT.EliminatedNotConfirmedCount = 0
     self.HVT.EliminatedAndConfirmedCount = 0
+    print('Intialized Objective Kill Confirmation ' .. tostring(killConfirmation))
     return killConfirmation
 end
 
@@ -151,18 +137,15 @@ end
 ---@param character userdata Character of the neutralized HVT.
 function ConfirmKill:Neutralized(character)
     print('OpFor HVT eliminated')
-    if self.MessageBroker then
-        self.MessageBroker:Display('HVTEliminated', 5.0)
-    end
-    if self.PromptBroker ~= nil then
-        timer.Set(
-			self.PromptTimer.Name,
-			self,
-			self.GuideToObjectiveTimer,
-			self.PromptTimer.DelayTime,
-			true
-		)
-    end
+    self.Team:DisplayMessage('HVTEliminated', 5.0, 'Upper')
+    timer.Set(
+        self.PromptTimer.Name,
+        self,
+        self.GuideToObjectiveTimer,
+        self.PromptTimer.DelayTime,
+        true
+    )
+    self.Team:IncreaseScore(250, 'HVT_Neutralized')
     table.insert(
         self.HVT.EliminatedNotConfirmedLocations,
         actor.GetLocation(character)
@@ -176,7 +159,7 @@ end
 ---the kill.
 function ConfirmKill:GuideToObjectiveTimer()
     for _, leaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
-        self.PromptBroker:Display(
+        self.Team:DisplayPrompt(
             'ConfirmKill',
             self.PromptTimer.ShowTime,
             leaderLocation
@@ -195,7 +178,7 @@ function ConfirmKill:ShouldConfirmKillTimer()
 	end
 	local LowestDist = self.ObjectiveTimer.TimeStep.Max * 1000.0
 	for leaderIndex, leaderLocation in ipairs(self.HVT.EliminatedNotConfirmedLocations) do
-		for _, playerController in ipairs(self.PlayersWithLives) do
+		for _, playerController in ipairs(self.Team:GetAlivePlayers()) do
 			local playerLocation = actor.GetLocation(
 				player.GetCharacter(playerController)
 			)
@@ -229,17 +212,13 @@ function ConfirmKill:ConfirmKill(leaderIndex)
     table.remove(self.HVT.EliminatedNotConfirmedLocations, leaderIndex)
     self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmedLocations
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
+    self.Team:IncreaseScore(750, 'Kill_Confirmed')
     if self:AreAllConfirmed() then
 		print('All HVT kills confirmed')
-        if self.MessageBroker then
-            self.MessageBroker:Display('HVTConfirmedAll', 5.0)
-        end
+        self.Team:DisplayMessage('HVTConfirmedAll', 5.0, 'Upper')
         self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
 	else
-		print('HVT kill confirmed')
-        if self.MessageBroker then
-		    self.MessageBroker:Display('HVTConfirmed', 5.0)
-        end
+        self.Team:DisplayMessage('HVTConfirmed', 5.0, 'Upper')
 	end
 end
 
@@ -257,12 +236,6 @@ end
 ---@return integer hvtCount Current HVT count.
 function ConfirmKill:GetHvtCount()
     return self.HVT.Count
-end
-
----Sets the desired players with lives table.
----@param playersWithLives table Containing list of players currently eligible for this objective.
-function ConfirmKill:SetPlayersWithLives(playersWithLives)
-    self.PlayersWithLives = playersWithLives
 end
 
 ---Returns true if all HVTs are neutralized, false otherwise.

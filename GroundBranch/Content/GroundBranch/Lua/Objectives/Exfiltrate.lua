@@ -1,11 +1,9 @@
 local Exfiltrate = {
-	MessageBroker = nil,
-	PromptBroker = nil,
     PlayersRequiredForExfil = 1,
     PlayersIn = 0,
     OnObjectiveCompleteFuncOwner = nil,
     OnObjectiveCompleteFunc = nil,
-    TeamId = 1,
+    Team = 1,
     ExfilTimer = {
         Name = 'ExfilTimer',
         DefaultTime = 5.0,
@@ -24,27 +22,21 @@ local Exfiltrate = {
     },
 }
 
-Exfiltrate.__index = Exfiltrate
-
 ---Creates a new object of type Objectives Exfiltrate. This prototype can be
 ---used for setting up and tracking an exifltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
----@param messageBroker table Reference to GameMessageBroker instance to be used by this objective.
----@param promptBroker table Reference to WorldPromptBroker instance to be used by this objective.
 ---@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
 ---@param onObjectiveCompleteFunc function Function to be run when the objective is completed.
----@param teamId integer ID of the team that this objective is for.
+---@param team table the team object of the eligible team.
 ---@param playerCountRequiredForExtraction integer How many players have to be in extraction zone for exfiltration to start.
 ---@param timeToExfil number How long the exfiltration should take.
 ---@param timeStep number How much time should pass between each exfiltration check.
 ---@return table Exfiltrate The newly created Exfiltrate object.
 function Exfiltrate:Create(
-	messageBroker,
-	promptBroker,
     onObjectiveCompleteFuncOwner,
     onObjectiveCompleteFunc,
-    teamId,
+    team,
 	playerCountRequiredForExtraction,
     timeToExfil,
     timeStep
@@ -52,12 +44,9 @@ function Exfiltrate:Create(
     local exfiltration = {}
     setmetatable(exfiltration, self)
     self.__index = self
-	print('Initializing Objective Exfiltrate ' .. tostring(exfiltration))
-	self.MessageBroker = messageBroker
-	self.PromptBroker = promptBroker
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
-    self.TeamId = teamId or Exfiltrate.TeamId
+    self.Team = team
 	self.PlayersRequiredForExfil = playerCountRequiredForExtraction or 1
 	self.PlayersIn = 0
     self.ExfilTimer.CurrentTime = timeToExfil or Exfiltrate.ExfilTimer.CurrentTime
@@ -71,12 +60,13 @@ function Exfiltrate:Create(
 		local Location = actor.GetLocation(self.Points.All[i])
 		self.Points.AllMarkers[i] = gamemode.AddObjectiveMarker(
 			Location,
-			self.TeamId,
+			self.Team:GetId(),
 			'Extraction',
 			false
 		)
 	end
 	print('Added inactive objective markers for extraction points')
+	print('Initialized Objective Exfiltrate ' .. tostring(exfiltration))
     return exfiltration
 end
 
@@ -116,15 +106,13 @@ end
 ---@param active boolean should the point be active.
 function Exfiltrate:SelectedPointSetActive(active)
 	actor.SetActive(self.Points.Active, active)
-	if self.PromptBroker ~= nil then
-		timer.Set(
-			self.PromptTimer.Name,
-			self,
-			self.GuideToExtractionTimer,
-			self.PromptTimer.DelayTime,
-			true
-		)
-	end
+	timer.Set(
+		self.PromptTimer.Name,
+		self,
+		self.GuideToExtractionTimer,
+		self.PromptTimer.DelayTime,
+		true
+	)
 end
 
 ---Returns the selected extraction point.
@@ -135,7 +123,7 @@ end
 
 ---Displays a world prompt at the extraction zone.
 function Exfiltrate:GuideToExtractionTimer()
-	self.PromptBroker:Display(
+	self.Team:DisplayPrompt(
 		'Extraction',
 		self.PromptTimer.ShowTime,
 		actor.GetLocation(self.Points.Active)
@@ -151,10 +139,7 @@ function Exfiltrate:CheckTriggerAndPlayer(trigger, playerIn)
     if trigger == self.Points.Active then
         local playerCharacter = player.GetCharacter(playerIn)
         if playerCharacter ~= nil then
-            local teamId = actor.GetTeamId(playerCharacter)
-            if teamId == self.TeamId then
-                return true
-            end
+            return true
         end
     end
     return false
@@ -194,22 +179,17 @@ function Exfiltrate:CheckExfilTimer()
 		return
 	end
 	if self.PlayersIn <= 0 then
-		if self.MessageBroker then
-			self.MessageBroker:Display('ExfilCancelled', self.ExfilTimer.TimeStep*2)
-		end
+		self.Team:DisplayMessage('ExfilCancelled', self.ExfilTimer.TimeStep*2, 'Upper')
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime
 		return
 	elseif self.PlayersIn < self.PlayersRequiredForExfil then
-		if self.MessageBroker then
-			self.MessageBroker:Display('ExfilPaused', self.ExfilTimer.TimeStep-0.05)
-		end
+		self.Team:DisplayMessage('ExfilPaused', self.ExfilTimer.TimeStep-0.05, 'Upper')
 	else
-		if self.MessageBroker then
-			self.MessageBroker:Display(
-				'ExfilInProgress_'..math.floor(self.ExfilTimer.CurrentTime),
-				self.ExfilTimer.TimeStep-0.05
-			)
-		end
+		self.Team:DisplayMessage(
+			'ExfilInProgress_'..math.floor(self.ExfilTimer.CurrentTime),
+			self.ExfilTimer.TimeStep-0.05,
+			'Upper'
+		)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.CurrentTime - self.ExfilTimer.TimeStep
 	end
 	timer.Set(

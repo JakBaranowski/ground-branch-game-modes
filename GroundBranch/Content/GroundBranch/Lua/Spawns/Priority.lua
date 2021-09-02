@@ -11,15 +11,12 @@ local Priority = {
     Selected = {}
 }
 
-Priority.__index = Priority
-
 ---Creates new Priority spawns object.
 ---@return table Priority Newly created Priority spawns object.
 function Priority:Create()
     local priority = {}
     setmetatable(priority, self)
     self.__index = self
-	print('Initialized PrioritySpawns ' .. tostring(self))
 	self.Spawns = {}
 	local priorityIndex = 1
 	for _, priorityTag in ipairs(self.Tags) do
@@ -34,6 +31,7 @@ function Priority:Create()
 		end
 	end
 	print('Found ' .. self.Total .. ' spawns by priority')
+	print('Initialized PrioritySpawns ' .. tostring(priority))
     return priority
 end
 

@@ -5,7 +5,6 @@
 	Work in progress!
 ]]--
 
-local ModUiGameMessageBroker = require('UI.GameMessageBroker')
 local ModSpawnsCommon = require('Spawns.Common')
 local ModSpawnsGroups = require('Spawns.Groups')
 local ModCodenames = require('Common.Codenames')
@@ -71,7 +70,6 @@ local MessagesObjective
 function SecureArea:PreInit()
 	print('PreInit')
 	print('Initializing Secure Area')
-	MessagesObjective = ModUiGameMessageBroker:Create(self.PlayerTeams.Blue.WithLives, 'Upper')
 	Spawns = ModSpawnsGroups:Create()
 	for i = 1, 12 do
 		local triggers = gameplaystatics.GetAllActorsOfClassWithTag(

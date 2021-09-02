@@ -2,8 +2,6 @@ local WorldPromptBroker = {
     Recipients = {}
 }
 
-WorldPromptBroker.__index = WorldPromptBroker
-
 ---Creates a new World Prompt Broker object. Can be used to display world prompts
 ---to selected players.
 ---@param  recipients table List of players to display the message to.
@@ -12,8 +10,8 @@ function WorldPromptBroker:Create(recipients)
     local wpb = self
     setmetatable(wpb, self)
     self.__index = self
-    print('Initialized World Prompt Broker ' .. tostring(self))
     self.Recipients = recipients or {}
+    print('Initialized World Prompt Broker ' .. tostring(wpb))
     return wpb
 end
 

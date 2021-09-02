@@ -4,10 +4,10 @@
 	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-break-out
 ]]--
 
+local ModTeams = require('Common.Teams')
 local ModSpawnsGroups = require('Spawns.Groups')
 local ModSpawnsCommon = require('Spawns.Common')
 local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')
-local ModUiGameMessageBroker = require('UI.GameMessageBroker')
 
 --#region Properties
 
@@ -39,18 +39,36 @@ local BreakOut = {
 		},
 		AllowRespawns = {
 			Min = 0,
+			Max = 2,
+			Value = 0
+		},
+		RespawnCost = {
+			Min = 1,
+			Max = 2000,
+			Value = 1000
+		},
+		DisplayScore = {
+			Min = 0,
 			Max = 1,
 			Value = 0
 		}
 	},
-	Players = {
-		WithLives = {}
+	SettingTrackers = {
+		HVTCount = 0,
+		DisplayScore = 0,
+		AllowRespawns = 0,
+		RespawnCost = 1000
 	},
 	OpFor = {
 		Tag = 'OpFor',
 		CalculatedAiCount = 0,
 	},
 	Timers = {
+		-- Repeating timers with constant delay
+		SettingsChanged = {
+			Name = 'SettingsChanged',
+			TimeStep = 1.0,
+		},
 		-- Delays
 		CheckBluForCount = {
 			Name = 'CheckBluForCount',
@@ -75,9 +93,9 @@ local BreakOut = {
 
 --#region Spawns
 
+local TeamBlue
 local Spawns
 local Exfiltrate
-local MessagesObjective
 
 --#endregion
 
@@ -86,20 +104,25 @@ local MessagesObjective
 function BreakOut:PreInit()
 	print('Initializing Break Out')
 	-- Initalize game message broker
-	MessagesObjective = ModUiGameMessageBroker:Create(self.Players.WithLives, 'upper')
+	TeamBlue = ModTeams:Create(
+		self.PlayerTeams.BluFor.TeamId,
+		false,
+		self.Settings.DisplayScore.Value == 1
+	)
 	-- Gathers all OpFor spawn points by groups
 	Spawns = ModSpawnsGroups:Create()
 	-- Initialize Exfiltration objective
 	Exfiltrate = ModObjectiveExfiltrate:Create(
-		MessagesObjective,
-		nil,
 		self,
 		self.Exfiltrate,
-		self.PlayerTeams.BluFor.TeamId,
-		#self.Players.WithLives,
+		TeamBlue,
+		1,
 		5.0,
 		1.0
 	)
+	self.SettingTrackers.DisplayScore = self.Settings.DisplayScore.Value
+	self.SettingTrackers.AllowRespawns = self.Settings.AllowRespawns.Value
+	self.SettingTrackers.RespawnCost = self.Settings.RespawnCost.Value
 end
 
 function BreakOut:PostInit()
@@ -118,17 +141,20 @@ function BreakOut:OnRoundStageSet(RoundStage)
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		Exfiltrate:SelectPoint(true)
+		timer.Set(
+			self.Timers.SettingsChanged.Name,
+			self,
+			self.CheckIfSettingsChanged,
+			self.Timers.SettingsChanged.TimeStep,
+			true
+		)
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
-		self.Players.WithLives = gamemode.GetPlayerListByLives(
-			self.PlayerTeams.BluFor.TeamId,
-			1,
-			false
-		)
-		MessagesObjective:SetRecipients(self.Players.WithLives)
-		Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
+		TeamBlue:UpdatePlayers()
+		TeamBlue:UpdateAlivePlayers(1)
+		Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 	end
 end
 
@@ -138,23 +164,31 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 		gamemode.GetRoundStage() == 'InProgress'
 	then
 		if CharacterController ~= nil then
+			local killedTeam = actor.GetTeamId(CharacterController)
+			local killerTeam = nil
+			if KillerController ~= nil then
+				killerTeam = actor.GetTeamId(KillerController)
+			end
 			if actor.HasTag(CharacterController, self.OpFor.Tag) then
-				print('OpFor eliminated')
+				print('OpFor eliminated. Killer team ' .. killerTeam .. ' killed team ' .. killedTeam)
+				if killerTeam ~= killedTeam then
+					TeamBlue:IncreaseScore(100, 'Enemy_Kill')
+				end
 			else
 				print('BluFor eliminated')
+				if killerTeam == nil then
+					TeamBlue:IncreaseScore(-50, 'Accident')
+				elseif killerTeam == killedTeam then
+					TeamBlue:IncreaseScore(-100, 'Team_Kill')
+				end
 				if self.Settings.AllowRespawns.Value == 0 then
 					player.SetLives(
 						CharacterController,
 						player.GetLives(CharacterController) - 1
 					)
+					TeamBlue:UpdateAlivePlayers(1)
 				end
-				self.Players.WithLives = gamemode.GetPlayerListByLives(
-					self.PlayerTeams.BluFor.TeamId,
-					1,
-					false
-				)
-				MessagesObjective:SetRecipients(self.Players.WithLives)
-				Exfiltrate:SetPlayersRequiredForExfil(#self.Players.WithLives)
+				Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 				timer.Set(
 					self.Timers.CheckBluForCount.Name,
 					self,
@@ -359,7 +393,7 @@ function BreakOut:Exfiltrate()
 		return
 	end
 	gamemode.AddGameStat('Result=Team1')
-	if #self.Players.WithLives >= gamemode.GetPlayerCount(true) then
+	if TeamBlue:GetAlivePlayersCount() >= TeamBlue:GetPlayersCount() then
 		gamemode.AddGameStat('CompleteObjectives=ExfiltrateBluFor,ExfiltrateAll')
 		gamemode.AddGameStat('Summary=BluForExfilSuccess')
 	else
@@ -377,7 +411,7 @@ function BreakOut:CheckBluForCountTimer()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
-	if #self.Players.WithLives == 0 then
+	if TeamBlue:GetAlivePlayersCount() == 0 then
 		timer.Clear(self, 'CheckBluForExfil')
 		gamemode.AddGameStat('Result=None')
 		gamemode.AddGameStat('Summary=BluForEliminated')
@@ -391,9 +425,26 @@ end
 
 function BreakOut:PreRoundCleanUp()
 	ai.CleanUp(self.OpFor.Tag)
-	self.Players.WithLives = {}
-	MessagesObjective:SetRecipients(self.Players.WithLives)
+	TeamBlue:Reset()
 	Exfiltrate:Reset()
+end
+
+function BreakOut:CheckIfSettingsChanged()
+	if self.SettingTrackers.DisplayScore ~= self.Settings.DisplayScore.Value then
+		print('Display score setting changed from ' .. self.SettingTrackers.DisplayScore .. ' to ' .. self.Settings.DisplayScore.Value)
+		TeamBlue:SetDisplayScore(self.Settings.DisplayScore.Value == 1)
+		self.SettingTrackers.DisplayScore = self.Settings.DisplayScore.Value
+	end
+	if self.SettingTrackers.AllowRespawns ~= self.Settings.AllowRespawns.Value then
+		print('Allow respawns setting changed from ' .. self.SettingTrackers.AllowRespawns .. ' to ' .. self.Settings.AllowRespawns.Value)
+		TeamBlue:SetRespawnType(self.Settings.AllowRespawns.Value)
+		self.SettingTrackers.AllowRespawns = self.Settings.AllowRespawns.Value
+	end
+	if self.SettingTrackers.RespawnCost ~= self.Settings.RespawnCost.Value then
+		print('Respawn cost setting changed from ' .. self.SettingTrackers.RespawnCost .. ' to ' .. self.Settings.RespawnCost.Value)
+		TeamBlue:SetRespawnCost(self.Settings.RespawnCost.Value)
+		self.SettingTrackers.RespawnCost = self.Settings.RespawnCost.Value
+	end
 end
 
 --#endregion
