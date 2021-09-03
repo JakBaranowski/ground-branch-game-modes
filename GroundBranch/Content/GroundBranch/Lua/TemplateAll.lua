@@ -88,6 +88,14 @@ function Template:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
 end
 
+---Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---triggers as well.
+---@param GameTrigger any
+---@param Player any
+function Template:OnGameTriggerEndOverlap(GameTrigger, Player)
+	print('OnGameTriggerBeginOverlap')
+end
+
 --#endregion
 
 --#region Player actions

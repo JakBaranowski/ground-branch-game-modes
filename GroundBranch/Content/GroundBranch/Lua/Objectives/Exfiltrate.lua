@@ -1,5 +1,4 @@
 local Exfiltrate = {
-    PlayersRequiredForExfil = 1,
     PlayersIn = 0,
     OnObjectiveCompleteFuncOwner = nil,
     OnObjectiveCompleteFunc = nil,
@@ -29,7 +28,6 @@ local Exfiltrate = {
 ---@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
 ---@param onObjectiveCompleteFunc function Function to be run when the objective is completed.
 ---@param team table the team object of the eligible team.
----@param playerCountRequiredForExtraction integer How many players have to be in extraction zone for exfiltration to start.
 ---@param timeToExfil number How long the exfiltration should take.
 ---@param timeStep number How much time should pass between each exfiltration check.
 ---@return table Exfiltrate The newly created Exfiltrate object.
@@ -37,7 +35,6 @@ function Exfiltrate:Create(
     onObjectiveCompleteFuncOwner,
     onObjectiveCompleteFunc,
     team,
-	playerCountRequiredForExtraction,
     timeToExfil,
     timeStep
 )
@@ -47,14 +44,19 @@ function Exfiltrate:Create(
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
     self.Team = team
-	self.PlayersRequiredForExfil = playerCountRequiredForExtraction or 1
 	self.PlayersIn = 0
     self.ExfilTimer.CurrentTime = timeToExfil or Exfiltrate.ExfilTimer.CurrentTime
     self.ExfilTimer.DefaultTime = timeToExfil or Exfiltrate.ExfilTimer.DefaultTime
     self.ExfilTimer.TimeStep = timeStep or Exfiltrate.ExfilTimer.TimeStep
-    self.Points.All = gameplaystatics.GetAllActorsOfClass(
+	self.Points.All = {}
+	local allExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
+	for _, extractionPoint in ipairs(allExtractionPoints) do
+		if actor.GetTeamId(extractionPoint) == self.Team:GetId() then
+			table.insert(self.Points.All, extractionPoint)
+		end
+	end
     print('Found ' .. #self.Points.All .. ' extraction points')
     for i = 1, #self.Points.All do
 		local Location = actor.GetLocation(self.Points.All[i])
@@ -72,15 +74,7 @@ end
 
 ---Resets the object attributes to default values. Should be called before every round.
 function Exfiltrate:Reset()
-	self.PlayersRequiredForExfil = 1
 	self.PlayersIn = 0
-end
-
----Sets the amount of players that need to be in extraction zone for the the
----exfiltration to start.
----@param playersRequiredForExfil integer How many players have to be in extraction zone for exfiltration to start.
-function Exfiltrate:SetPlayersRequiredForExfil(playersRequiredForExfil)
-	self.PlayersRequiredForExfil = playersRequiredForExfil
 end
 
 ---Randomly selects the extraction point that should be active in the given round.
@@ -123,10 +117,11 @@ end
 
 ---Displays a world prompt at the extraction zone.
 function Exfiltrate:GuideToExtractionTimer()
-	self.Team:DisplayPrompt(
+	self.Team:DisplayPromptToAlivePlayers(
+		actor.GetLocation(self.Points.Active),
 		'Extraction',
 		self.PromptTimer.ShowTime,
-		actor.GetLocation(self.Points.Active)
+		'ObjectivePrompt'
 	)
 end
 
@@ -168,9 +163,6 @@ end
 ---pauses the timer, or
 ---* if there are no players in the extraction zone
 ---cancels the exfiltration.
-------
----If GameMessageBroker was provided for the object this method will display 
----messages informng the players on exfiltration status.
 function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
 		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
@@ -179,16 +171,27 @@ function Exfiltrate:CheckExfilTimer()
 		return
 	end
 	if self.PlayersIn <= 0 then
-		self.Team:DisplayMessage('ExfilCancelled', self.ExfilTimer.TimeStep*2, 'Upper')
+		self.Team:DisplayMessageToAlivePlayers(
+			'ExfilCancelled',
+			'Upper',
+			self.ExfilTimer.TimeStep*2,
+			'ObjectiveMessage'
+		)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime
 		return
-	elseif self.PlayersIn < self.PlayersRequiredForExfil then
-		self.Team:DisplayMessage('ExfilPaused', self.ExfilTimer.TimeStep-0.05, 'Upper')
-	else
-		self.Team:DisplayMessage(
-			'ExfilInProgress_'..math.floor(self.ExfilTimer.CurrentTime),
+	elseif self.PlayersIn < self.Team:GetAlivePlayersCount() then
+		self.Team:DisplayMessageToAlivePlayers(
+			'ExfilPaused',
+			'Upper',
 			self.ExfilTimer.TimeStep-0.05,
-			'Upper'
+			'ObjectiveMessage'
+		)
+	else
+		self.Team:DisplayMessageToAlivePlayers(
+			'ExfilInProgress_'..math.floor(self.ExfilTimer.CurrentTime),
+			'Upper',
+			self.ExfilTimer.TimeStep-0.05,
+			'ObjectiveMessage'
 		)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.CurrentTime - self.ExfilTimer.TimeStep
 	end

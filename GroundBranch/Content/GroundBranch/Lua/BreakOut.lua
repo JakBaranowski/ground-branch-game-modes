@@ -37,38 +37,37 @@ local BreakOut = {
 			Max = 60,
 			Value = 60,
 		},
-		AllowRespawns = {
-			Min = 0,
-			Max = 2,
-			Value = 0
-		},
 		RespawnCost = {
 			Min = 1,
 			Max = 2000,
 			Value = 1000
 		},
-		DisplayScore = {
+		DisplayScoreMessage = {
 			Min = 0,
 			Max = 1,
 			Value = 0
-		}
-	},
-	SettingTrackers = {
-		HVTCount = 0,
-		DisplayScore = 0,
-		AllowRespawns = 0,
-		RespawnCost = 1000
+		},
+		DisplayScoreMilestones = {
+			Min = 0,
+			Max = 1,
+			Value = 1
+		},
+		DisplayObjectiveMessages = {
+			Min = 0,
+			Max = 1,
+			Value = 1
+		},
+		DisplayObjectivePrompts = {
+			Min = 0,
+			Max = 1,
+			Value = 1
+		},
 	},
 	OpFor = {
 		Tag = 'OpFor',
 		CalculatedAiCount = 0,
 	},
 	Timers = {
-		-- Repeating timers with constant delay
-		SettingsChanged = {
-			Name = 'SettingsChanged',
-			TimeStep = 1.0,
-		},
 		-- Delays
 		CheckBluForCount = {
 			Name = 'CheckBluForCount',
@@ -106,8 +105,7 @@ function BreakOut:PreInit()
 	-- Initalize game message broker
 	TeamBlue = ModTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
-		false,
-		self.Settings.DisplayScore.Value == 1
+		false
 	)
 	-- Gathers all OpFor spawn points by groups
 	Spawns = ModSpawnsGroups:Create()
@@ -116,13 +114,9 @@ function BreakOut:PreInit()
 		self,
 		self.Exfiltrate,
 		TeamBlue,
-		1,
 		5.0,
 		1.0
 	)
-	self.SettingTrackers.DisplayScore = self.Settings.DisplayScore.Value
-	self.SettingTrackers.AllowRespawns = self.Settings.AllowRespawns.Value
-	self.SettingTrackers.RespawnCost = self.Settings.RespawnCost.Value
 end
 
 function BreakOut:PostInit()
@@ -141,20 +135,11 @@ function BreakOut:OnRoundStageSet(RoundStage)
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		Exfiltrate:SelectPoint(true)
-		timer.Set(
-			self.Timers.SettingsChanged.Name,
-			self,
-			self.CheckIfSettingsChanged,
-			self.Timers.SettingsChanged.TimeStep,
-			true
-		)
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
-		TeamBlue:UpdatePlayers()
-		TeamBlue:UpdateAlivePlayers(1)
-		Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
+		TeamBlue:RoundStart(self.Settings.RespawnCost.Value, self.Settings.DisplayMessages.Value)
 	end
 end
 
@@ -170,24 +155,18 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 				killerTeam = actor.GetTeamId(KillerController)
 			end
 			if actor.HasTag(CharacterController, self.OpFor.Tag) then
-				print('OpFor eliminated. Killer team ' .. killerTeam .. ' killed team ' .. killedTeam)
+				print('OpFor eliminated')
 				if killerTeam ~= killedTeam then
-					TeamBlue:IncreaseScore(100, 'Enemy_Kill')
+					TeamBlue:IncreaseScore(KillerController, 'EnemyKill', 100)
 				end
 			else
 				print('BluFor eliminated')
 				if killerTeam == nil then
-					TeamBlue:IncreaseScore(-50, 'Accident')
+					TeamBlue:IncreaseScore(CharacterController, 'Accident', -50)
 				elseif killerTeam == killedTeam then
-					TeamBlue:IncreaseScore(-100, 'Team_Kill')
+					TeamBlue:IncreaseScore(KillerController, 'TeamKill', -100)
 				end
-				if self.Settings.AllowRespawns.Value == 0 then
-					player.SetLives(
-						CharacterController,
-						player.GetLives(CharacterController) - 1
-					)
-					TeamBlue:UpdateAlivePlayers(1)
-				end
+				TeamBlue:PlayerDied(CharacterController)
 				Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 				timer.Set(
 					self.Timers.CheckBluForCount.Name,
@@ -199,6 +178,19 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 			end
 		end
 	end
+end
+
+function BreakOut:PlayerGameModeRequest(PlayerState, Request)
+	if PlayerState ~= nil then
+		if Request == "join"  then
+			gamemode.EnterPlayArea(PlayerState)
+		end
+	end
+end
+
+function BreakOut:GetSpawnInfo(PlayerState)
+	TeamBlue:PlayerRespawned(PlayerState)
+	Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 end
 
 --#endregion
@@ -292,10 +284,6 @@ function BreakOut:PlayerCanEnterPlayArea(PlayerState)
 		return true
 	end
 	return false
-end
-
-function BreakOut:PlayerEnteredPlayArea(PlayerState)
-	player.SetAllowedToRestart(PlayerState, self.Settings.AllowRespawns.Value == 1)
 end
 
 function BreakOut:LogOut(Exiting)
@@ -411,7 +399,7 @@ function BreakOut:CheckBluForCountTimer()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
-	if TeamBlue:GetAlivePlayersCount() == 0 then
+	if TeamBlue:IsWipedOut() then
 		timer.Clear(self, 'CheckBluForExfil')
 		gamemode.AddGameStat('Result=None')
 		gamemode.AddGameStat('Summary=BluForEliminated')
@@ -425,26 +413,7 @@ end
 
 function BreakOut:PreRoundCleanUp()
 	ai.CleanUp(self.OpFor.Tag)
-	TeamBlue:Reset()
 	Exfiltrate:Reset()
-end
-
-function BreakOut:CheckIfSettingsChanged()
-	if self.SettingTrackers.DisplayScore ~= self.Settings.DisplayScore.Value then
-		print('Display score setting changed from ' .. self.SettingTrackers.DisplayScore .. ' to ' .. self.Settings.DisplayScore.Value)
-		TeamBlue:SetDisplayScore(self.Settings.DisplayScore.Value == 1)
-		self.SettingTrackers.DisplayScore = self.Settings.DisplayScore.Value
-	end
-	if self.SettingTrackers.AllowRespawns ~= self.Settings.AllowRespawns.Value then
-		print('Allow respawns setting changed from ' .. self.SettingTrackers.AllowRespawns .. ' to ' .. self.Settings.AllowRespawns.Value)
-		TeamBlue:SetRespawnType(self.Settings.AllowRespawns.Value)
-		self.SettingTrackers.AllowRespawns = self.Settings.AllowRespawns.Value
-	end
-	if self.SettingTrackers.RespawnCost ~= self.Settings.RespawnCost.Value then
-		print('Respawn cost setting changed from ' .. self.SettingTrackers.RespawnCost .. ' to ' .. self.Settings.RespawnCost.Value)
-		TeamBlue:SetRespawnCost(self.Settings.RespawnCost.Value)
-		self.SettingTrackers.RespawnCost = self.Settings.RespawnCost.Value
-	end
 end
 
 --#endregion
