@@ -1,6 +1,6 @@
 {
     "name" : "KillConfirmed",
-    "version" : "0.3.15",
+    "version" : "0.3.19",
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Actors.lua",
@@ -8,6 +8,7 @@
         "GroundBranch/Content/GroundBranch/Lua/Common/Strings.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Tables.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Vectors.lua",
+        "GroundBranch/Content/GroundBranch/Lua/Common/Teams.lua",
         "GroundBranch/Content/GroundBranch/Lua/Objectives/Exfiltration.lua",
         "GroundBranch/Content/GroundBranch/Lua/Objectives/KillConfirmation.lua",
         "GroundBranch/Content/GroundBranch/Lua/Spawns/Groups.lua",
@@ -19,6 +20,7 @@
         "GroundBranch/Content/GroundBranch/Mission/Creek/KillConfirmed.mis",
         "GroundBranch/Content/GroundBranch/Mission/SmallTown/KillConfirmed.mis",
         "GroundBranch/Content/GroundBranch/Mission/Tanker/KillConfirmed.mis",
+        "GroundBranch/Content/GroundBranch/Mission/RunDown/KillConfirmed.mis",
         "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_BLACK.kit",
         "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_WDLND.kit",
         "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_CQB_BLACK.kit",

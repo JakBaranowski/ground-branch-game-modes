@@ -18,6 +18,7 @@ Key,SourceString,Comment
 "missionsetting_displayobjectiveprompts","Display Objective World Prompts","Opsboard"
 "missionsetting_displayobjectiveprompts_0","No","Opsboard"
 "missionsetting_displayobjectiveprompts_1","Yes","Opsboard"
+"missionsetting_respawncost","Respawn Cost","Opsboard"
 "objective_ExfiltrateBluFor","Exfiltrate via marked extraction point.","Opsboard"
 "objective_ExfiltrateAll","Keep the whole team alive.","Opsboard"
 "gamemessage_ExfilInProgress_5","Exfiltrating, T-5.","objective"

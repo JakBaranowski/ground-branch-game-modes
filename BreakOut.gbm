@@ -1,6 +1,6 @@
 {
     "name" : "BreakOut",
-    "version" : "0.3.15",
+    "version" : "0.3.19",
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Actors.lua",
@@ -8,6 +8,7 @@
         "GroundBranch/Content/GroundBranch/Lua/Common/Strings.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Tables.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Vectors.lua",
+        "GroundBranch/Content/GroundBranch/Lua/Common/Teams.lua",
         "GroundBranch/Content/GroundBranch/Lua/Objectives/Exfiltration.lua",
         "GroundBranch/Content/GroundBranch/Lua/Spawns/Groups.lua",
         "GroundBranch/Content/GroundBranch/Lua/Spawns/Common.lua",
