@@ -145,7 +145,7 @@ function ConfirmKill:Neutralized(hvt, killer)
         self.PromptTimer.DelayTime,
         true
     )
-    self.Team:IncreaseScore(killer, 'HVTNeutralized', 250)
+    self.Team:ChangeScore(killer, 'HVTNeutralized', 250)
     table.insert(
         self.HVT.EliminatedNotConfirmedLocations,
         actor.GetLocation(hvt)
@@ -213,7 +213,7 @@ function ConfirmKill:ConfirmKill(leaderIndex, confirmer)
     table.remove(self.HVT.EliminatedNotConfirmedLocations, leaderIndex)
     self.HVT.EliminatedNotConfirmedCount = #self.HVT.EliminatedNotConfirmedLocations
     self.HVT.EliminatedAndConfirmedCount = self.HVT.EliminatedAndConfirmedCount + 1
-    self.Team:IncreaseScore(confirmer, 'KillConfirmed', 750)
+    self.Team:ChangeScore(confirmer, 'KillConfirmed', 750)
     if self:AreAllConfirmed() then
 		print('All HVT kills confirmed')
         self.Team:DisplayMessageToAlivePlayers('HVTConfirmedAll', 'Upper', 5.0, 'ObjectiveMessage')

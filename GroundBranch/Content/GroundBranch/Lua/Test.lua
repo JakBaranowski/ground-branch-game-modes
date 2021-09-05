@@ -1,3 +1,5 @@
+local Debug = require('Debug.Members')
+
 local Test = {
 	UseReadyRoom = true,	-- * Should this game mode use ready room.
 	UseRounds = true, 		-- * Should this game mode use rounds.
@@ -5,7 +7,7 @@ local Test = {
 	PlayerTeams = { 		-- * Player team settings.
 		Blue = {			--     * Afaik this name can be anything.
 			TeamId = 1,		--         * ID assigned to the team.
-			Loadout = '',	--         * Name of the `.kit` loadout to be used by
+			Loadout = 'NoTeam',	--         * Name of the `.kit` loadout to be used by
 		},					--           the team (w/o extension)
 	},
 	Settings = {			-- * Game mode settings changeable by players on opsboard.
@@ -91,6 +93,18 @@ function Test:OnRoundStageSet(RoundStage)
 			4.5,
 			false
 		)
+		local players = gamemode.GetPlayerListByLives(1, 1, false)
+		local inv = player.GetInventory(players[1])
+		print('!!!!!!!!!!!!YOLO!!!!!!!!!!')
+		for i, item in ipairs(inv) do
+			print('Item #' .. i)
+			for j = 1, 10 do
+				local uservalue, exist = debug.getuservalue(item, i)
+				print(uservalue)
+				print('Uservalue #' .. j .. ' ' .. tostring(exist) .. ' ' .. tostring(uservalue))
+			end
+			Debug.IterateMembers(GetLuaComp(item), 'Item #' .. i .. ' members')
+		end
 	end
 end
 

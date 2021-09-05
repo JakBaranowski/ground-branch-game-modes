@@ -15,12 +15,6 @@ local BreakOut = {
 	UseReadyRoom = true,
 	UseRounds = true,
 	StringTables = {'BreakOut'},
-	PlayerTeams = {
-		BluFor = {
-			TeamId = 1,
-			Loadout = 'Captive',
-		},
-	},
 	Settings = {
 		OpForPreset = {
 			Min = 0,
@@ -63,9 +57,22 @@ local BreakOut = {
 			Value = 1
 		},
 	},
-	OpFor = {
-		Tag = 'OpFor',
-		CalculatedAiCount = 0,
+	PlayerTeams = {
+		BluFor = {
+			TeamId = 1,
+			Loadout = 'Captive',
+			Script = nil
+		},
+	},
+	AiTeams = {
+		OpFor = {
+			Tag = 'OpFor',
+			CalculatedAiCount = 0,
+			Spawns = nil
+		},
+	},
+	Objectives = {
+		Exfiltrate = nil
 	},
 	Timers = {
 		-- Delays
@@ -90,30 +97,22 @@ local BreakOut = {
 
 --#endregion
 
---#region Spawns
-
-local TeamBlue
-local Spawns
-local Exfiltrate
-
---#endregion
-
 --#region Preparation
 
 function BreakOut:PreInit()
 	print('Initializing Break Out')
 	-- Initalize game message broker
-	TeamBlue = ModTeams:Create(
+	self.PlayerTeams.BluFor.Script = ModTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
 		false
 	)
 	-- Gathers all OpFor spawn points by groups
-	Spawns = ModSpawnsGroups:Create()
+	self.AiTeams.OpFor.Spawns = ModSpawnsGroups:Create()
 	-- Initialize Exfiltration objective
-	Exfiltrate = ModObjectiveExfiltrate:Create(
+	self.Objectives.Exfiltrate = ModObjectiveExfiltrate:Create(
 		self,
 		self.Exfiltrate,
-		TeamBlue,
+		self.PlayerTeams.BluFor.Script,
 		5.0,
 		1.0
 	)
@@ -134,12 +133,18 @@ function BreakOut:OnRoundStageSet(RoundStage)
 	timer.ClearAll()
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
-		Exfiltrate:SelectPoint(true)
+		self.Objectives.Exfiltrate:SelectPoint(true)
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
-		TeamBlue:RoundStart(self.Settings.RespawnCost.Value, self.Settings.DisplayMessages.Value)
+		self.PlayerTeams.BluFor.Script:RoundStart(
+			self.Settings.RespawnCost.Value,
+			self.Settings.DisplayScoreMessage.Value == 1,
+			self.Settings.DisplayScoreMilestones.Value == 1,
+			self.Settings.DisplayObjectiveMessages.Value == 1,
+			self.Settings.DisplayObjectivePrompts.Value == 1
+		)
 	end
 end
 
@@ -154,20 +159,19 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if actor.HasTag(CharacterController, self.OpFor.Tag) then
+			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor eliminated')
 				if killerTeam ~= killedTeam then
-					TeamBlue:IncreaseScore(KillerController, 'EnemyKill', 100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'EnemyKill', 100)
 				end
 			else
 				print('BluFor eliminated')
-				if killerTeam == nil then
-					TeamBlue:IncreaseScore(CharacterController, 'Accident', -50)
+				if CharacterController == KillerController then
+					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident', -50)
 				elseif killerTeam == killedTeam then
-					TeamBlue:IncreaseScore(KillerController, 'TeamKill', -100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'TeamKill', -100)
 				end
-				TeamBlue:PlayerDied(CharacterController)
-				Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
+				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController)
 				timer.Set(
 					self.Timers.CheckBluForCount.Name,
 					self,
@@ -178,19 +182,6 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 			end
 		end
 	end
-end
-
-function BreakOut:PlayerGameModeRequest(PlayerState, Request)
-	if PlayerState ~= nil then
-		if Request == "join"  then
-			gamemode.EnterPlayArea(PlayerState)
-		end
-	end
-end
-
-function BreakOut:GetSpawnInfo(PlayerState)
-	TeamBlue:PlayerRespawned(PlayerState)
-	Exfiltrate:SetPlayersRequiredForExfil(TeamBlue:GetAlivePlayersCount())
 end
 
 --#endregion
@@ -280,10 +271,26 @@ function BreakOut:ShouldCheckForTeamKills()
 end
 
 function BreakOut:PlayerCanEnterPlayArea(PlayerState)
-	if player.GetInsertionPoint(PlayerState) ~= nil then
+	print('PlayerCanEnterPlayArea')
+	if
+		gamemode.GetRoundStage() == 'InProgress' or
+		player.GetInsertionPoint(PlayerState) ~= nil
+	then
 		return true
 	end
 	return false
+end
+
+function BreakOut:GetSpawnInfo(PlayerState)
+	print('GetSpawnInfo')
+	if gamemode.GetRoundStage() == 'InProgress' then
+		self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
+	end
+end
+
+function BreakOut:PlayerEnteredPlayArea(PlayerState)
+	print('PlayerEnteredPlayArea')
+	player.SetInsertionPoint(PlayerState, nil)
 end
 
 function BreakOut:LogOut(Exiting)
@@ -308,10 +315,10 @@ end
 function BreakOut:SetUpOpForSpawns()
 	print('Setting up AI spawns by groups')
 	local maxAiCount = math.min(
-		Spawns:GetTotalSpawnPointsCount(),
+		self.AiTeams.OpFor.Spawns:GetTotalSpawnPointsCount(),
 		ai.GetMaxCount()
 	)
-	self.OpFor.CalculatedAiCount = ModSpawnsCommon.GetAiCountWithDeviationPercent(
+	self.AiTeams.OpFor.CalculatedAiCount = ModSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
 		maxAiCount,
 		gamemode.GetPlayerCount(true),
@@ -331,16 +338,16 @@ function BreakOut:SetUpOpForSpawns()
 		1,
 		0
 	)
-	local exfilLocation = actor.GetLocation(Exfiltrate:GetSelectedPoint())
-	Spawns:AddSpawnsFromClosestGroup(aiCountPerExfilGroup, exfilLocation)
+	local exfilLocation = actor.GetLocation(self.Objectives.Exfiltrate:GetSelectedPoint())
+	self.AiTeams.OpFor.Spawns:AddSpawnsFromClosestGroup(aiCountPerExfilGroup, exfilLocation)
 	print('Adding random spawns from remaining')
-	Spawns:AddRandomSpawns()
+	self.AiTeams.OpFor.Spawns:AddRandomSpawns()
 	print('Adding random spawns from reserve')
-	Spawns:AddRandomSpawnsFromReserve()
+	self.AiTeams.OpFor.Spawns:AddRandomSpawnsFromReserve()
 end
 
 function BreakOut:SpawnOpFor()
-	Spawns:Spawn(4.0, self.OpFor.CalculatedAiCount, self.OpFor.Tag)
+	self.AiTeams.OpFor.Spawns:Spawn(4.0, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
 	timer.Set(
 		self.Timers.CheckSpawnedAi.Name,
 		self,
@@ -353,7 +360,7 @@ end
 function BreakOut:CheckSpawnedAiTimer()
 	local aiControllers = ai.GetControllers(
 		'GroundBranch.GBAIController',
-		self.OpFor.Tag,
+		self.AiTeams.OpFor.Tag,
 		255,
 		255
 	)
@@ -365,14 +372,14 @@ end
 --#region Objective: Extraction
 
 function BreakOut:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	if Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
-		Exfiltrate:PlayerEnteredExfiltration(true)
+	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
+		self.Objectives.Exfiltrate:PlayerEnteredExfiltration(true)
 	end
 end
 
 function BreakOut:OnGameTriggerEndOverlap(GameTrigger, Player)
-	if Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
-		Exfiltrate:PlayerLeftExfiltration()
+	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
+		self.Objectives.Exfiltrate:PlayerLeftExfiltration()
 	end
 end
 
@@ -381,7 +388,7 @@ function BreakOut:Exfiltrate()
 		return
 	end
 	gamemode.AddGameStat('Result=Team1')
-	if TeamBlue:GetAlivePlayersCount() >= TeamBlue:GetPlayersCount() then
+	if self.PlayerTeams.BluFor.Script:GetAlivePlayersCount() >= self.PlayerTeams.BluFor.Script:GetAllPlayersCount() then
 		gamemode.AddGameStat('CompleteObjectives=ExfiltrateBluFor,ExfiltrateAll')
 		gamemode.AddGameStat('Summary=BluForExfilSuccess')
 	else
@@ -399,7 +406,7 @@ function BreakOut:CheckBluForCountTimer()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
-	if TeamBlue:IsWipedOut() then
+	if self.PlayerTeams.BluFor.Script:IsWipedOut() then
 		timer.Clear(self, 'CheckBluForExfil')
 		gamemode.AddGameStat('Result=None')
 		gamemode.AddGameStat('Summary=BluForEliminated')
@@ -412,8 +419,8 @@ end
 --region Helpers
 
 function BreakOut:PreRoundCleanUp()
-	ai.CleanUp(self.OpFor.Tag)
-	Exfiltrate:Reset()
+	ai.CleanUp(self.AiTeams.OpFor.Tag)
+	self.Objectives.Exfiltrate:Reset()
 end
 
 --#endregion

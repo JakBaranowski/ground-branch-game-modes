@@ -11,6 +11,22 @@ Actors.__index = Actors
 ---@param actorWithTag userdata actor reference.
 ---@param tagPrefix string prefix of the tag to find.
 ---@return string suffix suffix of the found tag.
+function Actors.HasTagStartingWith(actorWithTag, tagPrefix)
+	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+		if Strings.StartsWith(actorTag, tagPrefix) then
+			return true
+		end
+	end
+    return false
+end
+
+---Will query actor tags, of actorWithTags, for a tag starting with tagPrefix.
+---If tag starting with tagPrefix is found will return tagSuffix, i.e.: part of
+---the tag after tagPrefix.
+---If tag is not found will return empty string.
+---@param actorWithTag userdata actor reference.
+---@param tagPrefix string prefix of the tag to find.
+---@return string suffix suffix of the found tag.
 function Actors.GetSuffixFromActorTag(actorWithTag, tagPrefix)
 	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
 		if Strings.StartsWith(actorTag, tagPrefix) then
@@ -49,14 +65,16 @@ end
 function Actors.GetShortestDistanceSqWithinGroup(location, group)
     local firstMemberLocation = actor.GetLocation(group[1])
     local shortestDistanceSq = vector.SizeSq(firstMemberLocation - location)
-    for _, member in ipairs(group) do
-        local memberLocation = actor.GetLocation(member)
+    local closestMember = group[1]
+    for i = 2, #group do
+        local memberLocation = actor.GetLocation(group[i])
         local distanceSq = vector.SizeSq(memberLocation - location)
         if distanceSq < shortestDistanceSq then
             shortestDistanceSq = distanceSq
+            closestMember = group[i]
         end
     end
-    return shortestDistanceSq
+    return shortestDistanceSq, closestMember
 end
 
 ---Returns the shortest distance from any actor from provided group and the given

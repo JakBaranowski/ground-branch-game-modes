@@ -4,23 +4,23 @@ local RespawnLaptop = {
 
 function RespawnLaptop:ServerUseTimer(User, DeltaTime)
 	self.CurrentTime = self.CurrentTime + DeltaTime
-	local SearchTime = 2.0
+	local UseTime = 2.0
 	self.CurrentTime = math.max(self.CurrentTime, 0)
-	self.CurrentTime = math.min(self.CurrentTime, SearchTime)
+	self.CurrentTime = math.min(self.CurrentTime, UseTime)
 
 	local Result = {}
-	Result.Message = "Use to respawn"
+	Result.Message = 'Use to respawn'
 	Result.Equip = false
-	Result.Percentage = self.CurrentTime / SearchTime
+	Result.Percentage = self.CurrentTime / UseTime
 	if Result.Percentage == 1.0 then
-		Result.Message = "Use to respawn"
-		gamemode.SendEveryoneToPlayArea()
+		gamemode.GetScript().PlayerTeams.BluFor.Script:RespawnPlayerFromReadyRoom(User)
+		Result.Message = 'Use to respawn'
 		Result.Percentage = 0.0
 		self.CurrentTime = 0.0
 	elseif Result.Percentage == 0.0 then
-		Result.Message = "Use to respawn"
+		Result.Message = 'Use to respawn'
 	else
-		Result.Message = "Respawning"
+		Result.Message = 'Respawning'
 	end
 	return Result
 end

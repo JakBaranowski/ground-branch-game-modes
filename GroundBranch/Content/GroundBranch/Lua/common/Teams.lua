@@ -1,11 +1,15 @@
+local Actors = require('Common.Actors')
+
 local Teams = {
     Id = 0,
     Score = 0,
+    Milestones = 0,
     Players = {
         All = {},
         Alive = {},
-        Dead = {}
+        Dead = {},
     },
+    DeathLocations = {},
     IncludeBots = false,
     RespawnCost = 1000,
     Display = {
@@ -13,7 +17,8 @@ local Teams = {
         ScoreMilestone = true,
         ObjectiveMessage = true,
         ObjectivePrompt = true
-    }
+    },
+    PlayerStarts = {},
 }
 
 function Teams:Create(
@@ -25,6 +30,7 @@ function Teams:Create(
     self.__index = self
     self.Id = teamId
     self.Score = 0
+    self.Milestones = 0
     self.IncludeBots = includeBots
     self.Players.All = {}
     self.Players.Alive = {}
@@ -34,16 +40,14 @@ function Teams:Create(
     self.Display.ScoreMilestone = true
     self.Display.ObjectiveMessage = true
     self.Display.ObjectivePrompt = true
+    local allPlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
+	for _, playerStart in ipairs(allPlayerStarts) do
+		if actor.GetTeamId(playerStart) == teamId then
+			table.insert(self.PlayerStarts, playerStart)
+		end
+	end
     print('Intialized Team ' .. tostring(team))
     return team
-end
-
-function Teams:SetRespawnCost(respawnCost)
-    self.RespawnCost = respawnCost
-end
-
-function Teams:SetMessageImportance(messageImportance)
-    self.MessageImportance = messageImportance
 end
 
 function Teams:GetId()
@@ -64,7 +68,6 @@ function Teams:RoundStart(
     self.Display.ObjectiveMessage = displayObjectiveMessage
     self.Display.ObjectivePrompt = displayObjectivePrompt
     self:UpdatePlayers()
-    self:SetAllowedToRestart(false)
 end
 
 --#region Players
@@ -74,13 +77,13 @@ function Teams:UpdatePlayers()
     self.Players.Alive = {}
     self.Players.Dead = {}
     print('Found ' .. #self.Players.All .. ' Players')
-    for i, playerInstance in ipairs(self.Players.All) do
-        if player.GetLives(playerInstance) == 1 then
+    for i, playerState in ipairs(self.Players.All) do
+        if player.GetLives(playerState) == 1 then
             print('Player ' .. i .. ' is alive')
-            table.insert(self.Players.Alive, playerInstance)
+            table.insert(self.Players.Alive, playerState)
         else
             print('Player ' .. i .. ' is dead')
-            table.insert(self.Players.Dead, playerInstance)
+            table.insert(self.Players.Dead, playerState)
         end
     end
 end
@@ -109,57 +112,99 @@ end
 
 --#region Score
 
-function Teams:IncreaseScore(scoringPlayer, reason, scoreIncrease)
-    self.Score = self.Score + scoreIncrease
+function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
+    self.Score = self.Score + scoreChange
+    print('Changing team score to ' .. self.Score)
     if self.Score < 0 then
         self.Score = 0
     end
-    self:SetAllowedToRestart(self.Score >= self.RespawnCost)
+    self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
     local message = nil
-    if scoreIncrease >= 0 then
-        message = reason .. ' +' .. scoreIncrease .. ' [' .. self.Score .. ']'
+    if scoreChange >= 0 then
+        message = reason .. ' +' .. scoreChange .. ' [' .. self.Score .. ']'
     else
-        message = reason .. ' -' .. -scoreIncrease .. ' [' .. self.Score .. ']'
+        message = reason .. ' -' .. -scoreChange .. ' [' .. self.Score .. ']'
     end
     if scoringPlayer then
         self:DisplayMessageToPlayer(scoringPlayer, message, 'Lower', 2.0, 'ScoreMessage')
     else
         self:DisplayMessageToAllPlayers(message, 'Lower', 2.0, 'ScoreMilestone')
     end
+    local newMilestone = math.floor(self.Score / self.RespawnCost)
+    if newMilestone > self.Milestones then
+        message = 'Milestone gained. Current milestones ' .. newMilestone
+        self.Milestones = newMilestone
+    elseif newMilestone < self.Milestones then
+        message = 'Milestone lost. Current milestones ' .. newMilestone
+        self.Milestones = newMilestone
+    end
+    self:DisplayMessageToAllPlayers(message, 'Lower', 2.0, 'ScoreMilestone')
     return self.Score
-end
-
-function Teams:SetAllowedToRestart(allowRespawn)
-    for _, playerInstance in ipairs(self.Players.All) do
-        player.SetAllowedToRestart(playerInstance, allowRespawn)
-    end
-end
-
-function Teams:PlayerDied(deadPlayer)
-    if gamemode.GetRoundStage() ~= 'InProgress' then
-        return
-    end
-    player.SetLives(deadPlayer, 1)
-    self:UpdatePlayers()
-end
-
-function Teams:PlayerRespawned(respawnedPlayer)
-    if gamemode.GetRoundStage() ~= 'InProgress' then
-        return
-    end
-	self:IncreaseScore(nil, 'Respawn', -self.RespawnCost)
-    player.SetLives(respawnedPlayer, 1)
-    self:UpdatePlayers()
 end
 
 --#endregion
 
-function Teams:DisplayMessageToPlayer(playerInstance, message, position, duration, messageType)
+--#region Respawns
+
+function Teams:SetAllowedToRespawn(respawnAllowed)
+    print('Setting team allowed to respawn to ' .. tostring(respawnAllowed))
+    for _, playerController in ipairs(self.Players.All) do
+        player.SetAllowedToRestart(playerController, respawnAllowed)
+    end
+end
+
+function Teams:PlayerDied(playerController, playerCharacter)
+    print('Player died')
+    if gamemode.GetRoundStage() ~= 'InProgress' then
+        return
+    end
+    local playerState = player.GetPlayerState(playerController)
+    self.DeathLocations[Actors.GetSuffixFromActorTag(playerState, 'Player')] = actor.GetLocation(playerCharacter)
+    player.SetLives(playerController, 0)
+    print(playerController)
+    self:UpdatePlayers()
+end
+
+function Teams:RespawnPlayerFromReadyRoom(playerController)
+    print('Player respawning from ready room')
+    if gamemode.GetRoundStage() ~= 'InProgress' then
+        player.ShowGameMessage(
+            playerController,
+            'RespawnIsOnlyAvailbleWhenTheRoundIsInProgress',
+            'Lower',
+            2.5
+        )
+        return
+    end
+    if self.Score >= self.RespawnCost then
+        gamemode.EnterPlayArea(playerController)
+    else
+        player.ShowGameMessage(
+            playerController,
+            'NotEnoughPointsForRespawn',
+            'Lower',
+            2.5
+        )
+    end
+end
+
+function Teams:RespawnCleanUp(playerState)
+    print('Cleaning up after respawn')
+    player.SetLives(playerState, 1)
+    self:UpdatePlayers()
+    self:ChangeScore(playerState, 'Respawn', -self.RespawnCost)
+end
+
+--#endregion
+
+--#region Messages
+
+function Teams:DisplayMessageToPlayer(playerController, message, position, duration, messageType)
     if not self.Display[messageType] then
         return
     end
     player.ShowGameMessage(
-        playerInstance,
+        playerController,
         message,
         position,
         duration
@@ -171,9 +216,9 @@ function Teams:DisplayMessageToAlivePlayers(message, position, duration, message
         return
     end
     if #self.Players.Alive > 0 then
-        for _, playerInstance in ipairs(self.Players.Alive) do
+        for _, playerController in ipairs(self.Players.Alive) do
             player.ShowGameMessage(
-                playerInstance,
+                playerController,
                 message,
                 position,
                 duration
@@ -187,9 +232,9 @@ function Teams:DisplayMessageToAllPlayers(message, position, duration, messageTy
         return
     end
     if #self.Players.All > 0 then
-        for _, playerInstance in ipairs(self.Players.All) do
+        for _, playerController in ipairs(self.Players.All) do
             player.ShowGameMessage(
-                playerInstance,
+                playerController,
                 message,
                 position,
                 duration
@@ -203,9 +248,9 @@ function Teams:DisplayPromptToAlivePlayers(location, label, duration, messageTyp
         return
     end
     if #self.Players.Alive > 0 then
-        for _, playerInstance in ipairs(self.Players.Alive) do
+        for _, playerController in ipairs(self.Players.Alive) do
             player.ShowWorldPrompt(
-                playerInstance,
+                playerController,
                 location,
                 label,
                 duration
@@ -213,5 +258,7 @@ function Teams:DisplayPromptToAlivePlayers(location, label, duration, messageTyp
         end
     end
 end
+
+--#endregion
 
 return Teams
