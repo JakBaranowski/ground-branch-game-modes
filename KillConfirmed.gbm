@@ -1,8 +1,9 @@
 {
     "name" : "KillConfirmed",
-    "version" : "0.3.19",
+    "version" : "0.3.22",
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
+        "GroundBranch/Content/GroundBranch/Lua/RespawnLaptop.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Actors.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Maths.lua",
         "GroundBranch/Content/GroundBranch/Lua/Common/Strings.lua",
