@@ -1,39 +1,15 @@
 {
     "name" : "BreakOut",
     "version" : "0.3.22",
+    "dependencies" : [
+        "Common.gbm"
+    ],
+    "globs" : [
+        "GroundBranch/Content/GroundBranch/Mission/*/BreakOut.mis"
+    ],
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
-        "GroundBranch/Content/GroundBranch/Lua/RespawnLaptop.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Common/Actors.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Common/Maths.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Common/Strings.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Common/Tables.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Common/Vectors.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Common/Teams.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Objectives/Exfiltrate.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Spawns/Groups.lua",
-        "GroundBranch/Content/GroundBranch/Lua/Spawns/Common.lua",
-        "GroundBranch/Content/GroundBranch/Lua/UI/GameMessageBroker.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
-        "GroundBranch/Content/GroundBranch/Mission/Tanker/BreakOut.mis",
-        "GroundBranch/Content/GroundBranch/Mission/RunDown/BreakOut.mis",
-        "GroundBranch/Content/GroundBranch/Mission/City/BreakOut.mis",
-        "GroundBranch/Content/GroundBranch/DefaultLoadouts/Captive.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_CQB_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_CQB_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_SNP_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_SNP_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_STG_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_STG_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_AR_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_AR_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_CQB_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_CQB_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_SNP_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_SNP_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_STG_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_STG_WDLND.kit"
+        "GroundBranch/Content/GroundBranch/DefaultLoadouts/BreakOut.kit"
     ]
 }

@@ -35,6 +35,8 @@ Key,SourceString,Comment
 "gamemessage_ExfilInProgress_0","Exfiltrating, T-0.","objective"
 "gamemessage_ExfilPaused","Exfiltration paused. Get entire team to exfiltration zone.","objective"
 "gamemessage_ExfilCancelled","Exfiltration cancelled. Entire team left exfilration zone.","objective"
+"gamemessage_ExfilCancelled","Exfiltration cancelled. Entire team left exfilration zone.","objective"
+"gamemessage_RespawnNotInProgress","Respawn is not availble when a round is not in progress.","objective"
 "summary_HVTsConfirmed","Success: HVTs eliminated.","AAR"
 "summary_BluForExfilFailed","Failure: Failed to reach extraction point.","AAR"
 "summary_BluForEliminated","Failure: Your team was wiped out.","AAR"

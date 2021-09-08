@@ -9,7 +9,6 @@ local Teams = {
         Alive = {},
         Dead = {},
     },
-    DeathLocations = {},
     IncludeBots = false,
     RespawnCost = 1000,
     Display = {
@@ -62,6 +61,7 @@ function Teams:RoundStart(
     displayObjectivePrompt
 )
     self.Score = 0
+    self.Milestones = 0
     self.RespawnCost = respawnCost
     self.Display.ScoreMessage = displayScoreMessage
     self.Display.ScoreMilestone = displayScoreMilestone
@@ -114,31 +114,28 @@ end
 
 function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
     self.Score = self.Score + scoreChange
-    print('Changing team score to ' .. self.Score)
     if self.Score < 0 then
         self.Score = 0
     end
+    print('Changed team score to ' .. self.Score)
+
     self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
+
     local message = nil
     if scoreChange >= 0 then
         message = reason .. ' +' .. scoreChange .. ' [' .. self.Score .. ']'
     else
         message = reason .. ' -' .. -scoreChange .. ' [' .. self.Score .. ']'
     end
-    if scoringPlayer then
-        self:DisplayMessageToPlayer(scoringPlayer, message, 'Lower', 2.0, 'ScoreMessage')
-    else
+    self:DisplayMessageToPlayer(scoringPlayer, message, 'Lower', 2.0, 'ScoreMessage')
+
+    local newMilestone = math.floor(self.Score / self.RespawnCost)
+    if newMilestone ~= self.Milestones then
+        message = 'Respawns available ' .. newMilestone
+        self.Milestones = newMilestone
         self:DisplayMessageToAllPlayers(message, 'Lower', 2.0, 'ScoreMilestone')
     end
-    local newMilestone = math.floor(self.Score / self.RespawnCost)
-    if newMilestone > self.Milestones then
-        message = 'Milestone gained. Current milestones ' .. newMilestone
-        self.Milestones = newMilestone
-    elseif newMilestone < self.Milestones then
-        message = 'Milestone lost. Current milestones ' .. newMilestone
-        self.Milestones = newMilestone
-    end
-    self:DisplayMessageToAllPlayers(message, 'Lower', 2.0, 'ScoreMilestone')
+
     return self.Score
 end
 
@@ -158,30 +155,27 @@ function Teams:PlayerDied(playerController, playerCharacter)
     if gamemode.GetRoundStage() ~= 'InProgress' then
         return
     end
-    local playerState = player.GetPlayerState(playerController)
-    self.DeathLocations[Actors.GetSuffixFromActorTag(playerState, 'Player')] = actor.GetLocation(playerCharacter)
     player.SetLives(playerController, 0)
-    print(playerController)
     self:UpdatePlayers()
 end
 
-function Teams:RespawnPlayerFromReadyRoom(playerController)
+function Teams:RespawnFromReadyRoom(playerController)
     print('Player respawning from ready room')
     if gamemode.GetRoundStage() ~= 'InProgress' then
         player.ShowGameMessage(
             playerController,
-            'RespawnIsOnlyAvailbleWhenTheRoundIsInProgress',
+            'RespawnNotInProgress',
             'Lower',
             2.5
         )
         return
     end
-    if self.Score >= self.RespawnCost then
+    if self:CanRespawn() then
         gamemode.EnterPlayArea(playerController)
     else
         player.ShowGameMessage(
             playerController,
-            'NotEnoughPointsForRespawn',
+            'RespawnInsufficientScore',
             'Lower',
             2.5
         )
@@ -193,6 +187,10 @@ function Teams:RespawnCleanUp(playerState)
     player.SetLives(playerState, 1)
     self:UpdatePlayers()
     self:ChangeScore(playerState, 'Respawn', -self.RespawnCost)
+end
+
+function Teams:CanRespawn()
+    return self.Score >= self.RespawnCost
 end
 
 --#endregion

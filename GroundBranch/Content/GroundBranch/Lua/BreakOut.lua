@@ -60,7 +60,7 @@ local BreakOut = {
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
-			Loadout = 'Captive',
+			Loadout = 'BreakOut',
 			Script = nil
 		},
 	},
@@ -162,14 +162,14 @@ function BreakOut:OnCharacterDied(Character, CharacterController, KillerControll
 			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor eliminated')
 				if killerTeam ~= killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'EnemyKill', 100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
 				end
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident', -50)
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'TeamKill', -100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Team_Kill', -100)
 				end
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController)
 				timer.Set(
@@ -212,14 +212,20 @@ function BreakOut:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	if ReadyStatus == 'WaitingToReadyUp' then
 		player.ShowGameMessage(
 			PlayerState,
-			'Sidearm_+_1_Sidearm_Ammo_Pouch',
-			'Engine',
+			'RecommendedLoadout',
+			'Lower',
 			5.0
 		)
 		player.ShowGameMessage(
 			PlayerState,
-			'Recommended_Loadout:',
-			'Engine',
+			'Sidearm',
+			'Lower',
+			5.0
+		)
+		player.ShowGameMessage(
+			PlayerState,
+			'1SidearmAmmoPouch',
+			'Lower',
 			5.0
 		)
 	end
@@ -421,6 +427,10 @@ end
 function BreakOut:PreRoundCleanUp()
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
 	self.Objectives.Exfiltrate:Reset()
+end
+
+function BreakOut:GetPlayerTeamScript()
+	return self.PlayerTeams.BluFor.Script
 end
 
 --#endregion

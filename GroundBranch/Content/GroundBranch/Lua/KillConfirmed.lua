@@ -217,14 +217,14 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'EnemyKill', 100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
 				end
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident', -50)
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'TeamKill', -100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Team_Kill', -100)
 				end
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
 				timer.Set(
@@ -523,6 +523,10 @@ function KillConfirmed:CheckIfSettingsChanged()
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 		self.Settings.HVTCount.Last = self.Settings.HVTCount.Value
 	end
+end
+
+function KillConfirmed:GetPlayerTeamScript()
+	return self.PlayerTeams.BluFor.Script
 end
 
 --#endregion
