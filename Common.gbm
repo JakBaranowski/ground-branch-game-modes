@@ -1,0 +1,14 @@
+{
+    "name" : "All",
+    "version" : "0.3.22",
+    "dependencies" : [],
+    "globs" : [
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/*.kit",
+        "GroundBranch/Content/GroundBranch/Lua/Common/*.lua",
+        "GroundBranch/Content/GroundBranch/Lua/Objectives/*.lua",
+        "GroundBranch/Content/GroundBranch/Lua/Spawns/*.lua"
+    ],
+    "files" : [
+        "GroundBranch/Content/GroundBranch/Lua/RespawnLaptop.lua"
+    ]
+}

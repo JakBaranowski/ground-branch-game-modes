@@ -1,31 +1,14 @@
 {
     "name" : "KillConfirmed",
-    "version" : "0.2.0",
+    "version" : "0.3.22",
+    "dependencies" : [
+        "Common.gbm"
+    ],
+    "globs" : [
+        "GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed.mis"
+    ],
     "files" : [
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
-        "GroundBranch/Content/GroundBranch/Lua/common/Spawns.lua",
-        "GroundBranch/Content/GroundBranch/Lua/common/StringOperations.lua",
-        "GroundBranch/Content/GroundBranch/Lua/common/TableOperations.lua",
-        "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
-        "GroundBranch/Content/GroundBranch/Mission/City/KillConfirmed.mis",
-        "GroundBranch/Content/GroundBranch/Mission/Creek/KillConfirmed.mis",
-        "GroundBranch/Content/GroundBranch/Mission/SmallTown/KillConfirmed.mis",
-        "GroundBranch/Content/GroundBranch/Mission/Tanker/KillConfirmed.mis",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_AR_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_CQB_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_CQB_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_SNP_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_SNP_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_STG_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/HVT_STG_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_AR_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_AR_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_CQB_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_CQB_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_SNP_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_SNP_WDLND.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_STG_BLACK.kit",
-        "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/SO_STG_WDLND.kit"
+        "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv"
     ]
 }

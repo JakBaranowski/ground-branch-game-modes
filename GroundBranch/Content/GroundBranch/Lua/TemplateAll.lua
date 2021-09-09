@@ -5,7 +5,7 @@ local Template = {
 	PlayerTeams = { 		-- * Player team settings.
 		Blue = {			--     * Afaik this name can be anything.
 			TeamId = 1,		--         * ID assigned to the team.
-			Loadout = "",	--         * Name of the `.kit` loadout to be used by
+			Loadout = '',	--         * Name of the `.kit` loadout to be used by
 		},					--           the team (w/o extension)
 	},
 	Settings = {			-- * Game mode settings changeable by players on opsboard.
@@ -29,17 +29,17 @@ end
 
 ---Method called right after the mission is loaded.
 function Template:PreInit()
-	print("PreInit")
+	print('PreInit')
 end
 
 ---Method called just before player gets control.
 function Template:PostInit()
-	print("PostInit")
+	print('PostInit')
 end
 
 ---Method called just after player gets control.
 function Template:PostRun()
-	print("PostRun")
+	print('PostRun')
 end
 
 --#endregion
@@ -50,26 +50,26 @@ end
 ---using the gamemode.SetRoundStage(stage) function. Howver there are some predefined
 ---round stages.
 ---@param RoundStage string named of the set round stage
----| "WaitingForReady"
----| "ReadyCountdown"
----| "PreRoundWait"
----| "InProgress"
----| "PostRoundWait"
+---| 'WaitingForReady'
+---| 'ReadyCountdown'
+---| 'PreRoundWait'
+---| 'InProgress'
+---| 'PostRoundWait'
 function Template:OnRoundStageSet(RoundStage)
-	print("OnRoundStageSet " .. RoundStage)
+	print('OnRoundStageSet ' .. RoundStage)
 end
 
 ---Triggered when a round stage time elapse. Round stage can be anything set by
 ---the user using the gamemode.SetRoundStage(stage) function. However there are some
 ---predefined round stages.
 ---@param RoundStage string Name of the elapsed round stage
----| "WaitingForReady"
----| "ReadyCountdown"
----| "PreRoundWait"
----| "InProgress"
----| "PostRoundWait"
+---| 'WaitingForReady'
+---| 'ReadyCountdown'
+---| 'PreRoundWait'
+---| 'InProgress'
+---| 'PostRoundWait'
 function Template:OnRoundStageTimeElapsed(RoundStage)
-	print("OnRoundStageTimeElapsed " .. RoundStage)
+	print('OnRoundStageTimeElapsed ' .. RoundStage)
 end
 
 ---Triggered whenever any character dies (player or bot).
@@ -77,7 +77,7 @@ end
 ---@param CharacterController any Controller of the character that died.
 ---@param KillerController any Controller of the character that killed the character.
 function Template:OnCharacterDied(Character, CharacterController, KillerController)
-	print("OnCharacterDied")
+	print('OnCharacterDied')
 end
 
 ---Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
@@ -85,7 +85,15 @@ end
 ---@param GameTrigger any
 ---@param Player any
 function Template:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	print("OnGameTriggerBeginOverlap")
+	print('OnGameTriggerBeginOverlap')
+end
+
+---Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---triggers as well.
+---@param GameTrigger any
+---@param Player any
+function Template:OnGameTriggerEndOverlap(GameTrigger, Player)
+	print('OnGameTriggerBeginOverlap')
 end
 
 --#endregion
@@ -96,17 +104,17 @@ end
 ---@param PlayerState any
 ---@param InsertionPoint any
 function Template:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
-	print("PlayerInsertionPointChanged")
+	print('PlayerInsertionPointChanged')
 end
 
 ---Method called when a player changes their ready status. If mission provides insertion
 ---points this is called at more or less the same time as PlayerInsertionPointChanged.
 ---@param PlayerState any
 ---@param ReadyStatus string
----| "WaitingToReadyUp"
----| "DeclaredReady"
+---| 'WaitingToReadyUp'
+---| 'DeclaredReady'
 function Template:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
-	print("PlayerReadyStatusChanged " .. ReadyStatus)
+	print('PlayerReadyStatusChanged ' .. ReadyStatus)
 end
 
 ---Called by the game to check if the player should be allowed to enter play area.
@@ -114,22 +122,22 @@ end
 ---@return boolean PlayerCanEnterPlayArea whether or not should we allow users to enter
 ---play area.
 function Template:PlayerCanEnterPlayArea(PlayerState)
-	print("PlayerCanEnterPlayArea")
+	print('PlayerCanEnterPlayArea')
 	return true
 end
 
 ---Called when any player enters the play area.
 ---@param PlayerState any
 function Template:PlayerEnteredPlayArea(PlayerState)
-	print("PlayerEnteredPlayArea")
+	print('PlayerEnteredPlayArea')
 end
 
 ---
 ---@param PlayerState any
 ---@param Request string
----| "join"
+---| 'join'
 function Template:PlayerGameModeRequest(PlayerState, Request)
-	print("PlayerGameModeRequest " .. Request)
+	print('PlayerGameModeRequest ' .. Request)
 end
 
 ---Called when a player tries to enter play area in order to get a spawn point for
@@ -137,14 +145,14 @@ end
 ---@param PlayerState any
 ---@return any SpawnPoint the spawn point we want the user to spawn in.
 function Template:GetSpawnInfo(PlayerState)
-	print("GetSpawnInfo")
+	print('GetSpawnInfo')
 	return SpawnPoint
 end
 
 ---Triggered whenever a player leaves the game.
 ---@param Exiting any
 function Template:LogOut(Exiting)
-	print("LogOut")
+	print('LogOut')
 end
 
 --#endregion
@@ -154,7 +162,7 @@ end
 ---Whether or not we should check for team kills at this point.
 ---@return boolean ShouldCheckForTeamKills should we check for team kills.
 function Template:ShouldCheckForTeamKills()
-	print("ShouldCheckForTeamKills")
+	print('ShouldCheckForTeamKills')
 	return true
 end
 
