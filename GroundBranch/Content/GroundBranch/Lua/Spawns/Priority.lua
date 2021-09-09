@@ -51,13 +51,13 @@ end
 ---@param count integer The amount of the AI to spawn.
 ---@param spawnTag string The tag that will be assigned to spawned AI.
 function Priority:Spawn(duration, count, spawnTag)
-    if count > #self.Selected then
+    if count == nil or count > #self.Selected then
         count = #self.Selected
     end
 	ai.CreateOverDuration(
 		duration,
 		count,
-		self:PopSelectedSpawnPoints(),
+		self.Selected,
 		spawnTag
 	)
 end

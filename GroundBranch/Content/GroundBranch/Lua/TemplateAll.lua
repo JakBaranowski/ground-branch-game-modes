@@ -37,11 +37,6 @@ function Template:PostInit()
 	print('PostInit')
 end
 
----Method called just after player gets control.
-function Template:PostRun()
-	print('PostRun')
-end
-
 --#endregion
 
 --#region Triggers
@@ -111,6 +106,7 @@ end
 ---points this is called at more or less the same time as PlayerInsertionPointChanged.
 ---@param PlayerState any
 ---@param ReadyStatus string
+---| 'NotReady'
 ---| 'WaitingToReadyUp'
 ---| 'DeclaredReady'
 function Template:PlayerReadyStatusChanged(PlayerState, ReadyStatus)

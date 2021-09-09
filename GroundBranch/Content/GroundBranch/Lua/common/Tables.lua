@@ -61,4 +61,13 @@ function Tables.ConcatenateTables(table1, table2)
     return concatenatedTable
 end
 
+function Tables.Index(table, value)
+    for index, v in ipairs(table) do
+        if v == value then
+            return index
+        end
+    end
+    return nil
+end
+
 return Tables

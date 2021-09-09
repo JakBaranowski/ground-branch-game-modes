@@ -1,37 +1,34 @@
-local Debug = require('Debug.Members')
+local Tables = require('Common.Tables')
+local ModSpawns = require('Spawns.Priority')
+local ModPlayers = require('Common.Players')
+local ModTeams = require('Common.Teams')
 
 local Test = {
-	UseReadyRoom = true,	-- * Should this game mode use ready room.
-	UseRounds = true, 		-- * Should this game mode use rounds.
-	StringTables = {}, 		-- * Name of the `.csv` localization file (w/o extension).
-	PlayerTeams = { 		-- * Player team settings.
-		Blue = {			--     * Afaik this name can be anything.
-			TeamId = 1,		--         * ID assigned to the team.
-			Loadout = 'NoTeam',	--         * Name of the `.kit` loadout to be used by
-		},					--           the team (w/o extension)
+	UseReadyRoom = true,
+	UseRounds = true,
+	StringTables = {},
+	PlayerTeams = {
+		Blue = {
+			TeamId = 1,
+			Loadout = 'NoTeam',
+		},
 	},
-	Settings = {			-- * Game mode settings changeable by players on opsboard.
-		RoundTime = { 		--     * The time one round will last. Only needed if
-			Min = 5,		--       using rounds.
+	Settings = {
+		RoundTime = {
+			Min = 5,
 			Max = 30,
 			Value = 10,
 		},
 	},
-	OpFor = {
-		Tag = 'OpFor',
-		Spawns = {},
-		Controllers = {},
-	},
-	Players = {
-		Alive = {},
-	}
+	AiSpawns = nil,
+	Players = {}
 }
 
 Test.__index = Test
 
 function Test:new()
 	local test = {}
-	setmetatable(self, Test)
+	setmetatable(self, test)
 	return test
 end
 
@@ -40,20 +37,28 @@ end
 ---Method called right after the mission is loaded.
 function Test:PreInit()
 	print('PreInit')
-	self.OpFor.Spawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
-	for _, value in pairs(self.OpFor.Spawns) do
-		print(value)
-	end
+	self.AiSpawns = ModSpawns:Create()
 end
 
 ---Method called just before player gets control.
 function Test:PostInit()
 	print('PostInit')
+	timer.Set(
+		'Test',
+		self,
+		self.TestTimer,
+		1,
+		true
+	)
 end
 
----Method called just after player gets control.
-function Test:PostRun()
-	print('PostRun')
+function Test:TestTimer()
+	print(#self.Players .. ' players')
+	for index, value in ipairs(self.Players) do
+		print('###')
+		print(index)
+		print(value)
+	end
 end
 
 --#endregion
@@ -71,82 +76,16 @@ end
 ---| 'PostRoundWait'
 function Test:OnRoundStageSet(RoundStage)
 	print('OnRoundStageSet ' .. RoundStage)
-	if RoundStage == 'ReadyCountdown' then
-		local readyPlayers = gamemode.GetReadyPlayerTeamCounts(true)
-		if readyPlayers[self.PlayerTeams.Blue.TeamId] >= gamemode.GetPlayerCount(true) then
-			gamemode.SetRoundStage('PreRoundWait')
-		end
-	end
 	if RoundStage == 'PreRoundWait' then
-		print('Spawning AI')
-		ai.CreateOverDuration(
+		self.AiSpawns:SelectSpawnPoints()
+		print('Stage time ' .. gamemode.GetRoundStageTime())
+		self.AiSpawns:Spawn(
 			4.0,
-			1,
-			self.OpFor.Spawns,
-			self.OpFor.Tag
+			nil,
+			'OpFor'
 		)
-	elseif RoundStage == 'InProgress' then
-		timer.Set(
-			'Test1',
-			self,
-			self.Test1Timer,
-			4.5,
-			false
-		)
-		local players = gamemode.GetPlayerListByLives(1, 1, false)
-		local inv = player.GetInventory(players[1])
-		print('!!!!!!!!!!!!YOLO!!!!!!!!!!')
-		for i, item in ipairs(inv) do
-			print('Item #' .. i)
-			for j = 1, 10 do
-				local uservalue, exist = debug.getuservalue(item, i)
-				print(uservalue)
-				print('Uservalue #' .. j .. ' ' .. tostring(exist) .. ' ' .. tostring(uservalue))
-			end
-			Debug.IterateMembers(GetLuaComp(item), 'Item #' .. i .. ' members')
-		end
-	end
-end
-
-function Test:Test1Timer()
-	self.OpFor.Controllers = ai.GetControllers(
-		'GroundBranch.GBAIController',
-		self.OpFor.Tag,
-		255,
-		255
-	)
-	self.Players.Alive = gamemode.GetPlayerListByLives(
-		self.PlayerTeams.Blue.TeamId,
-		1,
-		false
-	)
-	timer.Set(
-		'Test2',
-		self,
-		self.Test2Timer,
-		1,
-		true
-	)
-end
-
-function Test:Test2Timer()
-	for _, ctrl in ipairs(self.OpFor.Controllers) do
-		local ctrlLocation = actor.GetLocation(ctrl)
-		-- local charLocation = actor.GetLocation(ai.GetCharacter(ctrlLocation))
-		for _, p in ipairs(self.Players.Alive) do
-			-- player.ShowWorldPrompt(
-			-- 	p,
-			-- 	charLocation,
-			-- 	'Character',
-			-- 	1
-			-- )
-			player.ShowWorldPrompt(
-				p,
-				ctrlLocation,
-				'Controller',
-				1
-			)
-		end
+	elseif RoundStage == 'PostRoundWait' then
+		ai.CleanUp(self.AiTeams.OpFor.Tag)
 	end
 end
 
@@ -179,6 +118,14 @@ function Test:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
 end
 
+---Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---triggers as well.
+---@param GameTrigger any
+---@param Player any
+function Test:OnGameTriggerEndOverlap(GameTrigger, Player)
+	print('OnGameTriggerBeginOverlap')
+end
+
 --#endregion
 
 --#region Player actions
@@ -194,12 +141,42 @@ end
 ---points this is called at more or less the same time as PlayerInsertionPointChanged.
 ---@param PlayerState any
 ---@param ReadyStatus string
+---| 'NotReady'
 ---| 'WaitingToReadyUp'
 ---| 'DeclaredReady'
 function Test:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	print('PlayerReadyStatusChanged ' .. ReadyStatus)
-	if ReadyStatus == 'DeclaredReady' then
+
+	if ReadyStatus == 'WaitingToReadyUp' then
+		if not Tables.Index(self.Players, PlayerState) then
+			table.insert(self.Players, PlayerState)
+		end
+	elseif ReadyStatus == 'NotReady' then
+		local index = Tables.Index(self.Players, PlayerState)
+		if index then
+			table.remove(self.Players, index)
+		end
+	end
+
+	local RoundStage = gamemode.GetRoundStage()
+	if RoundStage ~= 'WaitingForReady' and RoundStage ~= 'ReadyCountdown' then
+		return
+	end
+
+	local readyPlayersCount = 0
+	local allPlayersCount = gamemode.GetPlayerCount(true)
+	for _, team in ipairs(gamemode.GetReadyPlayerTeamCounts(true)) do
+		readyPlayersCount = readyPlayersCount + team
+	end
+
+	print('readyPlayersCount ' .. readyPlayersCount .. ' allPlayersCount ' .. allPlayersCount)
+
+	if readyPlayersCount >= allPlayersCount then
+		gamemode.SetRoundStage('PreRoundWait')
+	elseif readyPlayersCount >= 1 and RoundStage == 'WaitingForReady' then
 		gamemode.SetRoundStage('ReadyCountdown')
+	elseif readyPlayersCount < 1 and RoundStage == 'ReadyCountdown' then
+		gamemode.SetRoundStage('WaitingForReady')
 	end
 end
 
@@ -216,6 +193,7 @@ end
 ---@param PlayerState any
 function Test:PlayerEnteredPlayArea(PlayerState)
 	print('PlayerEnteredPlayArea')
+
 end
 
 ---
@@ -230,10 +208,10 @@ end
 ---the player. Has to return a spawn point in which the user will be spawned.
 ---@param PlayerState any
 ---@return any SpawnPoint the spawn point we want the user to spawn in.
--- function Test:GetSpawnInfo(PlayerState)
--- 	print('GetSpawnInfo')
--- 	return SpawnPoint
--- end
+function Test:GetSpawnInfo(PlayerState)
+	print('GetSpawnInfo')
+	return nil
+end
 
 ---Triggered whenever a player leaves the game.
 ---@param Exiting any
