@@ -1,5 +1,3 @@
-local Actors = require('Common.Actors')
-
 local Teams = {
     Id = 0,
     Score = 0,
@@ -67,6 +65,7 @@ function Teams:RoundStart(
     self.Display.ScoreMilestone = displayScoreMilestone
     self.Display.ObjectiveMessage = displayObjectiveMessage
     self.Display.ObjectivePrompt = displayObjectivePrompt
+    self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
     self:UpdatePlayers()
 end
 
@@ -129,6 +128,10 @@ function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
     end
     self:DisplayMessageToPlayer(scoringPlayer, message, 'Lower', 2.0, 'ScoreMessage')
 
+    if self.RespawnCost == 0 then
+        return
+    end
+
     local newMilestone = math.floor(self.Score / self.RespawnCost)
     if newMilestone ~= self.Milestones then
         message = 'Respawns available ' .. newMilestone
@@ -154,6 +157,14 @@ function Teams:PlayerDied(playerController, playerCharacter)
     print('Player died')
     if gamemode.GetRoundStage() ~= 'InProgress' then
         return
+    end
+    if self.Score >= self.RespawnCost then
+        player.ShowGameMessage(
+            playerController,
+            'RespawnAvailable',
+            'Lower',
+            2.5
+        )
     end
     player.SetLives(playerController, 0)
     self:UpdatePlayers()
