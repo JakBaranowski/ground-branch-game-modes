@@ -9,7 +9,7 @@ local Codenames = {
         'Golf',
         'Hotel',
         'India',
-        'Juliet',
+        'Juliett',
         'Kilo',
         'Lima',
         'Mike',
@@ -23,8 +23,8 @@ local Codenames = {
         'Uniform',
         'Victor',
         'Whiskey',
-        'Yankee',
         'X-ray',
+        'Yankee',
         'Zulu',
     }
 }
