@@ -62,6 +62,8 @@ Branch root directory.
 3. Copy files over from the cloned repository to Ground Branch root directory
    (by default: `C:\Program Files (x86)\Steam\steamapps\common\Ground Branch`).
 
+You can use `gbt.exe`, from <https://github.com/JakBaranowski/gb-tools>, to create ZIP files from `*.gbm` files. 
+
 Also, if you're interested in collaborating on this project you may find 
 [Unofficial Ground Branch modding guide](#unofficial-ground-branch-modding-guide)
 useful.
