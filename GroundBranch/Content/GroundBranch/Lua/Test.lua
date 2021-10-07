@@ -1,7 +1,5 @@
 local Tables = require('Common.Tables')
 local ModSpawns = require('Spawns.Priority')
-local ModPlayers = require('Common.Players')
-local ModTeams = require('Common.Teams')
 
 local Test = {
 	UseReadyRoom = true,
@@ -44,21 +42,43 @@ end
 function Test:PostInit()
 	print('PostInit')
 	timer.Set(
-		'Test',
+		'TestTimer1',
 		self,
-		self.TestTimer,
-		1,
-		true
+		self.TestTimer1,
+		10.0,
+		false
 	)
 end
 
-function Test:TestTimer()
-	print(#self.Players .. ' players')
-	for index, value in ipairs(self.Players) do
-		print('###')
-		print(index)
-		print(value)
-	end
+function Test:TestTimer1()
+	print('TestTimer1')
+	local players = gamemode.GetPlayerList(
+		1,
+		0,
+		false,
+		0,
+		true
+	)
+	print('Found ' .. #players .. ' players')
+	player.ShowGameMessage(
+		players[1],
+		'TestMessage1',
+		'Lower',
+		60.0
+	)
+	timer.Set(
+		'TestTimer2',
+		self,
+		self.TestTimer2,
+		5.0,
+		false
+	)
+end
+
+function Test:TestTimer2()
+	print('TestTimer2')
+	print('Clearing message')
+	timer.Clear(self, 'TestMessage1')
 end
 
 --#endregion

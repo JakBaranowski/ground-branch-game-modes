@@ -4,7 +4,7 @@
 	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-kill-confirmed
 ]]--
 
-local ModTeams = require('Common.Teams')
+local ModTeams = require('Players.Teams')
 local ModSpawnsGroups = require('Spawns.Groups')
 local ModSpawnsCommon = require('Spawns.Common')
 local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')

@@ -4,10 +4,8 @@
     "dependencies" : [
         "Common.gbm"
     ],
-    "globs" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed.mis"
-    ],
     "files" : [
+        "GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed.mis",
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv"
     ]
