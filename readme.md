@@ -48,7 +48,13 @@ You can find a more detailed info on how to play these game modes on the
 ## Contributing
 
 You're more than welcome to clone, fork and send pull requests for this repository.
-Below is more info how to set up the repo locally.
+Below is more info how to work with this repo.
+
+If you're interested in collaborating on this project you may find 
+[Unofficial Ground Branch modding guide](#unofficial-ground-branch-modding-guide)
+useful.
+
+### Cloning
 
 Git does not allow for cloning repositories to not empty directories, that's why you'll 
 need to clone to any empty directory and then copy contents of that directory to Ground 
@@ -62,9 +68,11 @@ Branch root directory.
 3. Copy files over from the cloned repository to Ground Branch root directory
    (by default: `C:\Program Files (x86)\Steam\steamapps\common\Ground Branch`).
 
-Also, if you're interested in collaborating on this project you may find 
-[Unofficial Ground Branch modding guide](#unofficial-ground-branch-modding-guide)
-useful.
+### Packaging
+
+This project uses **gb-tools**, and game modes manifests (the *\*.gbm* files), for
+packaging game modes into zip archives. More details about the **gb-tools** and
+manifests can be found on the [**gb-tools** github page](https://github.com/JakBaranowski/gb-tools).
 
 ## Unofficial Ground Branch modding guide
 
@@ -79,7 +87,7 @@ useful.
 * **tjl** for creating this awesome 
 [Guide](https://steamcommunity.com/sharedfiles/filedetails/?id=2461956424).
 * **AV** for creating this [Video Tutorial](https://www.youtube.com/playlist?list=PLle5osICJhZJwHxGOb1iBXoyu_uk9yXMY).
-* **r1ft4469** for creating this [GitHub repo](https://github.com/r1ft4469/GB-Server-Mods)
+* **r1ft4469** for creating this [GitHub repo](https://github.com/r1ft4469/GB-Server-Mods).
 
 ## License
 
