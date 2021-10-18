@@ -20,6 +20,15 @@ function Actors.HasTagStartingWith(actorWithTag, tagPrefix)
     return false
 end
 
+function Actors.GetTagStartingWith(actorWithTag, tagPrefix)
+	for _, actorTag in ipairs(actor.GetTags(actorWithTag)) do
+		if Strings.StartsWith(actorTag, tagPrefix) then
+			return actorTag
+		end
+	end
+    return ''
+end
+
 ---Will query actor tags, of actorWithTags, for a tag starting with tagPrefix.
 ---If tag starting with tagPrefix is found will return tagSuffix, i.e.: part of
 ---the tag after tagPrefix.

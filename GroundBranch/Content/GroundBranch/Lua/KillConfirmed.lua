@@ -164,10 +164,6 @@ function KillConfirmed:PostInit()
 	print('Added exfiltration objective')
 end
 
-function KillConfirmed:PostRun()
-	print('Post Run')
-end
-
 --#endregion
 
 --#region Common
@@ -245,7 +241,6 @@ end
 
 function KillConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	print('PlayerInsertionPointChanged')
-	print(InsertionPoint)
 	if InsertionPoint == nil then
 		-- Player unchecked insertion point.
 		timer.Set(

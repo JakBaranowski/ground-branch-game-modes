@@ -23,6 +23,7 @@ function Groups:Create(groupTagPrefix)
     -- Gathering all relevant spawn points
     print('Gathering group spawn points')
     self.Spawns = {}
+    self.Total = 0
 	local groupIndex = 1
 	for i = 1, 32, 1 do
 		local groupTag = self.GroupTagPrefix .. tostring(i)
@@ -200,6 +201,12 @@ function Groups:AddSpawnsFromGroup(aiPerGroupAmount, selectedGroupIndex)
     )
     table.remove(self.RemainingGroups, selectedGroupIndex)
     print('Removed group ' .. groupName .. ' from remaining groups')
+end
+
+---Returns the total cound of all groups.
+---@return integer totalGroupsCount
+function Groups:GetTotalGroupsCount()
+    return #self.Spawns
 end
 
 ---Returns the total count of remaining groups.

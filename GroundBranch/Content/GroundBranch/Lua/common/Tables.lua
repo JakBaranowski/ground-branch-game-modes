@@ -61,6 +61,24 @@ function Tables.ConcatenateTables(table1, table2)
     return concatenatedTable
 end
 
+function Tables.RemoveDuplicates(tableIn)
+    print(tableIn)
+    if tableIn == nil then
+        return nil
+    elseif #tableIn < 2 then
+        return {table.unpack(tableIn)}
+    end
+    local hash = {}
+    local tableOut = {}
+    for _, v in ipairs(tableIn) do
+        if not hash[v] then
+            tableOut[#tableOut+1] = v
+            hash[v] = true
+        end
+    end
+    return tableOut
+end
+
 function Tables.Index(table, value)
     for index, v in ipairs(table) do
         if v == value then

@@ -91,9 +91,7 @@ function Exfiltrate:SelectPoint(activeFromStart)
 		actor.SetActive(self.Points.All[i], false)
 		actor.SetActive(self.Points.AllMarkers[i], bActive)
 	end
-    if activeFromStart then
-        actor.SetActive(self.Points.Active, true)
-    end
+	actor.SetActive(self.Points.Active, activeFromStart)
 end
 
 ---Sets the selected point active state.
