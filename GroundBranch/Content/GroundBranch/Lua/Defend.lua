@@ -4,8 +4,9 @@
 	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-kill-confirmed
 ]]--
 
-local Tables = require('Common.Tables')
-local ModTeams = require('Players.Teams')
+local Tables          = require('Common.Tables')
+local Actors          = require('Common.Actors')
+local ModTeams 		  = require('Players.Teams')
 local ModSpawnsGroups = require('Spawns.Groups')
 
 local Defend = {
@@ -95,9 +96,12 @@ local Defend = {
 		OpFor = {
 			TeamId = 100,
 			Tag = 'OpFor',
-			Spawns = nil,
+			Script = nil,
+			Spawns = {},
 			Active = 0,
-			Characters = {}
+			CurrentIndex = 0,
+			MaxIndexForWave = 0,
+			Neutralized = {}
 		},
 	},
 	Waves = {
@@ -147,7 +151,7 @@ function Defend:PreInit()
 		false
 	)
 	-- Spawns
-	self.AiTeams.OpFor.Spawns = ModSpawnsGroups:Create()
+	self.AiTeams.OpFor.Script = ModSpawnsGroups:Create()
 	-- Zones
 	self.Zone.Triggers = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBGameTrigger', 'Zone')
 	print('Found ' .. #self.Zone.Triggers .. ' triggers')
@@ -158,7 +162,7 @@ function Defend:PreInit()
 	-- MinMaxing
 	self.Settings.LastWaveEnemyCount.Max = math.min(
 		ai.GetMaxCount(),
-		self.AiTeams.OpFor.Spawns:GetTotalSpawnPointsCount()
+		self.AiTeams.OpFor.Script:GetTotalSpawnPointsCount()
 	)
 	self.Settings.LastWaveEnemyCount.Value = math.min(
 		self.Settings.LastWaveEnemyCount.Value,
@@ -224,7 +228,7 @@ function Defend:OnCharacterDied(Character, CharacterController, KillerController
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
+			if actor.GetTeamId(Character) == 100 then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.Blue.TeamId then
 					self.PlayerTeams.Blue.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
@@ -234,7 +238,12 @@ function Defend:OnCharacterDied(Character, CharacterController, KillerController
 					timer.Clear(self, 'WaveTimer')
 					self:SpawnWave()
 				end
-				actor.AddTag(CharacterController, 'Neutralized')
+				local tag = Actors.GetTagStartingWith(CharacterController, self.AiTeams.OpFor.Tag)
+				print('Found tag ' .. tag)
+				table.insert(
+					self.AiTeams.OpFor.Neutralized,
+					tag
+				)
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
@@ -257,7 +266,6 @@ end
 ---@param character any
 function Defend:OnGameTriggerBeginOverlap(gameTrigger, character)
 	print('OnGameTriggerBeginOverlap')
-	
 end
 
 ---Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as
@@ -456,6 +464,10 @@ function Defend:StartRound()
 	self.Waves.Duration =
 		(self.Settings.RoundTime.Value * 60.0 - self.Settings.PrepTime.Value) /
 		self.Settings.Waves.Value
+	self.AiTeams.OpFor.CurrentIndex = 0
+	self.AiTeams.OpFor.MaxIndexForWave = 0
+	self.AiTeams.OpFor.Spawns = {}
+	self.AiTeams.OpFor.Neutralized = {}
 	if self.Settings.PrepTime.Value > 0 then
 		self.PlayerTeams.Blue.Script:DisplayMessageToAlivePlayers(
 			'Prep',
@@ -473,7 +485,6 @@ function Defend:StartRound()
 	else
 		self:SpawnWave()
 	end
-	self.AiTeams.OpFor.Characters = {}
 	timer.Set(
 		'ControlTimer',
 		self,
@@ -494,8 +505,15 @@ function Defend:SpawnWave()
 	if self.Waves.Current >= self.Settings.Waves.Value then
 		self:EndRound(true)
 	end
+	self:CleanUpAi()
 	self.Waves.Current = self.Waves.Current + 1
 	print('Spawning wave ' .. self.Waves.Current)
+	self.PlayerTeams.Blue.Script:DisplayMessageToAlivePlayers(
+		'Wave' .. self.Waves.Current,
+		'Upper',
+		5.0,
+		'ObjectiveMessage'
+	)
 	local totalEnemiesInWave = math.floor(
 		self.Settings.FirstWaveEnemyCount.Value +
 		(self.Waves.Current - 1) / self.Settings.Waves.Value *
@@ -503,7 +521,7 @@ function Defend:SpawnWave()
 	)
 	totalEnemiesInWave = math.min(
 		totalEnemiesInWave,
-		self.AiTeams.OpFor.Spawns:GetTotalSpawnPointsCount()
+		self.AiTeams.OpFor.Script:GetTotalSpawnPointsCount()
 	)
 	self.Waves.GroupsInWave = math.max(
 		math.ceil(totalEnemiesInWave / 10),
@@ -511,17 +529,16 @@ function Defend:SpawnWave()
 	)
 	self.Waves.GroupsInWave = math.min(
 		self.Waves.Current,
-		self.AiTeams.OpFor.Spawns:GetTotalGroupsCount()
+		self.AiTeams.OpFor.Script:GetTotalGroupsCount()
 	)
 	self.Waves.EnemiesInGroup = math.min(
 		math.floor(totalEnemiesInWave / self.Waves.GroupsInWave),
 		10
 	)
 	for _ = 1, self.Waves.GroupsInWave do
-		self.AiTeams.OpFor.Spawns:AddSpawnsFromRandomGroup(self.Waves.EnemiesInGroup)
+		self.AiTeams.OpFor.Script:AddSpawnsFromRandomGroup(self.Waves.EnemiesInGroup)
 	end
-	self.AiTeams.OpFor.Spawns:Spawn(5.0, totalEnemiesInWave, self.AiTeams.OpFor.Tag)
-	self.AiTeams.OpFor.Active = self.AiTeams.OpFor.Active + totalEnemiesInWave
+	self:SpawnAiWithUniqueTags(totalEnemiesInWave)
 	timer.Set(
 		'WaveTimer',
 		self,
@@ -529,32 +546,50 @@ function Defend:SpawnWave()
 		self.Waves.Duration,
 		false
 	)
-	print('Active OpFor ' .. self.AiTeams.OpFor.Active)
+end
+
+function Defend:SpawnAiWithUniqueTags(amount)
+	self.AiTeams.OpFor.Spawns = Tables.ConcatenateTables(
+		self.AiTeams.OpFor.Spawns,
+		self.AiTeams.OpFor.Script:PopSelectedSpawnPoints()
+	)
+	self.AiTeams.OpFor.MaxIndexForWave = self.AiTeams.OpFor.CurrentIndex + amount
+	self:SpawnAiWithUniqueTag()
+end
+
+function Defend:SpawnAiWithUniqueTag()
+	if self.AiTeams.OpFor.CurrentIndex > self.AiTeams.OpFor.MaxIndexForWave then
+		print('Active AI count ' .. self.AiTeams.OpFor.Active)
+		return
+	end
+	self.AiTeams.OpFor.CurrentIndex = self.AiTeams.OpFor.CurrentIndex + 1
+	local spawn = self.AiTeams.OpFor.Spawns[self.AiTeams.OpFor.CurrentIndex]
+	if spawn == nil then
+		print('Active AI count ' .. self.AiTeams.OpFor.Active)
+		return
+	end
+	ai.Create(
+		spawn,
+		self.AiTeams.OpFor.Tag .. self.AiTeams.OpFor.CurrentIndex,
+		0.09
+	)
+	self.AiTeams.OpFor.Active = self.AiTeams.OpFor.Active + 1
 	timer.Set(
-		'CheckTimer',
+		'SpawnAiWithUniqueTag',
 		self,
-		self.CheckSpawnedAi,
-		5.0,
+		self.SpawnAiWithUniqueTag,
+		0.1,
 		false
 	)
 end
 
-function Defend:CheckSpawnedAi()
-	ai.CleanUp('Neutralized')
-	local aiControllers = ai.GetControllers(
-		'GroundBranch.GBAIController',
-		self.AiTeams.OpFor.Tag,
-		255,
-		255
-	)
-	self.AiTeams.OpFor.Active = #aiControllers
-	print('Spawned ' .. self.AiTeams.OpFor.Active .. ' AI')
-	self.PlayerTeams.Blue.Script:DisplayMessageToAlivePlayers(
-		'Wave' .. self.Waves.Current,
-		'Upper',
-		5.0,
-		'ObjectiveMessage'
-	)
+function Defend:CleanUpAi()
+	print('Cleaning up ' .. #self.AiTeams.OpFor.Neutralized .. ' neutralized AI')
+	for _, uniqueAiTag in ipairs(self.AiTeams.OpFor.Neutralized) do
+		print('Cleaning up tag ' .. uniqueAiTag)
+		ai.CleanUp(uniqueAiTag)
+	end
+	self.AiTeams.OpFor.Neutralized = {}
 end
 
 function Defend:UpdateBalance()
