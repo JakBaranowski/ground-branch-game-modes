@@ -118,8 +118,6 @@ function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
     end
     print('Changed team score to ' .. self.Score)
 
-    self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
-
     local message = nil
     if scoreChange >= 0 then
         message = reason .. ' +' .. scoreChange .. ' [' .. self.Score .. ']'
@@ -131,7 +129,7 @@ function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
     if self.RespawnCost == 0 then
         return
     end
-
+    self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
     local newMilestone = math.floor(self.Score / self.RespawnCost)
     if newMilestone ~= self.Milestones then
         message = 'Respawns available ' .. newMilestone
