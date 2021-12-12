@@ -4,16 +4,17 @@
 	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-break-out
 ]]--
 
-local ModTeams = require('Players.Teams')
-local ModSpawnsGroups = require('Spawns.Groups')
-local ModSpawnsCommon = require('Spawns.Common')
-local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')
+local MTeams               = require('Players.Teams')
+local MSpawnsGroups        = require('Spawns.Groups')
+local MSpawnsCommon        = require('Spawns.Common')
+local MObjectiveExfiltrate = require('Objectives.Exfiltrate')
 
 --#region Properties
 
 local BreakOut = {
 	UseReadyRoom = true,
 	UseRounds = true,
+	MissionTypeDescription = '[Solo/Co-Op] Break out from captivity.',
 	StringTables = {'BreakOut'},
 	Settings = {
 		OpForPreset = {
@@ -102,14 +103,14 @@ local BreakOut = {
 function BreakOut:PreInit()
 	print('Initializing Break Out')
 	-- Initalize game message broker
-	self.PlayerTeams.BluFor.Script = ModTeams:Create(
+	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
 		false
 	)
 	-- Gathers all OpFor spawn points by groups
-	self.AiTeams.OpFor.Spawns = ModSpawnsGroups:Create()
+	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
 	-- Initialize Exfiltration objective
-	self.Objectives.Exfiltrate = ModObjectiveExfiltrate:Create(
+	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
 		self,
 		self.Exfiltrate,
 		self.PlayerTeams.BluFor.Script,
@@ -304,7 +305,7 @@ function BreakOut:SetUpOpForSpawns()
 		self.AiTeams.OpFor.Spawns:GetTotalSpawnPointsCount(),
 		ai.GetMaxCount()
 	)
-	self.AiTeams.OpFor.CalculatedAiCount = ModSpawnsCommon.GetAiCountWithDeviationPercent(
+	self.AiTeams.OpFor.CalculatedAiCount = MSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
 		maxAiCount,
 		gamemode.GetPlayerCount(true),
@@ -315,7 +316,7 @@ function BreakOut:SetUpOpForSpawns()
 	)
 	-- Select groups guarding extraction and add their spawn points to spawn list
 	print('Adding group closest to exfil')
-	local aiCountPerExfilGroup = ModSpawnsCommon.GetAiCountWithDeviationNumber(
+	local aiCountPerExfilGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
 		3,
 		10,
 		gamemode.GetPlayerCount(true),
