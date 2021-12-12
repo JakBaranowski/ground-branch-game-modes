@@ -5,7 +5,7 @@
         "Common.gbm"
     ],
     "files" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/BreakOut.mis"
+        "GroundBranch/Content/GroundBranch/Mission/*/BreakOut.mis",
         "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
         "GroundBranch/Content/GroundBranch/DefaultLoadouts/BreakOut.kit"

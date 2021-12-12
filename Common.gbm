@@ -1,5 +1,5 @@
 {
-    "name" : "All",
+    "name" : "Common",
     "version" : "1032.3.25",
     "dependencies" : [],
     "globs" : [
