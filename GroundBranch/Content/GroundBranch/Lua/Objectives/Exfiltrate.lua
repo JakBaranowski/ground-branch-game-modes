@@ -64,6 +64,7 @@ function Exfiltrate:Create(
 			Location,
 			self.Team:GetId(),
 			'Extraction',
+			'Extraction',
 			false
 		)
 	end

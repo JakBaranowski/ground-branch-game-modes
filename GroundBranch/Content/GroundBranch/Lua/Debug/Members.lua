@@ -4,7 +4,7 @@ Members.__index = Members
 
 function Members.IterateMembers(object, parent)
 	print('# ' .. parent)
-	Members.IterateMembersInner(object, 3)
+	Members.IterateMembersInner(object, 5)
 end
 
 function Members.IterateMembersInner(object, depth, current)

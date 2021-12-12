@@ -2,38 +2,78 @@
 	"Ver": 9,
 	"Data": [
         {
-			"Type": "HeadGear",
-            "Item": "HeadGear:BP_Helmet_Mich",
-            "Skin": "Green",
-            "Children": [
+            "Type": "Profile",
+			"Data": [
                 {
-                    "Item": "Attachment:BP_ComTac"
+                    "Type": "Head",
+                    "Item": "Head:BP_Soldier_Ru_Head"
                 }
+            ]
+        },
+        {
+			"Type": "Weapons",
+			"Data": [
+                {
+                    "Type": "PrimaryFirearm",
+                    "Item": "PrimaryFirearm:BP_AK74_MI",
+                    "Children": [
+                        {
+                            "Item": "Magazine:BP_AK545_Magazine",
+                            "Well": "MagWell_AK545"
+                        },
+                        {
+                            "Item": "Sight:BP_OKP-7",
+                            "Rail": "RearSightRail",
+                            "Slot": 5
+                        },
+                        {
+                            "Item": "RailAttachment:BP_TacLight_M300c",
+                            "Rail": "LeftRail",
+                            "Slot": 18
+                        },
+                        {
+                            "Item": "RailAttachment:BP_TDStubby_VertGrip",
+                            "Rail": "BottomRail",
+                            "Slot": 3
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+			"Type": "Gear",
+			"Data": [
+                {
+                    "Type": "HeadGear",
+                    "Item": "HeadGear:BP_Helmet_Mich_C",
+                    "Skin": "OD"
+                },
+                {
+					"Type": "Platform",
+					"Item": "Platform:BP_RuSpec_Vest"
+				},
+				{
+					"Type": "Pouch",
+					"Item": "Pouch:BP_RuSpec_Equipment"
+				}
             ]
 		},
-		{
-            "Item": "PrimaryFirearm:BP_AK74_MI",
-            "Children": [
+        {
+			"Type": "Outfit",
+			"Data": [
                 {
-                    "Item": "Magazine:BP_AK545_Magazine",
-                    "Well": "MagWell_AK545"
-                },
-                {
-                    "Item": "Sight:BP_Reflex_Large",
-                    "Rail": "RearSightRail",
-                    "Slot": 2
-                },
-                {
-                    "Item": "RailAttachment:BP_TacLight_M300c",
-                    "Rail": "LeftRail",
-                    "Slot": 18
-                },
-                {
-                    "Item": "RailAttachment:BP_TDStubby_VertGrip",
-                    "Rail": "BottomRail",
-                    "Slot": 3
-                }
-            ]
+					"Type": "Shirt",
+					"Item": "Shirt:BP_RuSpec_Sleeve"
+				},
+				{
+					"Type": "Pants",
+					"Item": "Pants:BP_RuSpec_Pants"
+				},
+				{
+					"Type": "Gloves",
+					"Item": "Gloves:BP_RuSpec_Gloves"
+				}
+			]
 		}
 	]
 }
