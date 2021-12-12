@@ -5,12 +5,13 @@
 ]]--
 
 local Tables          = require('Common.Tables')
-local ModTeams 		  = require('Players.Teams')
-local ModSpawnsGroups = require('Spawns.Groups')
+local MTeams          = require('Players.Teams')
+local MSpawnsGroups   = require('Spawns.Groups')
 
 local Defend = {
 	UseReadyRoom = true,
 	UseRounds = true,
+	MissionTypeDescription = '[Solo/Co-Op] Defend the objective.',
 	StringTables = {'Defend'},
 	Settings = {
 		RoundTime = {
@@ -143,12 +144,12 @@ function Defend:PreInit()
 	print('PreInit')
 	print('Initializing Defend')
 	-- Teams
-	self.PlayerTeams.Blue.Script = ModTeams:Create(
+	self.PlayerTeams.Blue.Script = MTeams:Create(
 		1,
 		false
 	)
 	-- Spawns
-	self.AiTeams.OpFor.Script = ModSpawnsGroups:Create()
+	self.AiTeams.OpFor.Script = MSpawnsGroups:Create()
 	-- Zones
 	self.Zone.Triggers = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBGameTrigger', 'Zone')
 	print('Found ' .. #self.Zone.Triggers .. ' triggers')

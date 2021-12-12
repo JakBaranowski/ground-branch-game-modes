@@ -2,29 +2,70 @@
 	"Ver": 9,
 	"Data": [
         {
-			"Type": "HeadGear",
-            "Item": "HeadGear:BP_Helmet_Mich",
-            "Skin": "Green",
-            "Children": [
+            "Type": "Profile",
+			"Data": [
                 {
-                    "Item": "Attachment:BP_ComTac"
+                    "Type": "Head",
+                    "Item": "Head:BP_Soldier_Ru_Head"
                 }
             ]
-		},
-		{
-            "Item": "PrimaryFirearm:BP_M1014",
-            "Children": [
+        },
+        {
+			"Type": "Weapons",
+			"Data": [
                 {
-                    "Item": "Attachment:BP_M1014_BarrelRail",
+                    "Type": "PrimaryFirearm",
+                    "Item": "PrimaryFirearm:BP_M1014",
                     "Children": [
                         {
-                            "Item": "RailAttachment:BP_TacLight_Rifle",
-                            "Rail": "GBRailLeftSide"
+                            "Item": "Attachment:BP_M1014_BarrelRail",
+                            "Children": [
+                                {
+                                    "Item": "RailAttachment:BP_TacLight_Rifle",
+                                    "Rail": "GBRailLeftSide"
+                                }
+                            ]
                         }
                     ]
                 }
             ]
+        },
+        {
+			"Type": "Gear",
+			"Data": [
+                {
+                    "Type": "HeadGear",
+                    "Item": "HeadGear:BP_Helmet_Mich_C",
+                    "Skin": "OD"
+                },
+                {
+					"Type": "Platform",
+					"Item": "Platform:BP_RuSpec_Vest"
+				},
+				{
+					"Type": "Pouch",
+					"Item": "Pouch:BP_RuSpec_Equipment"
+				}
+            ]
+		},
+        {
+			"Type": "Outfit",
+			"Data": [
+                {
+					"Type": "Shirt",
+					"Item": "Shirt:BP_RuSpec_Sleeve"
+				},
+				{
+					"Type": "Pants",
+					"Item": "Pants:BP_RuSpec_Pants"
+				},
+				{
+					"Type": "Gloves",
+					"Item": "Gloves:BP_RuSpec_Gloves"
+				}
+			]
 		}
+
 	]
 }
 

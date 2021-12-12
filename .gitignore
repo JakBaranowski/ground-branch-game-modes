@@ -25,23 +25,31 @@
 GroundBranch/Content/GroundBranch/Lua/Assassination.lua
 GroundBranch/Content/GroundBranch/Lua/Bomb.lua
 GroundBranch/Content/GroundBranch/Lua/Deathmatch.lua
+GroundBranch/Content/GroundBranch/Lua/DeathmatchValidate.lua
 GroundBranch/Content/GroundBranch/Lua/Defuse.lua
+GroundBranch/Content/GroundBranch/Lua/DTAS.lua
+GroundBranch/Content/GroundBranch/Lua/DTASValidate.lua
 GroundBranch/Content/GroundBranch/Lua/Flag.lua
 GroundBranch/Content/GroundBranch/Lua/IntelRetrieval.lua
+GroundBranch/Content/GroundBranch/Lua/IntelRetrievalValidate.lua
 GroundBranch/Content/GroundBranch/Lua/IntelTarget.lua
 GroundBranch/Content/GroundBranch/Lua/Laptop.lua
 GroundBranch/Content/GroundBranch/Lua/TeamElimination.lua
+GroundBranch/Content/GroundBranch/Lua/TeamEliminationValidate.lua
 GroundBranch/Content/GroundBranch/Lua/TerroristHunt.lua
+GroundBranch/Content/GroundBranch/Lua/TerroristHuntValidate.lua
 GroundBranch/Content/GroundBranch/Lua/Training.lua
 GroundBranch/Content/GroundBranch/Lua/Testing.lua
 GroundBranch/Content/GroundBranch/Lua/Uplink.lua
 GroundBranch/Content/GroundBranch/Lua/UplinkTarget.lua
+GroundBranch/Content/GroundBranch/Lua/UplinkValidate.lua
 ## Default mission setups
-GroundBranch/Content/GroundBranch/Mission/*/Deathmatch.mis
-GroundBranch/Content/GroundBranch/Mission/*/IntelRetrieval.mis
-GroundBranch/Content/GroundBranch/Mission/*/TeamElimination.mis
-GroundBranch/Content/GroundBranch/Mission/*/TerroristHunt.mis
-GroundBranch/Content/GroundBranch/Mission/*/Uplink.mis
+GroundBranch/Content/GroundBranch/Mission/*/Deathmatch*.mis
+GroundBranch/Content/GroundBranch/Mission/*/DTAS*.mis
+GroundBranch/Content/GroundBranch/Mission/*/IntelRetrieval*.mis
+GroundBranch/Content/GroundBranch/Mission/*/TeamElimination*.mis
+GroundBranch/Content/GroundBranch/Mission/*/TerroristHunt*.mis
+GroundBranch/Content/GroundBranch/Mission/*/Uplink*.mis
 GroundBranch/Content/GroundBranch/Mission/*/Training.mis
 ## Default player loadouts
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Blue.kit
@@ -52,12 +60,12 @@ GroundBranch/Content/GroundBranch/DefaultLoadouts/NoTeam.kit
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Red.kit
 GroundBranch/Content/GroundBranch/DefaultLoadouts/Red.res
 ## Default AI loadouts
-GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BadGuys*.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGLowVis_*.kit
-GroundBranch/Content/GroundBranch/AI/Loadouts/*BadGuys/BGMilitant_*.kit
+GroundBranch/Content/GroundBranch/AI/Loadouts/BadGuys/*.kit
 ## Default localization
 GroundBranch/Content/Localization/GroundBranch/en/Assassination.csv
+GroundBranch/Content/Localization/GroundBranch/en/Deathmatch.csv
 GroundBranch/Content/Localization/GroundBranch/en/Defuse.csv
+GroundBranch/Content/Localization/GroundBranch/en/DTAS.csv
 GroundBranch/Content/Localization/GroundBranch/en/GameMode.csv
 GroundBranch/Content/Localization/GroundBranch/en/GroundBranch.locres
 GroundBranch/Content/Localization/GroundBranch/en/IntelRetrieval.csv
@@ -72,8 +80,6 @@ GroundBranch/Content/Localization/GroundBranch/en/Uplink.csv
 GroundBranch/Content/GroundBranch/Lua/Rendezvous.lua
 GroundBranch/Content/Localization/GroundBranch/en/Rendezvous.csv
 GroundBranch/Content/GroundBranch/Mission/*/Rendezvous.mis
-## DTAS
-GroundBranch/Content/Localization/GroundBranch/en/DTAS.csv
 ## Simple mission generator
 GroundBranch/Content/GroundBranch/Lua/GeneralBombTarget.lua
 GroundBranch/Content/GroundBranch/Lua/GeneralLaptopTarget.lua

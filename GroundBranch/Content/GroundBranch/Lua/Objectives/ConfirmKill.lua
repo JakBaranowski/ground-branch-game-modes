@@ -70,6 +70,7 @@ function ConfirmKill:Create(
 			actor.GetLocation(Spawn),
 			self.Team:GetId(),
 			description,
+            'MissionLocation',
 			false
 		)
 	end

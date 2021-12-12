@@ -4,17 +4,18 @@
 	More details @ https://github.com/JakBaranowski/ground-branch-game-modes/wiki/game-mode-kill-confirmed
 ]]--
 
-local ModTeams = require('Players.Teams')
-local ModSpawnsGroups = require('Spawns.Groups')
-local ModSpawnsCommon = require('Spawns.Common')
-local ModObjectiveExfiltrate = require('Objectives.Exfiltrate')
-local ModObjectiveConfirmKill = require('Objectives.ConfirmKill')
+local MTeams                = require('Players.Teams')
+local MSpawnsGroups         = require('Spawns.Groups')
+local MSpawnsCommon         = require('Spawns.Common')
+local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
+local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
 
 --#region Properties
 
 local KillConfirmed = {
 	UseReadyRoom = true,
 	UseRounds = true,
+	MissionTypeDescription = '[Solo/Co-Op] Locate, neutralize and confirm elimination of all High Value Targets in the area of operation.',
 	StringTables = {'KillConfirmed'},
 	Settings = {
 		HVTCount = {
@@ -118,14 +119,14 @@ local KillConfirmed = {
 function KillConfirmed:PreInit()
 	print('Pre initialization')
 	print('Initializing Kill Confirmed')
-	self.PlayerTeams.BluFor.Script = ModTeams:Create(
+	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		1,
 		false
 	)
 	-- Gathers all OpFor spawn points by groups
-	self.AiTeams.OpFor.Spawns = ModSpawnsGroups:Create()
+	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
 	-- Gathers all HVT spawn points
-	self.Objectives.ConfirmKill = ModObjectiveConfirmKill:Create(
+	self.Objectives.ConfirmKill = MObjectiveConfirmKill:Create(
 		self,
 		self.OnAllKillsConfirmed,
 		self.PlayerTeams.BluFor.Script,
@@ -133,7 +134,7 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Value
 	)
 	-- Gathers all extraction points placed in the mission
-	self.Objectives.Exfiltrate = ModObjectiveExfiltrate:Create(
+	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
 		self,
 		self.OnExfiltrated,
 		self.PlayerTeams.BluFor.Script,
@@ -158,7 +159,6 @@ function KillConfirmed:PostInit()
 	print('Post initialization')
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'LastKnownLocation', 2)
     print('Added Kill Confirmation objectives')
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
 	print('Added exfiltration objective')
@@ -363,7 +363,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 		self.AiTeams.OpFor.Spawns.Total,
 		ai.GetMaxCount() - self.Settings.HVTCount.Value
 	)
-	self.AiTeams.OpFor.CalculatedAiCount = ModSpawnsCommon.GetAiCountWithDeviationPercent(
+	self.AiTeams.OpFor.CalculatedAiCount = MSpawnsCommon.GetAiCountWithDeviationPercent(
 		5,
 		maxAiCount,
 		gamemode.GetPlayerCount(true),
@@ -377,7 +377,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	local maxAiCountPerHvtGroup = math.floor(
 		missingAiCount / self.Settings.HVTCount.Value
 	)
-	local aiCountPerHvtGroup = ModSpawnsCommon.GetAiCountWithDeviationNumber(
+	local aiCountPerHvtGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
 		3,
 		maxAiCountPerHvtGroup,
 		gamemode.GetPlayerCount(true),
@@ -398,7 +398,7 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	-- Select random groups and add their spawn points to spawn list
 	print('Adding random group spawns')
 	while missingAiCount > 0 do
-		local aiCountPerGroup = ModSpawnsCommon.GetAiCountWithDeviationNumber(
+		local aiCountPerGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
 			2,
 			10,
 			gamemode.GetPlayerCount(true),
