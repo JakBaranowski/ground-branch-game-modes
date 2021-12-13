@@ -65,6 +65,55 @@ local KillConfirmed = {
 			Value = 1
 		},
 	},
+	PlayerScoreTypes = {
+		KillStandard = {
+			Score = 100,
+			OneOff = false,
+			Description = 'Eliminated threat'
+		},
+		KillHvt = {
+			Score = 250,
+			OneOff = false,
+			Description = 'Eliminated HVT'
+		},
+		ConfirmHvt = {
+			Score = 750,
+			OneOff = false,
+			Description = 'Confirmed HVT elimination'
+		},
+		Survived = {
+			Score = 200,
+			OneOff = false,
+			Description = 'Made it out alive'
+		},
+		TeamKill = {
+			Score = -250,
+			OneOff = false,
+			Description = 'Confirmed HVT elimination'
+		},
+		Accident = {
+			Score = -50,
+			OneOff = false,
+			Description = 'Confirmed HVT elimination'
+		}
+	},
+	TeamScoreTypes = {
+		KillHvt = {
+			Score = 250,
+			OneOff = false,
+			Description = 'Eliminated HVT'
+		},
+		ConfirmHvt = {
+			Score = 750,
+			OneOff = false,
+			Description = 'Confirmed HVT elimination'
+		},
+		Respawn = {
+			Score = -1,
+			OneOff = false,
+			Description = 'Respawned'
+		}
+	},
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
@@ -121,7 +170,9 @@ function KillConfirmed:PreInit()
 	print('Initializing Kill Confirmed')
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		1,
-		false
+		false,
+		self.PlayerScoreTypes,
+		self.TeamScoreTypes
 	)
 	-- Gathers all OpFor spawn points by groups
 	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
@@ -213,14 +264,14 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'KillStandard')
 				end
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
-					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident', -50)
+					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Team_Kill', -100)
+					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'TeamKill')
 				end
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
 				timer.Set(

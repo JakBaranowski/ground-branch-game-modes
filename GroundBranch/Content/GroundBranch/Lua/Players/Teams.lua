@@ -15,12 +15,16 @@ local Teams = {
         ObjectiveMessage = true,
         ObjectivePrompt = true
     },
+    PlayerTypeScores = {},
+    TeamTypeScores = {},
     PlayerStarts = {},
 }
 
 function Teams:Create(
     teamId,
-    includeBots
+    includeBots,
+    playerTypeScores,
+    teamTypeScores
 )
     local team = {}
     setmetatable(team, self)
@@ -37,12 +41,18 @@ function Teams:Create(
     self.Display.ScoreMilestone = true
     self.Display.ObjectiveMessage = true
     self.Display.ObjectivePrompt = true
+    self.PlayerTypeScores = playerTypeScores or {}
+    self.TeamTypeScores = teamTypeScores or {}
     local allPlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
 	for _, playerStart in ipairs(allPlayerStarts) do
 		if actor.GetTeamId(playerStart) == teamId then
 			table.insert(self.PlayerStarts, playerStart)
 		end
 	end
+    gamemode.ResetTeamScores()
+	gamemode.ResetPlayerScores()
+	gamemode.SetTeamScoreTypes( self.TeamScoreTypes )
+	gamemode.SetPlayerScoreTypes( self.PlayerScoreTypes )
     print('Intialized Team ' .. tostring(team))
     return team
 end
@@ -65,6 +75,8 @@ function Teams:RoundStart(
     self.Display.ScoreMilestone = displayScoreMilestone
     self.Display.ObjectiveMessage = displayObjectiveMessage
     self.Display.ObjectivePrompt = displayObjectivePrompt
+    gamemode.ResetTeamScores()
+	gamemode.ResetPlayerScores()
     self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
     self:UpdatePlayers()
 end
@@ -112,18 +124,27 @@ end
 --#region Score
 
 function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
+    if reason == 'Respawn' then
+        gamemode.AwardTeamScore(actor.GetTeamId(scoringPlayer), reason, self.RespawnCost)
+    elseif self.TeamTypeScores[reason] ~= nil then
+        gamemode.AwardTeamScore(actor.GetTeamId(scoringPlayer), reason, 1)
+    end
     self.Score = self.Score + scoreChange
     if self.Score < 0 then
         self.Score = 0
     end
     print('Changed team score to ' .. self.Score)
 
+    if self.PlayerTypeScores[reason] ~= nil then
+        player.AwardPlayerScore(scoringPlayer, reason, 1)
+    end
     local message = nil
     if scoreChange >= 0 then
         message = reason .. ' +' .. scoreChange .. ' [' .. self.Score .. ']'
     else
         message = reason .. ' -' .. -scoreChange .. ' [' .. self.Score .. ']'
     end
+
     self:DisplayMessageToPlayer(scoringPlayer, message, 'Lower', 2.0, 'ScoreMessage')
 
     if self.RespawnCost == 0 then
