@@ -84,10 +84,10 @@ useful.
 ## Kudos
 
 * **BlackFoot** Studios for creating Ground Branch.
-* **tjl** for creating this awesome 
-[Guide](https://steamcommunity.com/sharedfiles/filedetails/?id=2461956424).
+* **tjl** for creating this awesome [Guide](https://steamcommunity.com/sharedfiles/filedetails/?id=2461956424).
 * **AV** for creating this [Video Tutorial](https://www.youtube.com/playlist?list=PLle5osICJhZJwHxGOb1iBXoyu_uk9yXMY).
 * **r1ft4469** for creating this [GitHub repo](https://github.com/r1ft4469/GB-Server-Mods).
+* [**Bob-AT**](https://github.com/JakBaranowski/ground-branch-game-modes/commits?author=Bob-AT) for contribiutions to this project.
 
 ## License
 

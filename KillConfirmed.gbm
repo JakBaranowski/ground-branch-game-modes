@@ -1,6 +1,6 @@
 {
     "name" : "KillConfirmed",
-    "version" : "1032.3.25",
+    "version" : "1032.3.26",
     "dependencies" : [
         "Common.gbm"
     ],
