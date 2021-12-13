@@ -89,12 +89,12 @@ local KillConfirmed = {
 		TeamKill = {
 			Score = -250,
 			OneOff = false,
-			Description = 'Confirmed HVT elimination'
+			Description = 'Killed a teammate'
 		},
 		Accident = {
 			Score = -50,
 			OneOff = false,
-			Description = 'Confirmed HVT elimination'
+			Description = 'Killed oneself'
 		}
 	},
 	TeamScoreTypes = {
@@ -264,14 +264,14 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'KillStandard')
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
-					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident')
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'TeamKill')
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'TeamKill')
 				end
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
 				timer.Set(
@@ -518,6 +518,12 @@ function KillConfirmed:OnExfiltrated()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
+	-- Award surviving players
+	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
+	for _, alivePlayer in ipairs(alivePlayers) do
+		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
+	end
+	-- Prepare summary
 	gamemode.AddGameStat('Result=Team1')
 	gamemode.AddGameStat('Summary=HVTsConfirmed')
 	gamemode.AddGameStat(

@@ -15,16 +15,16 @@ local Teams = {
         ObjectiveMessage = true,
         ObjectivePrompt = true
     },
-    PlayerTypeScores = {},
-    TeamTypeScores = {},
+    PlayerScoreTypes = {},
+    TeamScoreTypes = {},
     PlayerStarts = {},
 }
 
 function Teams:Create(
     teamId,
     includeBots,
-    playerTypeScores,
-    teamTypeScores
+    playerScoreTypes,
+    teamScoreTypes
 )
     local team = {}
     setmetatable(team, self)
@@ -41,18 +41,16 @@ function Teams:Create(
     self.Display.ScoreMilestone = true
     self.Display.ObjectiveMessage = true
     self.Display.ObjectivePrompt = true
-    self.PlayerTypeScores = playerTypeScores or {}
-    self.TeamTypeScores = teamTypeScores or {}
+    self.PlayerScoreTypes = playerScoreTypes or {}
+    self.TeamScoreTypes = teamScoreTypes or {}
     local allPlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
 	for _, playerStart in ipairs(allPlayerStarts) do
 		if actor.GetTeamId(playerStart) == teamId then
 			table.insert(self.PlayerStarts, playerStart)
 		end
 	end
-    gamemode.ResetTeamScores()
-	gamemode.ResetPlayerScores()
-	gamemode.SetTeamScoreTypes( self.TeamScoreTypes )
-	gamemode.SetPlayerScoreTypes( self.PlayerScoreTypes )
+	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
+	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
     print('Intialized Team ' .. tostring(team))
     return team
 end
@@ -77,7 +75,7 @@ function Teams:RoundStart(
     self.Display.ObjectivePrompt = displayObjectivePrompt
     gamemode.ResetTeamScores()
 	gamemode.ResetPlayerScores()
-    self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
+    self:SetAllowedToRespawn(self:CanRespawn())
     self:UpdatePlayers()
 end
 
@@ -123,42 +121,57 @@ end
 
 --#region Score
 
-function Teams:ChangeScore(scoringPlayer, reason, scoreChange)
-    if reason == 'Respawn' then
-        gamemode.AwardTeamScore(actor.GetTeamId(scoringPlayer), reason, self.RespawnCost)
-    elseif self.TeamTypeScores[reason] ~= nil then
-        gamemode.AwardTeamScore(actor.GetTeamId(scoringPlayer), reason, 1)
+function Teams:AwardTeamScore(action)
+    if self.TeamScoreTypes[action] == nil then
+        return
     end
+
+    local multiplier = 1
+    if action == 'Respawn' then
+        multiplier = self.RespawnCost
+    end
+    gamemode.AwardTeamScore(self.Id, action, multiplier)
+
+    local scoreChange = self.TeamScoreTypes[action].Score * multiplier
     self.Score = self.Score + scoreChange
     if self.Score < 0 then
         self.Score = 0
     end
-    print('Changed team score to ' .. self.Score)
 
-    if self.PlayerTypeScores[reason] ~= nil then
-        player.AwardPlayerScore(scoringPlayer, reason, 1)
+    self:DisplayMilestones()
+    self:SetAllowedToRespawn(self:CanRespawn())
+    print('Changed team score to ' .. self.Score)
+end
+
+function Teams:AwardPlayerScore(awardedPlayer, action)
+    if self.PlayerScoreTypes[action] == nil then
+        return
     end
+
+    local multiplier = 1
+    player.AwardPlayerScore(awardedPlayer, action, multiplier)
+
+    local scoreChange = self.PlayerScoreTypes[action].Score * multiplier
     local message = nil
     if scoreChange >= 0 then
-        message = reason .. ' +' .. scoreChange .. ' [' .. self.Score .. ']'
+        message = action .. ' +' .. scoreChange
     else
-        message = reason .. ' -' .. -scoreChange .. ' [' .. self.Score .. ']'
+        message = action .. ' -' .. -scoreChange
     end
+    self:DisplayMessageToPlayer(awardedPlayer, message, 'Lower', 2.0, 'ScoreMessage')
+    print('Changed player score by ' .. scoreChange)
+end
 
-    self:DisplayMessageToPlayer(scoringPlayer, message, 'Lower', 2.0, 'ScoreMessage')
-
+function Teams:DisplayMilestones()
     if self.RespawnCost == 0 then
         return
     end
-    self:SetAllowedToRespawn(self.Score >= self.RespawnCost)
     local newMilestone = math.floor(self.Score / self.RespawnCost)
     if newMilestone ~= self.Milestones then
-        message = 'Respawns available ' .. newMilestone
+        local message = 'Respawns available ' .. newMilestone
         self.Milestones = newMilestone
         self:DisplayMessageToAllPlayers(message, 'Lower', 2.0, 'ScoreMilestone')
     end
-
-    return self.Score
 end
 
 --#endregion
@@ -216,11 +229,15 @@ function Teams:RespawnCleanUp(playerState)
     print('Cleaning up after respawn')
     player.SetLives(playerState, 1)
     self:UpdatePlayers()
-    self:ChangeScore(playerState, 'Respawn', -self.RespawnCost)
+    self:AwardTeamScore('Respawn')
 end
 
 function Teams:CanRespawn()
-    return self.Score >= self.RespawnCost
+    if self.RespawnCost == 0 then
+        return true
+    else
+        return self.Score >= self.RespawnCost
+    end
 end
 
 --#endregion

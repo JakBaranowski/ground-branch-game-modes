@@ -229,7 +229,7 @@ function Defend:OnCharacterDied(Character, CharacterController, KillerController
 			if actor.GetTeamId(Character) == 100 then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.Blue.TeamId then
-					self.PlayerTeams.Blue.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
+					self.PlayerTeams.Blue.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
 				self.AiTeams.OpFor.ActiveCount = self.AiTeams.OpFor.ActiveCount - 1
 				if self.AiTeams.OpFor.ActiveCount <= 0 then
@@ -239,9 +239,9 @@ function Defend:OnCharacterDied(Character, CharacterController, KillerController
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
-					self.PlayerTeams.Blue.Script:ChangeScore(CharacterController, 'Accident', -50)
+					self.PlayerTeams.Blue.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.Blue.Script:ChangeScore(KillerController, 'Team_Kill', -100)
+					self.PlayerTeams.Blue.Script:AwardPlayerScore(KillerController, 'TeamKill')
 				end
 				self.PlayerTeams.Blue.Script:PlayerDied(CharacterController, Character)
 				if self.PlayerTeams.Blue.Script:IsWipedOut() then
