@@ -1,11 +1,11 @@
 {
     "name" : "BreakThrough",
-    "version" : "1032.4.1",
+    "version" : "1032.4.12",
     "dependencies" : [
         "Common.gbm"
     ],
     "files" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/BreakThrough.mis",
+        "GroundBranch/Content/GroundBranch/Mission/*/BreakThrough_*.mis",
         "GroundBranch/Content/GroundBranch/Lua/BreakThrough.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/BreakThrough.csv"
     ]

@@ -21,41 +21,49 @@ local BreakOut = {
 			Min = 0,
 			Max = 4,
 			Value = 2,
+			AdvancedSetting = false,
 		},
 		Difficulty = {
 			Min = 0,
 			Max = 4,
 			Value = 2,
+			AdvancedSetting = false,
 		},
 		RoundTime = {
 			Min = 10,
 			Max = 60,
 			Value = 60,
+			AdvancedSetting = false,
 		},
 		RespawnCost = {
 			Min = 0,
 			Max = 10000,
-			Value = 1000
+			Value = 1000,
+			AdvancedSetting = true,
 		},
 		DisplayScoreMessage = {
 			Min = 0,
 			Max = 1,
-			Value = 0
+			Value = 0,
+			AdvancedSetting = true,
 		},
 		DisplayScoreMilestones = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		DisplayObjectiveMessages = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		DisplayObjectivePrompts = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 	},
 	PlayerScoreTypes = {

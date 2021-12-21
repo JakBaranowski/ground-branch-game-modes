@@ -1,12 +1,10 @@
 {
     "name" : "Common",
-    "version" : "1032.4.1",
+    "version" : "1032.4.12",
     "dependencies" : [],
-    "globs" : [
-
-    ],
     "files" : [
         "GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/*.kit",
+        "GroundBranch/Content/GroundBranch/AI/Loadouts/MidEas/*.kit",
         "GroundBranch/Content/GroundBranch/Lua/Common/*.lua",
         "GroundBranch/Content/GroundBranch/Lua/Objectives/*.lua",
         "GroundBranch/Content/GroundBranch/Lua/Players/*.lua",

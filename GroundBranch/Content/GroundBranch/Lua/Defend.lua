@@ -523,6 +523,9 @@ function Defend:SpawnWave()
 		10
 	)
 	for _ = 1, self.Waves.GroupsInWave do
+		if self.AiTeams.OpFor.Spawns:GetRemainingGroupsCount() <= 0 then
+			break
+		end
 		self.AiTeams.OpFor.Script:AddSpawnsFromRandomGroup(self.Waves.EnemiesInGroup)
 	end
 	self.AiTeams.OpFor.ActiveCount = self.AiTeams.OpFor.ActiveCount + totalEnemiesInWave

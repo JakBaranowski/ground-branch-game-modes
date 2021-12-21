@@ -141,6 +141,10 @@ end
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 function Groups:AddSpawnsFromRandomGroup(aiPerGroupAmount)
     print('Adding spawn points from randomly selected group')
+    if #self.RemainingGroups <=0 then
+        print('No groups left')
+        return
+    end
     local selectedGroupIndex = math.random(#self.RemainingGroups)
     self:AddSpawnsFromGroup(
         aiPerGroupAmount,

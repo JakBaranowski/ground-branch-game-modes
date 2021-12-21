@@ -1,10 +1,11 @@
 {
     "name" : "All",
-    "version" : "1032.4.1",
+    "version" : "1032.4.12",
     "dependencies" : [
         "Common.gbm",
         "KillConfirmed.gbm",
         "BreakOut.gbm",
         "BreakThrough.gbm"
-    ]
+    ],
+    "files" : []
 }
