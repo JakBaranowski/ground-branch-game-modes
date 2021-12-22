@@ -22,48 +22,106 @@ local KillConfirmed = {
 			Min = 1,
 			Max = 5,
 			Value = 1,
-			Last = 1
+			Last = 1,
+			AdvancedSetting = false,
 		},
 		OpForPreset = {
 			Min = 0,
 			Max = 4,
 			Value = 2,
+			AdvancedSetting = false,
 		},
 		Difficulty = {
 			Min = 0,
 			Max = 4,
 			Value = 2,
+			AdvancedSetting = false,
 		},
 		RoundTime = {
 			Min = 10,
 			Max = 60,
 			Value = 60,
+			AdvancedSetting = false,
 		},
 		RespawnCost = {
 			Min = 0,
 			Max = 10000,
-			Value = 1000
+			Value = 1000,
+			AdvancedSetting = true,
 		},
 		DisplayScoreMessage = {
 			Min = 0,
 			Max = 1,
-			Value = 0
+			Value = 0,
+			AdvancedSetting = true,
 		},
 		DisplayScoreMilestones = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		DisplayObjectiveMessages = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		DisplayObjectivePrompts = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
+	},
+	PlayerScoreTypes = {
+		KillStandard = {
+			Score = 100,
+			OneOff = false,
+			Description = 'Eliminated threat'
+		},
+		KillHvt = {
+			Score = 250,
+			OneOff = false,
+			Description = 'Eliminated HVT'
+		},
+		ConfirmHvt = {
+			Score = 750,
+			OneOff = false,
+			Description = 'Confirmed HVT elimination'
+		},
+		Survived = {
+			Score = 200,
+			OneOff = false,
+			Description = 'Made it out alive'
+		},
+		TeamKill = {
+			Score = -250,
+			OneOff = false,
+			Description = 'Killed a teammate'
+		},
+		Accident = {
+			Score = -50,
+			OneOff = false,
+			Description = 'Killed oneself'
+		}
+	},
+	TeamScoreTypes = {
+		KillHvt = {
+			Score = 250,
+			OneOff = false,
+			Description = 'Eliminated HVT'
+		},
+		ConfirmHvt = {
+			Score = 750,
+			OneOff = false,
+			Description = 'Confirmed HVT elimination'
+		},
+		Respawn = {
+			Score = -1,
+			OneOff = false,
+			Description = 'Respawned'
+		}
 	},
 	PlayerTeams = {
 		BluFor = {
@@ -121,7 +179,9 @@ function KillConfirmed:PreInit()
 	print('Initializing Kill Confirmed')
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		1,
-		false
+		false,
+		self.PlayerScoreTypes,
+		self.TeamScoreTypes
 	)
 	-- Gathers all OpFor spawn points by groups
 	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
@@ -213,14 +273,14 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor standard eliminated')
 				if killerTeam == self.PlayerTeams.BluFor.TeamId then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
-					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident', -50)
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Team_Kill', -100)
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'TeamKill')
 				end
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
 				timer.Set(
@@ -398,6 +458,9 @@ function KillConfirmed:SetUpOpForStandardSpawns()
 	-- Select random groups and add their spawn points to spawn list
 	print('Adding random group spawns')
 	while missingAiCount > 0 do
+		if self.AiTeams.OpFor.Spawns:GetRemainingGroupsCount() <= 0 then
+			break
+		end
 		local aiCountPerGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
 			2,
 			10,
@@ -467,6 +530,12 @@ function KillConfirmed:OnExfiltrated()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
+	-- Award surviving players
+	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
+	for _, alivePlayer in ipairs(alivePlayers) do
+		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
+	end
+	-- Prepare summary
 	gamemode.AddGameStat('Result=Team1')
 	gamemode.AddGameStat('Summary=HVTsConfirmed')
 	gamemode.AddGameStat(

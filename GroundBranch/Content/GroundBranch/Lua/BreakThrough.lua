@@ -21,42 +21,89 @@ local BreakThrough = {
 			Min = 0,
 			Max = 4,
 			Value = 2,
+			AdvancedSetting = false,
 		},
 		Difficulty = {
 			Min = 0,
 			Max = 4,
 			Value = 2,
+			AdvancedSetting = false,
 		},
 		RoundTime = {
 			Min = 10,
 			Max = 60,
 			Value = 60,
+			AdvancedSetting = false,
 		},
 		RespawnCost = {
 			Min = 0,
 			Max = 10000,
-			Value = 1000
+			Value = 1000,
+			AdvancedSetting = true,
 		},
 		DisplayScoreMessage = {
 			Min = 0,
 			Max = 1,
-			Value = 0
+			Value = 0,
+			AdvancedSetting = true,
 		},
 		DisplayScoreMilestones = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		DisplayObjectiveMessages = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		DisplayObjectivePrompts = {
 			Min = 0,
 			Max = 1,
-			Value = 1
+			Value = 1,
+			AdvancedSetting = true,
 		},
+	},
+	PlayerScoreTypes = {
+		KillStandard = {
+			Score = 100,
+			OneOff = false,
+			Description = 'Eliminated threat'
+		},
+		Survived = {
+			Score = 200,
+			OneOff = false,
+			Description = 'Made it out alive'
+		},
+		TeamKill = {
+			Score = -250,
+			OneOff = false,
+			Description = 'Killed a teammate'
+		},
+		Accident = {
+			Score = -50,
+			OneOff = false,
+			Description = 'Killed oneself'
+		}
+	},
+	TeamScoreTypes = {
+		ExfiltrateSome = {
+			Score = 250,
+			OneOff = false,
+			Description = 'Some team members exfiltrated'
+		},
+		ExfiltrateAll = {
+			Score = 1000,
+			OneOff = false,
+			Description = 'All team members exfiltrated'
+		},
+		Respawn = {
+			Score = -1,
+			OneOff = false,
+			Description = 'Respawned'
+		}
 	},
 	PlayerTeams = {
 		BluFor = {
@@ -105,14 +152,16 @@ function BreakThrough:PreInit()
 	-- Initalize game message broker
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
-		false
+		false,
+		self.PlayerScoreTypes,
+		self.TeamScoreTypes
 	)
 	-- Gathers all OpFor spawn points by groups
 	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
 	-- Initialize Exfiltration objective
 	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
 		self,
-		self.Exfiltrate,
+		self.OnExfiltrated,
 		self.PlayerTeams.BluFor.Script,
 		5.0,
 		1.0
@@ -162,14 +211,14 @@ function BreakThrough:OnCharacterDied(Character, CharacterController, KillerCont
 			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
 				print('OpFor eliminated')
 				if killerTeam ~= killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Enemy_Kill', 100)
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
 			else
 				print('BluFor eliminated')
 				if CharacterController == KillerController then
-					self.PlayerTeams.BluFor.Script:ChangeScore(CharacterController, 'Accident', -50)
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
-					self.PlayerTeams.BluFor.Script:ChangeScore(KillerController, 'Team_Kill', -100)
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'TeamKill')
 				end
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController)
 				timer.Set(
@@ -316,6 +365,9 @@ function BreakThrough:SetUpOpForSpawns()
 	local missingAiCount = self.AiTeams.OpFor.CalculatedAiCount
 	print('Adding random group spawns')
 	while missingAiCount > 0 do
+		if self.AiTeams.OpFor.Spawns:GetRemainingGroupsCount() <= 0 then
+			break
+		end
 		local aiCountPerGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
 			2,
 			10,
@@ -374,15 +426,24 @@ function BreakThrough:OnGameTriggerEndOverlap(GameTrigger, Player)
 	end
 end
 
-function BreakThrough:Exfiltrate()
+function BreakThrough:OnExfiltrated()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
 	gamemode.AddGameStat('Result=Team1')
-	if self.PlayerTeams.BluFor.Script:GetAlivePlayersCount() >= self.PlayerTeams.BluFor.Script:GetAllPlayersCount() then
+	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
+	for _, alivePlayer in ipairs(alivePlayers) do
+		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
+	end
+	if
+		self.PlayerTeams.BluFor.Script:GetAlivePlayersCount() >=
+		self.PlayerTeams.BluFor.Script:GetAllPlayersCount()
+	then
+		self.PlayerTeams.BluFor.Script:AwardTeamScore('ExfiltrateAll')
 		gamemode.AddGameStat('CompleteObjectives=ExfiltrateBluFor,ExfiltrateAll')
 		gamemode.AddGameStat('Summary=BluForExfilSuccess')
 	else
+		self.PlayerTeams.BluFor.Script:AwardTeamScore('ExfiltrateSome')
 		gamemode.AddGameStat('CompleteObjectives=ExfiltrateBluFor')
 		gamemode.AddGameStat('Summary=BluForExfilPartialSuccess')
 	end

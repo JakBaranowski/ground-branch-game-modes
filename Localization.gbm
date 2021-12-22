@@ -1,6 +1,6 @@
 {
     "name" : "Localization",
-    "version" : "1032.3.27",
+    "version" : "1032.4.1",
     "files" : [
         "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
         "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
