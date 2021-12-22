@@ -1,11 +1,11 @@
 {
     "name" : "BreakOut",
-    "version" : "1032.4.12",
+    "version" : "1032.4.13",
     "dependencies" : [
         "Common.gbm"
     ],
     "files" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/BreakOut_*.mis",
+        "GroundBranch/Content/GroundBranch/Mission/*/BreakOut*.mis",
         "GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
         "GroundBranch/Content/GroundBranch/DefaultLoadouts/BreakOut.kit"
