@@ -144,11 +144,6 @@ local KillConfirmed = {
 		Tag = 'HVT',
 	},
 	Timers = {
-		-- Repeating timers with constant delay
-		SettingsChanged = {
-			Name = 'SettingsChanged',
-			TimeStep = 1.0,
-		},
 		-- Delays
 		CheckBluForCount = {
 			Name = 'CheckBluForCount',
@@ -232,13 +227,6 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self.Objectives.Exfiltrate:SelectPoint(false)
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
-		timer.Set(
-			self.Timers.SettingsChanged.Name,
-			self,
-			self.CheckIfSettingsChanged,
-			self.Timers.SettingsChanged.TimeStep,
-			true
-		)
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
@@ -309,7 +297,8 @@ function KillConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 		)
 	else
 		-- Player checked insertion point.
-		timer.Set(self.Timers.CheckReadyUp.Name,
+		timer.Set(
+			self.Timers.CheckReadyUp.Name,
 			self,
 			self.CheckReadyUpTimer,
 			self.Timers.CheckReadyUp.TimeStep,
