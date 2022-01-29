@@ -30,6 +30,7 @@ Key,SourceString,Comment
 "gamemessage_ExfilCancelled","Exfiltration cancelled. Entire team left exfilration zone.","objective"
 "gamemessage_RespawnNotInProgress","Respawn is not availble when a round is not in progress.","objective"
 "gamemessage_RespawnInsufficientScore","Score too low for a respawn.","objective"
+"gamemessage_RespawnAvailable","Respawn is availble.","objective"
 "summary_BluForExfilSuccess","All team members exfiltrated.","AAR"
 "summary_BluForExfilPartialSuccess","Some team members exfiltrated.","AAR"
 "summary_BluForEliminated","Your team was wiped out.","AAR"
