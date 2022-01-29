@@ -1,11 +1,11 @@
 {
     "name" : "KillConfirmed",
-    "version" : "1032.4.12",
+    "version" : "1032.4.13",
     "dependencies" : [
         "Common.gbm"
     ],
     "files" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed_*.mis",
+        "GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed*.mis",
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv"
     ]
