@@ -22,7 +22,6 @@ local KillConfirmed = {
 			Min = 1,
 			Max = 5,
 			Value = 1,
-			Last = 1,
 			AdvancedSetting = false,
 		},
 		OpForPreset = {
@@ -145,11 +144,6 @@ local KillConfirmed = {
 		Tag = 'HVT',
 	},
 	Timers = {
-		-- Repeating timers with constant delay
-		SettingsChanged = {
-			Name = 'SettingsChanged',
-			TimeStep = 1.0,
-		},
 		-- Delays
 		CheckBluForCount = {
 			Name = 'CheckBluForCount',
@@ -210,9 +204,6 @@ function KillConfirmed:PreInit()
 		self.Settings.HVTCount.Value,
 		self.Settings.HVTCount.Max
 	)
-	-- Set last HVT count for tracking if the setting has changed.
-	-- This is neccessary for adding objective markers on map.
-	self.Settings.HVTCount.Last = self.Settings.HVTCount.Value
 end
 
 function KillConfirmed:PostInit()
@@ -234,14 +225,8 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 	if RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self.Objectives.Exfiltrate:SelectPoint(false)
+		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
-		timer.Set(
-			self.Timers.SettingsChanged.Name,
-			self,
-			self.CheckIfSettingsChanged,
-			self.Timers.SettingsChanged.TimeStep,
-			true
-		)
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
@@ -312,7 +297,8 @@ function KillConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 		)
 	else
 		-- Player checked insertion point.
-		timer.Set(self.Timers.CheckReadyUp.Name,
+		timer.Set(
+			self.Timers.CheckReadyUp.Name,
 			self,
 			self.CheckReadyUpTimer,
 			self.Timers.CheckReadyUp.TimeStep,
@@ -580,12 +566,11 @@ function KillConfirmed:PreRoundCleanUp()
 	self.Objectives.Exfiltrate:Reset()
 end
 
-function KillConfirmed:CheckIfSettingsChanged()
-	if self.Settings.HVTCount.Last ~= self.Settings.HVTCount.Value then
-		print('Leader count changed, reshuffling spawns & updating objective markers.')
+function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
+	if Setting == "HVTCount" then
+		print('HVT count set to ' .. NewValue .. ', updating spawns & objective markers.')
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
-		self.Settings.HVTCount.Last = self.Settings.HVTCount.Value
 	end
 end
 
