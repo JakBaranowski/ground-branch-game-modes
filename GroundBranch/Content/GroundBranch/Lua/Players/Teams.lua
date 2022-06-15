@@ -13,7 +13,8 @@ local Teams = {
         ScoreMessage = false,
         ScoreMilestone = true,
         ObjectiveMessage = true,
-        ObjectivePrompt = true
+        ObjectivePrompt = true,
+        Always = true
     },
     PlayerScoreTypes = {},
     TeamScoreTypes = {},
