@@ -13,12 +13,15 @@ local Teams = {
         ScoreMessage = false,
         ScoreMilestone = true,
         ObjectiveMessage = true,
-        ObjectivePrompt = true
+        ObjectivePrompt = true,
+        Always = true
     },
     PlayerScoreTypes = {},
     TeamScoreTypes = {},
     PlayerStarts = {},
 }
+
+Teams.__index = Teams
 
 function Teams:Create(
     teamId,
@@ -26,9 +29,7 @@ function Teams:Create(
     playerScoreTypes,
     teamScoreTypes
 )
-    local team = {}
-    setmetatable(team, self)
-    self.__index = self
+    local self = setmetatable({}, Teams)
     self.Id = teamId
     self.Score = 0
     self.Milestones = 0
@@ -51,8 +52,8 @@ function Teams:Create(
 	end
 	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
-    print('Intialized Team ' .. tostring(team))
-    return team
+    print('Initialized Team ' .. tostring(self))
+    return self
 end
 
 function Teams:GetId()

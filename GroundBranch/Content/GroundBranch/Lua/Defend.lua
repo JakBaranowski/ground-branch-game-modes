@@ -179,7 +179,7 @@ end
 --#region Triggers
 
 ---Triggered when a round stage is set. Round stage can be anything set by the user
----using the gamemode.SetRoundStage(stage) function. Howver there are some predefined
+---using the gamemode.SetRoundStage(stage) function. However there are some predefined
 ---round stages.
 ---@param RoundStage string named of the set round stage
 ---| 'WaitingForReady'
@@ -252,7 +252,7 @@ function Defend:OnCharacterDied(Character, CharacterController, KillerController
 	end
 end
 
----Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as
+---Triggered whenever any actor overlaps a trigger. Note: Extraction points act as
 ---triggers as well.
 ---@param gameTrigger any
 ---@param character any
@@ -260,7 +260,7 @@ function Defend:OnGameTriggerBeginOverlap(gameTrigger, character)
 	print('OnGameTriggerBeginOverlap')
 end
 
----Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as
+---Triggered whenever any actor overlaps a trigger. Note: Extraction points act as
 ---triggers as well.
 ---@param gameTrigger any
 ---@param character any
@@ -560,18 +560,18 @@ end
 
 function Defend:UpdateBalance()
 	self.Zone.Balance.Current = 0.0
-	local allOverlapingActors = {}
+	local allOverlappingActors = {}
 	for _, gameTrigger in ipairs(self.Zone.Triggers) do
-		allOverlapingActors = Tables.ConcatenateTables(
-			allOverlapingActors,
+		allOverlappingActors = Tables.ConcatenateTables(
+				allOverlappingActors,
 			actor.GetOverlaps(gameTrigger, 'GroundBranch.GBCharacter')
 		)
 	end
 
-	for _, overlapingActor in ipairs(allOverlapingActors) do
-		if not actor.HasTag(overlapingActor, 'Done') then
-			actor.AddTag(overlapingActor, 'Done')
-			if actor.GetTeamId(overlapingActor) == 1 then
+	for _, overlappingActor in ipairs(allOverlappingActors) do
+		if not actor.HasTag(overlappingActor, 'Done') then
+			actor.AddTag(overlappingActor, 'Done')
+			if actor.GetTeamId(overlappingActor) == 1 then
 				self.Zone.Balance.Current = self.Zone.Balance.Current +
 					self.Settings.ZoneBalanceSwayPerPerson.Value
 			else
@@ -581,8 +581,8 @@ function Defend:UpdateBalance()
 		end
 	end
 
-	for _, overlapingActor in ipairs(allOverlapingActors) do
-		actor.RemoveTag(overlapingActor, 'Done')
+	for _, overlappingActor in ipairs(allOverlappingActors) do
+		actor.RemoveTag(overlappingActor, 'Done')
 	end
 
 	self.Zone.Balance.Current = math.max(

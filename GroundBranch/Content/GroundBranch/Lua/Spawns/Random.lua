@@ -6,18 +6,18 @@ local Random = {
     Selected = {}
 }
 
+Random.__index = Random
+
 ---Creates new Random spawns object.
 ---@return table Random Newly created Random spawns object.
 function Random:Create()
-    local random = {}
-    setmetatable(random, self)
-    self.__index = self
+    local self = setmetatable({}, Random)
     self.Spawns = {}
     self.Spawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
     self.Total = #self.Spawns
     print('Found ' .. self.Total .. ' spawns')
-    print('Initialized RandomSpawns ' .. tostring(random))
-    return random
+    print('Initialized RandomSpawns ' .. tostring(self))
+    return self
 end
 
 ---Removes AI spawn points with the provided tagToExclude from Selected spawns table.

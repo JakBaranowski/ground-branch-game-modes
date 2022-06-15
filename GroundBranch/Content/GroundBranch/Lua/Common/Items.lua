@@ -32,7 +32,7 @@ local Items = {
     }
 }
 
----WIP! The idea for this method is to check players inventory agains a list of
+---WIP! The idea for this method is to check players inventory against a list of
 ---forbidden items.
 ---@param playerInventory userdata
 function Items.CheckIfHasForbiddenItems(playerInventory)

@@ -1,7 +1,7 @@
 local Vectors = require('Common.Vectors')
 local Common = require('Navigation.Common')
 
----Direction table maps human-readeable directions to numbers in a way that allows
+---Direction table maps human-readable directions to numbers in a way that allows
 ---to easily find opposite direction and compare directions faster.
 local Direction = {
     None = 0,
@@ -36,6 +36,8 @@ local Advanced = {
     Route = {},
 }
 
+Advanced.__index = Advanced
+
 ---Creates new object of type Navigation.Advanced.
 ---@param start table vector {x,y,z} starting location.
 ---@param destination table vector {x,y,z} ending location.
@@ -44,9 +46,7 @@ local Advanced = {
 ---@param thresholdCheck integer how many previous steps should be checked.
 ---@return table Advanced a new instance of the Navigation.Advanced prototype.
 function Advanced:Create(start, destination, stepLength, minStepThreshold, thresholdCheck)
-    local adv = {}
-    setmetatable(adv, self)
-    self.__index = self
+    local adv = setmetatable({}, Advanced)
     adv.Route = {start}
     adv.Start = start
     adv.Destination = destination
