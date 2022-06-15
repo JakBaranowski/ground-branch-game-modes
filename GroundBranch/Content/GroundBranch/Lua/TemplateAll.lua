@@ -17,14 +17,6 @@ local Template = {
 	}
 }
 
-Template.__index = Template
-
-function Template:new()
-	local template = {}
-	setmetatable(self, Template)
-	return template
-end
-
 --#region Initialization
 
 ---Method called right after the mission is loaded.

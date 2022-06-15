@@ -22,14 +22,6 @@ local Test = {
 	Players = {}
 }
 
-Test.__index = Test
-
-function Test:new()
-	local test = {}
-	setmetatable(self, test)
-	return test
-end
-
 --#region Initialization
 
 ---Method called right after the mission is loaded.
