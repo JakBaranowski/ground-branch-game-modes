@@ -522,11 +522,9 @@ function KillConfirmed:OnExfiltrated()
 		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
 	end
 	-- Prepare summary
+	self:UpdateCompletedObjectives()
 	gamemode.AddGameStat('Result=Team1')
 	gamemode.AddGameStat('Summary=HVTsConfirmed')
-	gamemode.AddGameStat(
-		'CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs,ExfiltrateBluFor'
-	)
 	gamemode.SetRoundStage('PostRoundWait')
 end
 
@@ -540,14 +538,11 @@ function KillConfirmed:CheckBluForCountTimer()
 	end
 	if self.PlayerTeams.BluFor.Script:IsWipedOut() then
 		gamemode.AddGameStat('Result=None')
+		self:UpdateCompletedObjectives()
 		if self.Objectives.ConfirmKill:AreAllNeutralized() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
-			gamemode.AddGameStat('CompleteObjectives=NeutralizeHVTs')
 		elseif self.Objectives.ConfirmKill:AreAllConfirmed() then
 			gamemode.AddGameStat('Summary=BluForExfilFailed')
-			gamemode.AddGameStat(
-				'CompleteObjectives=NeutralizeHVTs,ConfirmEliminatedHVTs'
-			)
 		else
 			gamemode.AddGameStat('Summary=BluForEliminated')
 		end
@@ -562,8 +557,10 @@ end
 function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
-	self.Objectives.ConfirmKill:Reset()
-	self.Objectives.Exfiltrate:Reset()
+	for name, objective in pairs(self.Objectives) do
+		print("Resetting " .. name)
+		objective:Reset()
+	end
 end
 
 function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
@@ -576,6 +573,22 @@ end
 
 function KillConfirmed:GetPlayerTeamScript()
 	return self.PlayerTeams.BluFor.Script
+end
+
+function KillConfirmed:UpdateCompletedObjectives()
+	local completedObjectives = {}
+
+	for _, objective in pairs(self.Objectives) do
+		for _, completed in ipairs(objective:GetCompletedObjectives()) do
+			table.insert(completedObjectives, completed)
+		end
+	end
+
+	if #completedObjectives > 0 then
+		gamemode.AddGameStat(
+				'CompleteObjectives=' .. table.concat(completedObjectives, ",")
+		)
+	end
 end
 
 --#endregion

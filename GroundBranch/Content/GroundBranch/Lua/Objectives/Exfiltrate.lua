@@ -50,11 +50,15 @@ function Exfiltrate:Create(
     self.ExfilTimer.DefaultTime = timeToExfil or Exfiltrate.ExfilTimer.DefaultTime
     self.ExfilTimer.TimeStep = timeStep or Exfiltrate.ExfilTimer.TimeStep
 	self.Points.All = {}
+	self.ExfilDone = false
 	local allExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
 	for _, extractionPoint in ipairs(allExtractionPoints) do
 		if actor.GetTeamId(extractionPoint) == self.Team:GetId() then
+			getmetatable(extractionPoint).__tostring = function(obj)
+				return actor.GetName(obj)
+			end
 			table.insert(self.Points.All, extractionPoint)
 		end
 	end
@@ -77,6 +81,15 @@ end
 ---Resets the object attributes to default values. Should be called before every round.
 function Exfiltrate:Reset()
 	self.PlayersIn = 0
+	self.ExfilDone = false
+end
+
+function Exfiltrate:GetCompletedObjectives()
+	if self.ExfilDone then
+		return {'ExfiltrateBluFor'}
+	else
+		return {}
+	end
 end
 
 ---Randomly selects the extraction point that should be active in the given round.
@@ -84,8 +97,11 @@ end
 ---active, and Exfiltrate:SelectedPointSetActive should be called to activate it
 ---when needed.
 ---@param activeFromStart boolean Should the selected extraction point be active from round start.
-function Exfiltrate:SelectPoint(activeFromStart)
-    local activeIndex = math.random(#self.Points.All)
+---@param activeIndex number The index of the active point (nil for random)
+function Exfiltrate:SelectPoint(activeFromStart, activeIndex)
+	if activeIndex == nil then
+		activeIndex = math.random(#self.Points.All)
+	end
     self.Points.Active = self.Points.All[activeIndex]
     for i = 1, #self.Points.All do
 		local bActive = (i == activeIndex)
@@ -165,6 +181,9 @@ end
 ---cancels the exfiltration.
 function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
+		if self.Team:GetAlivePlayersCount() > 0 then
+			self.ExfilDone = true
+		end
 		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
 		timer.Clear(self, self.ExfilTimer.Name)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime

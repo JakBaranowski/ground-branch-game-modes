@@ -89,6 +89,15 @@ function ConfirmKill:Reset()
 	self.HVT.EliminatedAndConfirmedCount = 0
 end
 
+function ConfirmKill:GetCompletedObjectives()
+    if self:AreAllConfirmed() then
+        return {'NeutralizeHVTs','ConfirmEliminatedHVTs'}
+    elseif self:AreAllNeutralized() then
+        return {'NeutralizeHVTs'}
+    end
+    return {}
+end
+
 ---Shuffle HVT spawn order. Should be called before every round.
 function ConfirmKill:ShuffleSpawns()
     print('Shuffling ' .. self.HVT.Tag ..  ' spawns')
