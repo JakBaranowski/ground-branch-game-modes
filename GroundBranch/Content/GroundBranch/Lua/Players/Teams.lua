@@ -51,7 +51,7 @@ function Teams:Create(
 	end
 	gamemode.SetTeamScoreTypes(self.TeamScoreTypes)
 	gamemode.SetPlayerScoreTypes(self.PlayerScoreTypes)
-    print('Intialized Team ' .. tostring(team))
+    print('Initialized Team ' .. tostring(team))
     return team
 end
 

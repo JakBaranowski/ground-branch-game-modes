@@ -48,7 +48,7 @@ end
 
 ---Adds spawn points from a random group within the given maxDistance from provided
 ---location found in RemainingGroups table to the SelectedSpawnPoints table.
----Spawns that excceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
+---Spawns that exceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 ---@param location table vector {x,y,z} The origin point for distance calculation.
 ---@param maxDistance number The maximum distance from location to a selected group.
@@ -95,7 +95,7 @@ end
 
 ---Adds spawn points from a group closest to the given location found in RemainingGroups
 ---table to the SelectedSpawnPoints table.
----Spawns that excceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
+---Spawns that exceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 ---@param location table vector {x,y,z} The origin point for distance calculation.
 function Groups:AddSpawnsFromClosestGroup(aiPerGroupAmount, location)
@@ -137,7 +137,7 @@ end
 
 ---Adds spawn points from a random group found in RemainingGroups table to the
 ---SelectedSpawnPoints table.
----Spawns that excceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
+---Spawns that exceed the aiPerGroupAmount will be added to ReserveSpawnPoints table.
 ---@param aiPerGroupAmount integer Amount of spawn points to be added from the group.
 function Groups:AddSpawnsFromRandomGroup(aiPerGroupAmount)
     print('Adding spawn points from randomly selected group')
@@ -207,7 +207,7 @@ function Groups:AddSpawnsFromGroup(aiPerGroupAmount, selectedGroupIndex)
     print('Removed group ' .. groupName .. ' from remaining groups')
 end
 
----Returns the total cound of all groups.
+---Returns the total count of all groups.
 ---@return integer totalGroupsCount
 function Groups:GetTotalGroupsCount()
     return #self.Spawns
@@ -250,7 +250,7 @@ end
 ---Resets RemainingGroups, SelectedSpawnPoints and ReserveSpawnPoints tables to
 ---default values.
 function Groups:ResetSpawnTables()
-    print('Reseting group spawn tables')
+    print('Resetting group spawn tables')
     self.RemainingGroups = {table.unpack(self.Spawns)}
     self.ReserveSpawnPoints = {}
     self.SelectedSpawnPoints = {}

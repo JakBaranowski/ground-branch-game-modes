@@ -1,7 +1,7 @@
 local Vectors = require('Common.Vectors')
 local Common = require('Navigation.Common')
 
----Direction table maps human-readeable directions to numbers in a way that allows
+---Direction table maps human-readable directions to numbers in a way that allows
 ---to easily find opposite direction and compare directions faster.
 local Direction = {
     None = 0,

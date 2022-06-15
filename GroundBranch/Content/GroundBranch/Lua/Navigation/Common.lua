@@ -9,12 +9,12 @@ Common.__index = Common
 ---@param extent table vector {x,y,z} extent within which to search for the point on nav mesh.
 ---@return table stepEnd vector {x,y,z} point on nav mesh.
 function Common.AttemptStep(stepStart, stepVector, extent)
-    local newPostionStraight = stepStart + stepVector
-    local newPositionNav = ai.ProjectPointToNavigation(newPostionStraight, extent)
+    local newPositionStraight = stepStart + stepVector
+    local newPositionNav = ai.ProjectPointToNavigation(newPositionStraight, extent)
     return newPositionNav
 end
 
----Retruns a table of random reachable points found along the route and within
+---Returns a table of random reachable points found along the route and within
 ---radius.
 ---@param route table a list of steps on the route.
 ---@param radius number radius within which the random points can be created.
@@ -36,7 +36,7 @@ end
 
 ---Takes the given route and creates a new cleaned route. The cleaning is done by
 ---returning only the amount of points specified as desiredPointCount. This is done
----by ommiting points in between n-th points, where n is the number of points on
+---by omitting points in between n-th points, where n is the number of points on
 ---original route divided by desiredPointCount and rounded down. The resulting point
 ---count may differ slightly from the desiredPointCount.
 ---@param route table a list of steps on the route.

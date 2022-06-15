@@ -105,7 +105,7 @@ function ConfirmKill:ShuffleSpawns()
 end
 
 ---Spawns the specified amount of HVTs at the shuffled spawn points.
----@param duration number time over whch the ai should be spawned.
+---@param duration number time over which the ai should be spawned.
 function ConfirmKill:Spawn(duration)
     print('Spawning ' .. self.HVT.Tag)
     ai.CreateOverDuration(
@@ -277,7 +277,7 @@ end
 ---spawn points table.
 ---@return table
 function ConfirmKill:PopShuffledSpawnPoints()
-    print('Poping ' .. self.HVT.Tag .. ' spawns')
+    print('Popping ' .. self.HVT.Tag .. ' spawns')
     local hvtSpawns = self:GetShuffledSpawnPoints()
     self.HVT.SpawnsShuffled = {}
     return hvtSpawns

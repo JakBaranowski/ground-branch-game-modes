@@ -149,7 +149,7 @@ local BreakThrough = {
 
 function BreakThrough:PreInit()
 	print('Initializing Break Out')
-	-- Initalize game message broker
+	-- Initialize game message broker
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
 		self.PlayerTeams.BluFor.TeamId,
 		false,

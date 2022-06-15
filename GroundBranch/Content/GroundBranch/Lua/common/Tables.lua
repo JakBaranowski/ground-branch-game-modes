@@ -4,7 +4,7 @@ Tables.__index = Tables
 
 ---Returns a copy of the provided table with shuffled entries.
 ---@param orderedTable table an ordered table that we want to shuffle.
----@return table shuffledTable a copy of the provdide table with shuffled entries.
+---@return table shuffledTable a copy of the provided table with shuffled entries.
 function Tables.ShuffleTable(orderedTable)
     local tempTable = {table.unpack(orderedTable)}
     local shuffledTable = {}

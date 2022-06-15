@@ -31,7 +31,7 @@ function Maths.ApplyDeviationNumber(number, deviationInt)
 end
 
 ---Applies deviation, making the resulting integer smaller or bigger, calculated
----as a deviationPercent of the proivided number.
+---as a deviationPercent of the provided number.
 ---@param number number base number that the deviation will be applied to.
 ---@param deviationPercent number percentage, between 0 and 1.
 ---@return integer numberWithDeviation number after applying deviation.

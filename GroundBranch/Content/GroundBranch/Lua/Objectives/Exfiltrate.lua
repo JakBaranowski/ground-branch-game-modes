@@ -22,7 +22,7 @@ local Exfiltrate = {
 }
 
 ---Creates a new object of type Objectives Exfiltrate. This prototype can be
----used for setting up and tracking an exifltration objective for a specific team.
+---used for setting up and tracking an exfiltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
 ---@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
@@ -79,7 +79,7 @@ function Exfiltrate:Reset()
 end
 
 ---Randomly selects the extraction point that should be active in the given round.
----If activeFromStart parameter is set to false, the extration point will not be
+---If activeFromStart parameter is set to false, the extraction point will not be
 ---active, and Exfiltrate:SelectedPointSetActive should be called to activate it
 ---when needed.
 ---@param activeFromStart boolean Should the selected extraction point be active from round start.
@@ -158,7 +158,7 @@ end
 ---Checks how many players are in the extraction zone and based on the result:
 ---* if players in zone count is equal or bigger then required count
 ---will count down time to exfiltration,
----* if playres in zone count is bigger than 0 but lower then required count
+---* if players in zone count is bigger than 0 but lower then required count
 ---pauses the timer, or
 ---* if there are no players in the extraction zone
 ---cancels the exfiltration.

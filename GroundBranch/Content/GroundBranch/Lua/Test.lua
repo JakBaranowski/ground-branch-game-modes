@@ -86,7 +86,7 @@ end
 --#region Triggers
 
 ---Triggered when a round stage is set. Round stage can be anything set by the user
----using the gamemode.SetRoundStage(stage) function. Howver there are some predefined
+---using the gamemode.SetRoundStage(stage) function. However there are some predefined
 ---round stages.
 ---@param RoundStage string named of the set round stage
 ---| 'WaitingForReady'
@@ -130,7 +130,7 @@ function Test:OnCharacterDied(Character, CharacterController, KillerController)
 	print('OnCharacterDied')
 end
 
----Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---Triggered whenever any actor overlaps a trigger. Note: Extraction points act as
 ---triggers as well.
 ---@param GameTrigger any
 ---@param Player any
@@ -138,7 +138,7 @@ function Test:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
 end
 
----Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---Triggered whenever any actor overlaps a trigger. Note: Extraction points act as
 ---triggers as well.
 ---@param GameTrigger any
 ---@param Player any
