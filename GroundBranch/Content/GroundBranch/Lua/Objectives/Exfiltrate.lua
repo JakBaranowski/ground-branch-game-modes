@@ -21,6 +21,8 @@ local Exfiltrate = {
     },
 }
 
+Exfiltrate.__index = Exfiltrate
+
 ---Creates a new object of type Objectives Exfiltrate. This prototype can be
 ---used for setting up and tracking an exfiltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
@@ -38,9 +40,8 @@ function Exfiltrate:Create(
     timeToExfil,
     timeStep
 )
-    local exfiltration = {}
-    setmetatable(exfiltration, self)
-    self.__index = self
+    local self = setmetatable({}, Exfiltrate)
+
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
     self.Team = team
@@ -69,8 +70,8 @@ function Exfiltrate:Create(
 		)
 	end
 	print('Added inactive objective markers for extraction points')
-	print('Initialized Objective Exfiltrate ' .. tostring(exfiltration))
-    return exfiltration
+	print('Initialized Objective Exfiltrate ' .. tostring(self))
+    return self
 end
 
 ---Resets the object attributes to default values. Should be called before every round.

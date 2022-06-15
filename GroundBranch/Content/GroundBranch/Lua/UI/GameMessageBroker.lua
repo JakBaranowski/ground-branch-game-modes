@@ -3,6 +3,8 @@ local GameMessageBroker = {
     Position = 'Engine',
 }
 
+GameMessageBroker.__index = GameMessageBroker
+
 ---Creates a new Game Message Broker object. Can be used to display game messages
 ---to selected players.
 ---@param recipients table List of players to display the message to.
@@ -13,13 +15,11 @@ local GameMessageBroker = {
 ---| 'Lower' Lower center of screen. Big white font.
 ---@return table GameMessageBroker The newly create Game Message Broker object.
 function GameMessageBroker:Create(position, recipients)
-    local gmb = {}
-    setmetatable(gmb, self)
-    self.__index = self
-    gmb.Position = position or 'Engine'
-    gmb.Recipients = recipients or {}
-    print('Initialized Game Message Broker ' .. tostring(gmb))
-    return gmb
+    local self = setmetatable({}, GameMessageBroker)
+    self.Position = position or 'Engine'
+    self.Recipients = recipients or {}
+    print('Initialized Game Message Broker ' .. tostring(self))
+    return self
 end
 
 ---Sets the recipients of the game message broker.
