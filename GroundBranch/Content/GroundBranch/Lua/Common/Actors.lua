@@ -90,7 +90,7 @@ end
 ---location.
 ---@param location table vector {x,y,z} a location to which distance is measured.
 ---@param group table a table containing a group of actors.
----@return number distance the shortests distance.
+---@return number distance the shortest distance.
 function Actors.GetShortestDistanceWithinGroup(location, group)
     return math.sqrt(
         Actors.GetShortestDistanceSqWithinGroup(location, group)

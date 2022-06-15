@@ -6,7 +6,7 @@ local Simple = {}
 Simple.__index = Simple
 
 ---Attempts to plot a route from start to destination by blindly making steps in
----the directin more or less toward destination. angleMiss can be used to create
+---the direction more or less toward destination. angleMiss can be used to create
 ---a route with tendency to go in the specified direction.
 ---This method of plotting route usually requires bigger extent to work properly.
 ---May not reach the destination.

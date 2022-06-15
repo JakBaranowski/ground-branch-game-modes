@@ -17,14 +17,6 @@ local Template = {
 	}
 }
 
-Template.__index = Template
-
-function Template:new()
-	local template = {}
-	setmetatable(self, Template)
-	return template
-end
-
 --#region Initialization
 
 ---Method called right after the mission is loaded.
@@ -42,7 +34,7 @@ end
 --#region Triggers
 
 ---Triggered when a round stage is set. Round stage can be anything set by the user
----using the gamemode.SetRoundStage(stage) function. Howver there are some predefined
+---using the gamemode.SetRoundStage(stage) function. However there are some predefined
 ---round stages.
 ---@param RoundStage string named of the set round stage
 ---| 'WaitingForReady'
@@ -75,7 +67,7 @@ function Template:OnCharacterDied(Character, CharacterController, KillerControll
 	print('OnCharacterDied')
 end
 
----Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---Triggered whenever any actor overlaps a trigger. Note: Extraction points act as
 ---triggers as well.
 ---@param GameTrigger any
 ---@param Player any
@@ -83,7 +75,7 @@ function Template:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	print('OnGameTriggerBeginOverlap')
 end
 
----Triggered whenever any actor ovelaps a trigger. Note: Extraction points act as 
+---Triggered whenever any actor overlaps a trigger. Note: Extraction points act as
 ---triggers as well.
 ---@param GameTrigger any
 ---@param Player any

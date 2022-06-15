@@ -30,6 +30,8 @@ local ConfirmKill = {
     }
 }
 
+ConfirmKill.__index = ConfirmKill
+
 ---Creates a new object of type Objectives Kill Confirmation. This prototype can be
 ---used for setting up and tracking an Kill Confirmation objective for a specific team.
 ---Kill Confirmation requires players to kill selected targets (HVTs), and confirm
@@ -49,9 +51,7 @@ function ConfirmKill:Create(
     hvtTag,
     hvtCount
 )
-    local killConfirmation = {}
-    setmetatable(killConfirmation, self)
-    self.__index = self
+    local self = setmetatable({}, ConfirmKill)
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
     self.Team = team
@@ -78,8 +78,8 @@ function ConfirmKill:Create(
     self.HVT.EliminatedNotConfirmedLocations = {}
     self.HVT.EliminatedNotConfirmedCount = 0
     self.HVT.EliminatedAndConfirmedCount = 0
-    print('Intialized Objective Kill Confirmation ' .. tostring(killConfirmation))
-    return killConfirmation
+    print('Initialized Objective Kill Confirmation ' .. tostring(self))
+    return self
 end
 
 ---Resets the object attributes to default values. Should be called before every round.
@@ -87,6 +87,15 @@ function ConfirmKill:Reset()
     self.HVT.EliminatedNotConfirmedLocations = {}
 	self.HVT.EliminatedNotConfirmedCount = 0
 	self.HVT.EliminatedAndConfirmedCount = 0
+end
+
+function ConfirmKill:GetCompletedObjectives()
+    if self:AreAllConfirmed() then
+        return {'NeutralizeHVTs','ConfirmEliminatedHVTs'}
+    elseif self:AreAllNeutralized() then
+        return {'NeutralizeHVTs'}
+    end
+    return {}
 end
 
 ---Shuffle HVT spawn order. Should be called before every round.
@@ -105,7 +114,7 @@ function ConfirmKill:ShuffleSpawns()
 end
 
 ---Spawns the specified amount of HVTs at the shuffled spawn points.
----@param duration number time over whch the ai should be spawned.
+---@param duration number time over which the ai should be spawned.
 function ConfirmKill:Spawn(duration)
     print('Spawning ' .. self.HVT.Tag)
     ai.CreateOverDuration(
@@ -277,7 +286,7 @@ end
 ---spawn points table.
 ---@return table
 function ConfirmKill:PopShuffledSpawnPoints()
-    print('Poping ' .. self.HVT.Tag .. ' spawns')
+    print('Popping ' .. self.HVT.Tag .. ' spawns')
     local hvtSpawns = self:GetShuffledSpawnPoints()
     self.HVT.SpawnsShuffled = {}
     return hvtSpawns

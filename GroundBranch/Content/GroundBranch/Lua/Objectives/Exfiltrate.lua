@@ -21,8 +21,10 @@ local Exfiltrate = {
     },
 }
 
+Exfiltrate.__index = Exfiltrate
+
 ---Creates a new object of type Objectives Exfiltrate. This prototype can be
----used for setting up and tracking an exifltration objective for a specific team.
+---used for setting up and tracking an exfiltration objective for a specific team.
 ---If messageBroker is provided will display objective related messages to players.
 ---If promptBroker is provided will display objective prompts to players.
 ---@param onObjectiveCompleteFuncOwner table The object owning function to be run when the objective is completed.
@@ -38,9 +40,8 @@ function Exfiltrate:Create(
     timeToExfil,
     timeStep
 )
-    local exfiltration = {}
-    setmetatable(exfiltration, self)
-    self.__index = self
+    local self = setmetatable({}, Exfiltrate)
+
     self.OnObjectiveCompleteFuncOwner = onObjectiveCompleteFuncOwner
     self.OnObjectiveCompleteFunc = onObjectiveCompleteFunc
     self.Team = team
@@ -49,11 +50,15 @@ function Exfiltrate:Create(
     self.ExfilTimer.DefaultTime = timeToExfil or Exfiltrate.ExfilTimer.DefaultTime
     self.ExfilTimer.TimeStep = timeStep or Exfiltrate.ExfilTimer.TimeStep
 	self.Points.All = {}
+	self.ExfilDone = false
 	local allExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
 	for _, extractionPoint in ipairs(allExtractionPoints) do
 		if actor.GetTeamId(extractionPoint) == self.Team:GetId() then
+			getmetatable(extractionPoint).__tostring = function(obj)
+				return actor.GetName(obj)
+			end
 			table.insert(self.Points.All, extractionPoint)
 		end
 	end
@@ -69,22 +74,34 @@ function Exfiltrate:Create(
 		)
 	end
 	print('Added inactive objective markers for extraction points')
-	print('Initialized Objective Exfiltrate ' .. tostring(exfiltration))
-    return exfiltration
+	print('Initialized Objective Exfiltrate ' .. tostring(self))
+    return self
 end
 
 ---Resets the object attributes to default values. Should be called before every round.
 function Exfiltrate:Reset()
 	self.PlayersIn = 0
+	self.ExfilDone = false
+end
+
+function Exfiltrate:GetCompletedObjectives()
+	if self.ExfilDone then
+		return {'ExfiltrateBluFor'}
+	else
+		return {}
+	end
 end
 
 ---Randomly selects the extraction point that should be active in the given round.
----If activeFromStart parameter is set to false, the extration point will not be
+---If activeFromStart parameter is set to false, the extraction point will not be
 ---active, and Exfiltrate:SelectedPointSetActive should be called to activate it
 ---when needed.
 ---@param activeFromStart boolean Should the selected extraction point be active from round start.
-function Exfiltrate:SelectPoint(activeFromStart)
-    local activeIndex = math.random(#self.Points.All)
+---@param activeIndex number The index of the active point (nil for random)
+function Exfiltrate:SelectPoint(activeFromStart, activeIndex)
+	if activeIndex == nil then
+		activeIndex = math.random(#self.Points.All)
+	end
     self.Points.Active = self.Points.All[activeIndex]
     for i = 1, #self.Points.All do
 		local bActive = (i == activeIndex)
@@ -158,12 +175,15 @@ end
 ---Checks how many players are in the extraction zone and based on the result:
 ---* if players in zone count is equal or bigger then required count
 ---will count down time to exfiltration,
----* if playres in zone count is bigger than 0 but lower then required count
+---* if players in zone count is bigger than 0 but lower then required count
 ---pauses the timer, or
 ---* if there are no players in the extraction zone
 ---cancels the exfiltration.
 function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
+		if self.Team:GetAlivePlayersCount() > 0 then
+			self.ExfilDone = true
+		end
 		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
 		timer.Clear(self, self.ExfilTimer.Name)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime
