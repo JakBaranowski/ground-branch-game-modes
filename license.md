@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2021 Jakub Baranowski / https://github.com/JakBaranowski
+Copyright (c) 2023 Jakub Baranowski / https://github.com/JakBaranowski
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,5 +1,7 @@
 # Ground Branch game modes
 
+Development of Ground Branch Game Modes have been moved to the [forked project](https://github.com/gbgmc/ground-branch-game-modes), please go there for the latest release of Ground Branch Game Modes.
+
 ## Description
 
 This repo contains game modes and missions for Ground Branch, as well as other
